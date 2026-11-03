@@ -15,10 +15,10 @@ Application Android d'accordage de guitare, en Kotlin + Jetpack Compose.
 
 ## Installer l'APK
 
-Chaque push lance le workflow GitHub Actions **Android build**, qui exécute les tests et produit
-l'APK. Dans l'onglet *Actions* du dépôt, ouvrez la dernière exécution et téléchargez l'artefact
-`accordeur-guitare-apk`, puis installez `app-debug.apk` sur le téléphone (autoriser les
-« sources inconnues »).
+**Lien direct :** https://github.com/RiadBen95/riad/releases/latest/download/accordeur-guitare.apk
+
+Ouvrez ce lien sur le téléphone, puis le fichier téléchargé (autoriser les « sources inconnues »
+si Android le demande). Chaque push recompile l'APK et met à jour ce lien.
 
 ## Compiler soi-même
 

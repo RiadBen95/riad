@@ -5,6 +5,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -18,8 +21,23 @@ jobs:
       - name: Tests unitaires
         run: ./gradlew testDebugUnitTest
       - name: Construire l'APK
-        run: ./gradlew assembleDebug
+        run: |
+          ./gradlew assembleDebug
+          cp app/build/outputs/apk/debug/app-debug.apk accordeur-guitare.apk
       - uses: actions/upload-artifact@v4
         with:
           name: accordeur-guitare-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: accordeur-guitare.apk
+      # Publie l'APK dans une Release : lien direct
+      # https://github.com/<owner>/<repo>/releases/latest/download/accordeur-guitare.apk
+      - name: Publier la release
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Accordeur Guitare (build ${{ github.run_number }})
+          body: |
+            APK de l'accordeur de guitare, compilé depuis ${{ github.sha }}.
+            Téléchargez `accordeur-guitare.apk` et ouvrez-le sur votre téléphone Android (8.0 minimum).
+          files: accordeur-guitare.apk
+          make_latest: true
