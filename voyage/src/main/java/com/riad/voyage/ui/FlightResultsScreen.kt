@@ -1,6 +1,13 @@
 package com.riad.voyage.ui
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import coil.compose.AsyncImage
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -221,12 +228,25 @@ private fun FlightCard(
     onHotels: () -> Unit,
 ) {
     val deal = dealColor()
-    Card(Modifier.fillMaxWidth()) {
+    Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             if (cheapest) {
                 Text("★ Meilleur prix", color = deal, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
             }
             Row(verticalAlignment = Alignment.Top) {
+                if (f.airline.isNotBlank()) {
+                    // Logos des compagnies fournis par le CDN d'Aviasales.
+                    AsyncImage(
+                        model = "https://pics.avs.io/96/96/${f.airline}.png",
+                        contentDescription = Airlines.name(f.airline),
+                        imageLoader = Images.get(LocalContext.current),
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color.White),
+                    )
+                    Spacer(Modifier.width(12.dp))
+                }
                 Column(Modifier.weight(1f)) {
                     Text(Airlines.name(f.airline), style = MaterialTheme.typography.titleMedium)
                     if (f.flightNumber.isNotBlank()) {

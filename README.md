@@ -19,7 +19,11 @@ pour payer : aucune donnée bancaire ne passe par l'application.
 
 ## Fonctionnalités
 
+- **Accueil** : recherche rapide, raccourcis Vols / Hôtels / Sorties / Alertes, recherches récentes à relancer
+  d'un geste, destinations populaires en photo.
 - **Vols** : aller-retour ou aller simple, autocomplétion des villes et aéroports, passagers, vols directs.
+- **Recherche rapide** : le dernier départ est mémorisé, aller et retour se choisissent dans un seul calendrier,
+  idées de destinations en un geste, logos des compagnies dans les résultats.
 - **Dates flexibles** : cherche le meilleur prix sur tout le mois.
 - **Calendrier des prix** : le tarif aller le plus bas jour par jour ; touchez un jour pour relancer la recherche.
 - **Tri** par prix, durée ou nombre d'escales ; le meilleur prix est mis en évidence.

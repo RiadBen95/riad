@@ -72,3 +72,56 @@ class AlertStore(context: Context) {
         lastChecked = o.optLong("lastChecked"),
     )
 }
+
+/** Recherche de vol mémorisée, pour la relancer d'un geste. */
+data class RecentSearch(
+    val origin: Place,
+    val destination: Place,
+    val departure: String,
+    val returnDate: String?,
+    val adults: Int,
+)
+
+class RecentStore(context: Context) {
+    private val prefs = context.getSharedPreferences("recent", Context.MODE_PRIVATE)
+
+    fun all(): List<RecentSearch> {
+        val arr = runCatching { JSONArray(prefs.getString("list", "[]")) }.getOrDefault(JSONArray())
+        return (0 until arr.length()).mapNotNull { i ->
+            val o = arr.optJSONObject(i) ?: return@mapNotNull null
+            runCatching {
+                RecentSearch(
+                    origin = place(o.getJSONObject("origin")),
+                    destination = place(o.getJSONObject("destination")),
+                    departure = o.getString("departure"),
+                    returnDate = if (o.isNull("returnDate")) null else o.optString("returnDate"),
+                    adults = o.optInt("adults", 1),
+                )
+            }.getOrNull()
+        }
+    }
+
+    fun add(r: RecentSearch) {
+        val list = (listOf(r) + all().filterNot {
+            it.origin.code == r.origin.code && it.destination.code == r.destination.code
+        }).take(8)
+        val arr = JSONArray()
+        list.forEach {
+            arr.put(
+                JSONObject()
+                    .put("origin", json(it.origin)).put("destination", json(it.destination))
+                    .put("departure", it.departure).put("returnDate", it.returnDate ?: JSONObject.NULL)
+                    .put("adults", it.adults),
+            )
+        }
+        prefs.edit().putString("list", arr.toString()).apply()
+    }
+
+    private fun json(p: Place) = JSONObject().put("code", p.code).put("name", p.name).put("country", p.country)
+        .put("type", p.type).put("cityName", p.cityName ?: JSONObject.NULL)
+
+    private fun place(o: JSONObject) = Place(
+        code = o.getString("code"), name = o.getString("name"), country = o.optString("country"),
+        type = o.optString("type", "city"), cityName = if (o.isNull("cityName")) null else o.optString("cityName"),
+    )
+}

@@ -1,0 +1,297 @@
+package com.riad.voyage.ui
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import com.riad.voyage.FlightForm
+import com.riad.voyage.data.Place
+import com.riad.voyage.data.PopularPlaces
+import com.riad.voyage.data.PriceAlert
+import com.riad.voyage.data.RecentSearch
+import com.riad.voyage.data.WikiSummary
+import java.time.LocalDate
+import java.time.LocalTime
+
+/** Destinations mises en avant sur l'accueil, avec leur article Wikipédia (pour la photo). */
+private val featured = listOf(
+    "BCN" to "fr:Barcelone", "IST" to "fr:Istanbul", "RAK" to "fr:Marrakech", "ROM" to "fr:Rome",
+    "LIS" to "fr:Lisbonne", "DXB" to "fr:Dubaï", "ALG" to "fr:Alger", "LON" to "fr:Londres",
+    "NYC" to "fr:New York", "TUN" to "fr:Tunis", "PAR" to "fr:Paris", "AMS" to "fr:Amsterdam",
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeScreen(
+    form: FlightForm,
+    recents: List<RecentSearch>,
+    alerts: List<PriceAlert>,
+    demo: Boolean,
+    onOpenFlights: () -> Unit,
+    onOpenHotels: () -> Unit,
+    onOpenActivities: () -> Unit,
+    onOpenAlerts: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onRecent: (RecentSearch) -> Unit,
+    onDestination: (Place) -> Unit,
+    wiki: suspend (String) -> WikiSummary?,
+) {
+    val hour = LocalTime.now().hour
+    val greeting = if (hour in 5..17) "Bonjour 👋" else "Bonsoir 👋"
+    val primary = MaterialTheme.colorScheme.primary
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
+        // En-tête en dégradé, avec la barre de recherche.
+        item {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .background(Brush.verticalGradient(listOf(primary, primary.copy(alpha = 0.75f))))
+                    .statusBarsPadding()
+                    .padding(start = 20.dp, end = 8.dp, top = 12.dp, bottom = 52.dp),
+            ) {
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(greeting, color = Color.White.copy(alpha = 0.9f), modifier = Modifier.weight(1f))
+                        IconButton(onClick = onOpenSettings) {
+                            Icon(AppIcons.Settings, contentDescription = "Réglages", tint = Color.White)
+                        }
+                    }
+                    Text(
+                        "Où partez-vous ?",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                    )
+                }
+            }
+        }
+        item {
+            Card(
+                onClick = onOpenFlights,
+                shape = RoundedCornerShape(20.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 0.dp)
+                    .offset(y = (-36).dp),
+            ) {
+                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(AppIcons.Search, null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                    }
+                    Spacer(Modifier.width(14.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("Rechercher un vol", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "Depuis ${form.origin?.name ?: "…"} · ${form.adults} passager${if (form.adults > 1) "s" else ""}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Text("›", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
+                }
+            }
+        }
+        item {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .offset(y = (-20).dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                QuickTile("Vols", AppIcons.Flight, onOpenFlights, Modifier.weight(1f))
+                QuickTile("Hôtels", AppIcons.Hotel, onOpenHotels, Modifier.weight(1f))
+                QuickTile("Sorties", AppIcons.Ticket, onOpenActivities, Modifier.weight(1f))
+                QuickTile("Alertes", AppIcons.Bell, onOpenAlerts, Modifier.weight(1f), badge = alerts.size.takeIf { it > 0 })
+            }
+        }
+        if (demo) {
+            item {
+                Box(Modifier.padding(horizontal = 16.dp)) { DemoBanner(onOpenSettings) }
+                Spacer(Modifier.height(12.dp))
+            }
+        }
+        if (recents.isNotEmpty()) {
+            item { SectionTitle("Reprendre une recherche", AppIcons.History) }
+            item {
+                LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    items(recents) { r -> RecentCard(r) { onRecent(r) } }
+                }
+            }
+        }
+        item { SectionTitle("Destinations populaires", null) }
+        item {
+            val list = featured.filter { it.first != form.origin?.code }
+            LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(list) { (code, tag) ->
+                    val place = PopularPlaces.find(code) ?: return@items
+                    DestinationCard(place, tag, wiki) { onDestination(place) }
+                }
+            }
+        }
+        item {
+            Text(
+                "Prix des vols : Aviasales · Lieux : OpenStreetMap · Photos : Wikipédia",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun QuickTile(label: String, icon: ImageVector, onClick: () -> Unit, modifier: Modifier, badge: Int? = null) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 2.dp,
+        modifier = modifier,
+    ) {
+        Column(
+            Modifier.padding(vertical = 14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box {
+                Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(26.dp))
+                if (badge != null) {
+                    Box(
+                        Modifier
+                            .align(Alignment.TopEnd)
+                            .offset(y = (-4).dp)
+                            .size(16.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.secondary),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(badge.toString(), color = Color.White, style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(label, style = MaterialTheme.typography.labelLarge)
+        }
+    }
+}
+
+@Composable
+private fun SectionTitle(title: String, icon: ImageVector?) {
+    Row(Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (icon != null) {
+            Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+        }
+        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RecentCard(r: RecentSearch, onClick: () -> Unit) {
+    Card(onClick = onClick, shape = RoundedCornerShape(16.dp), modifier = Modifier.width(220.dp)) {
+        Column(Modifier.padding(14.dp)) {
+            Text(
+                "${r.origin.name} → ${r.destination.name}",
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            val dates = buildString {
+                append(formatDateOrMonth(r.departure))
+                r.returnDate?.let { append(" – ").append(formatDateOrMonth(it)) }
+            }
+            Text(dates, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            val past = runCatching { LocalDate.parse(r.departure).isBefore(LocalDate.now()) }.getOrDefault(false)
+            Text(
+                if (past) "Relancer avec de nouvelles dates ›" else "Relancer la recherche ›",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(top = 6.dp),
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DestinationCard(place: Place, wikiTag: String, wiki: suspend (String) -> WikiSummary?, onClick: () -> Unit) {
+    val context = LocalContext.current
+    var image by remember(wikiTag) { mutableStateOf<String?>(null) }
+    LaunchedEffect(wikiTag) { image = wiki(wikiTag)?.imageUrl }
+    Card(onClick = onClick, shape = RoundedCornerShape(18.dp), modifier = Modifier.size(width = 150.dp, height = 190.dp)) {
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.primaryContainer)) {
+            image?.let {
+                AsyncImage(
+                    model = it,
+                    contentDescription = place.name,
+                    imageLoader = Images.get(context),
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)))),
+            )
+            Column(Modifier.align(Alignment.BottomStart).padding(12.dp)) {
+                Text(place.name, color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                Text(place.country, color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.bodySmall)
+            }
+        }
+    }
+}

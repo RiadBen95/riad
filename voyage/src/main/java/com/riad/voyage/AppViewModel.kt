@@ -12,6 +12,8 @@ import com.riad.voyage.data.Flight
 import com.riad.voyage.data.Place
 import com.riad.voyage.data.PopularPlaces
 import com.riad.voyage.data.PriceAlert
+import com.riad.voyage.data.RecentSearch
+import com.riad.voyage.data.RecentStore
 import com.riad.voyage.data.Settings
 import com.riad.voyage.data.SettingsStore
 import com.riad.voyage.data.TravelpayoutsApi
@@ -27,8 +29,9 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.temporal.ChronoUnit
 
-enum class Tab(val label: String, val emoji: String) {
-    FLIGHTS("Vols", "✈️"), HOTELS("Hôtels", "🏨"), ACTIVITIES("Sorties", "🎟️"), ALERTS("Alertes", "🔔"), SETTINGS("Réglages", "⚙️")
+enum class Tab(val label: String, val inBottomBar: Boolean = true) {
+    HOME("Accueil"), FLIGHTS("Vols"), HOTELS("Hôtels"), ACTIVITIES("Sorties"), ALERTS("Alertes"),
+    SETTINGS("Réglages", inBottomBar = false),
 }
 
 sealed interface KeyStatus {
@@ -102,14 +105,21 @@ data class PlacesState(
 class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val settingsStore = SettingsStore(app)
     private val alertStore = AlertStore(app)
+    private val recentStore = RecentStore(app)
+
+    private val _recents = MutableStateFlow(recentStore.all())
+    val recents: StateFlow<List<RecentSearch>> = _recents.asStateFlow()
 
     private val _settings = MutableStateFlow(settingsStore.load())
     val settings: StateFlow<Settings> = _settings.asStateFlow()
 
-    private val _tab = MutableStateFlow(Tab.FLIGHTS)
+    private val _tab = MutableStateFlow(Tab.HOME)
     val tab: StateFlow<Tab> = _tab.asStateFlow()
 
-    private val _form = MutableStateFlow(FlightForm())
+    // Reprend le dernier départ et le nombre de passagers de la recherche précédente.
+    private val _form = MutableStateFlow(
+        _recents.value.firstOrNull()?.let { FlightForm(origin = it.origin, adults = it.adults) } ?: FlightForm(),
+    )
     val form: StateFlow<FlightForm> = _form.asStateFlow()
 
     private val _results = MutableStateFlow(ResultsState())
@@ -262,6 +272,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             _message.value = "Le départ et la destination sont identiques."
             return
         }
+        recentStore.add(RecentSearch(origin, destination, f.departure.toString(), if (f.roundTrip) f.returnDate.toString() else null, f.adults))
+        _recents.value = recentStore.all()
+        _tab.value = Tab.FLIGHTS
         val s = _settings.value
         _results.update {
             ResultsState(visible = true, loading = true, query = f, demo = s.isDemo, currency = s.currency, sort = it.sort)
@@ -290,6 +303,32 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 _results.update { if (it.query == f) it.copy(loading = false, error = TravelpayoutsApi.userMessage(e)) else it }
             }
         }
+    }
+
+    /** Relance une recherche récente (les dates passées sont décalées à dans deux semaines). */
+    fun applyRecent(r: RecentSearch) {
+        val today = LocalDate.now()
+        var dep = runCatching { LocalDate.parse(r.departure) }.getOrDefault(today.plusDays(14))
+        var ret = r.returnDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+        if (dep.isBefore(today)) {
+            val stay = ret?.let { ChronoUnit.DAYS.between(dep, it) } ?: 7
+            dep = today.plusDays(14)
+            ret = ret?.let { dep.plusDays(stay) }
+        }
+        updateForm {
+            it.copy(
+                origin = r.origin, destination = r.destination, departure = dep,
+                returnDate = ret ?: dep.plusDays(7), roundTrip = ret != null, flexibleMonth = false, adults = r.adults,
+            )
+        }
+        search()
+    }
+
+    /** Choisit une destination depuis l'accueil et ouvre le formulaire de vol. */
+    fun pickDestination(p: Place) {
+        updateForm { it.copy(destination = p) }
+        _results.update { it.copy(visible = false) }
+        _tab.value = Tab.FLIGHTS
     }
 
     fun pickCalendarDay(date: LocalDate) {

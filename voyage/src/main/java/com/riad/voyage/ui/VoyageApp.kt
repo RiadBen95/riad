@@ -4,7 +4,11 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -36,6 +40,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
     val activityCity by vm.activityCity.collectAsStateWithLifecycle()
     val activityCategory by vm.activityCategory.collectAsStateWithLifecycle()
     val places by vm.places.collectAsStateWithLifecycle()
+    val recents by vm.recents.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(message) {
@@ -53,23 +58,40 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
             NavigationBar {
-                Tab.entries.forEach { t ->
+                Tab.entries.filter { it.inBottomBar }.forEach { t ->
                     NavigationBarItem(
                         selected = tab == t,
                         onClick = { vm.selectTab(t) },
-                        icon = { Text(t.emoji, fontSize = 20.sp) },
+                        icon = { Icon(tabIcon(t), contentDescription = t.label) },
                         label = { Text(t.label, maxLines = 1, fontSize = 11.sp) },
                     )
                 }
             }
         },
     ) { padding ->
+        // L'accueil dessine son en-tête sous la barre d'état ; les autres écrans restent dessous.
+        val contentPadding = if (tab == Tab.HOME) PaddingValues(bottom = padding.calculateBottomPadding()) else padding
         Box(
             Modifier
-                .padding(padding)
+                .padding(contentPadding)
                 .fillMaxSize(),
         ) {
             when (tab) {
+                Tab.HOME -> HomeScreen(
+                    form = form,
+                    recents = recents,
+                    alerts = alerts,
+                    demo = settings.isDemo,
+                    onOpenFlights = { vm.selectTab(Tab.FLIGHTS) },
+                    onOpenHotels = { vm.selectTab(Tab.HOTELS) },
+                    onOpenActivities = { vm.selectTab(Tab.ACTIVITIES) },
+                    onOpenAlerts = { vm.selectTab(Tab.ALERTS) },
+                    onOpenSettings = configure,
+                    onRecent = vm::applyRecent,
+                    onDestination = vm::pickDestination,
+                    wiki = vm::wikiSummary,
+                )
+
                 Tab.FLIGHTS -> if (results.visible) {
                     BackHandler { vm.closeResults() }
                     FlightResultsScreen(
@@ -88,6 +110,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         onConfigure = configure,
                     )
                 } else {
+                    BackHandler { vm.selectTab(Tab.HOME) }
                     FlightSearchScreen(
                         form = form,
                         demo = settings.isDemo,
@@ -96,11 +119,13 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         onSearch = vm::search,
                         suggest = vm::suggestPlaces,
                         onConfigure = configure,
+                        recents = recents,
+                        onRecent = vm::applyRecent,
                     )
                 }
 
                 Tab.HOTELS -> {
-                    BackHandler { vm.selectTab(Tab.FLIGHTS) }
+                    BackHandler { vm.selectTab(Tab.HOME) }
                     HotelScreen(hotel, vm::updateHotel) {
                         vm.setActivityCity(hotel.city)
                         vm.selectTab(Tab.ACTIVITIES)
@@ -108,7 +133,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                 }
 
                 Tab.ACTIVITIES -> {
-                    BackHandler { vm.selectTab(Tab.FLIGHTS) }
+                    BackHandler { vm.selectTab(Tab.HOME) }
                     ActivitiesScreen(
                         city = activityCity,
                         category = activityCategory,
@@ -121,15 +146,24 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                 }
 
                 Tab.ALERTS -> {
-                    BackHandler { vm.selectTab(Tab.FLIGHTS) }
+                    BackHandler { vm.selectTab(Tab.HOME) }
                     AlertsScreen(alerts, settings.isDemo, checking, vm::checkAlertsNow, vm::removeAlert, configure)
                 }
 
                 Tab.SETTINGS -> {
-                    BackHandler { vm.selectTab(Tab.FLIGHTS) }
+                    BackHandler { vm.selectTab(Tab.HOME) }
                     SettingsScreen(settings, keyStatus, vm::saveSettings)
                 }
             }
         }
     }
+}
+
+private fun tabIcon(t: Tab) = when (t) {
+    Tab.HOME -> AppIcons.Home
+    Tab.FLIGHTS -> AppIcons.Flight
+    Tab.HOTELS -> AppIcons.Hotel
+    Tab.ACTIVITIES -> AppIcons.Ticket
+    Tab.ALERTS -> AppIcons.Bell
+    Tab.SETTINGS -> AppIcons.Settings
 }

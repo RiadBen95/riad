@@ -58,7 +58,7 @@ import com.riad.voyage.data.WikiSummary
 import okhttp3.OkHttpClient
 
 /** Chargeur d'images avec un User-Agent explicite (demandé par Wikimedia). */
-private object Images {
+internal object Images {
     @Volatile private var loader: ImageLoader? = null
     fun get(context: Context): ImageLoader = loader ?: synchronized(this) {
         loader ?: ImageLoader.Builder(context.applicationContext)
