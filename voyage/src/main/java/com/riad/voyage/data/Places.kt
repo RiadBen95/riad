@@ -13,7 +13,7 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
 
-data class GeoPoint(val lat: Double, val lon: Double, val label: String)
+data class GeoPoint(val lat: Double, val lon: Double, val label: String, val wikidata: String? = null)
 
 data class PointOfInterest(
     val id: String,
@@ -29,7 +29,13 @@ data class PointOfInterest(
     val wikipedia: String?,      // ex. "fr:Musée du Louvre"
     val notable: Boolean,
     val isRestaurant: Boolean,
-)
+    val wikidata: String? = null,
+    val sitelinks: Int = 0,        // nombre de Wikipédias (langues) qui ont un article sur ce lieu
+    val inGuide: Boolean = false,  // cité par le guide Wikivoyage de la ville
+) {
+    val isMustSee get() = sitelinks >= 20
+    val score get() = sitelinks + (if (inGuide) 30 else 0)
+}
 
 data class WikiSummary(val extract: String, val imageUrl: String?, val pageUrl: String)
 
@@ -45,7 +51,7 @@ object PlacesApi {
     )
 
     suspend fun geocode(city: String): GeoPoint? {
-        val url = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=fr&q=${enc(city)}"
+        val url = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&extratags=1&accept-language=fr&q=${enc(city)}"
         return PlacesParser.geocode(get(url))
     }
 
@@ -60,6 +66,32 @@ object PlacesApi {
             }
         }
         throw last ?: IOException("Serveur de lieux injoignable")
+    }
+
+    /** Nombre de Wikipédias par lieu (Wikidata), par lots de 50. */
+    suspend fun sitelinkCounts(ids: List<String>): Map<String, Int> {
+        val result = mutableMapOf<String, Int>()
+        ids.distinct().chunked(50).forEach { chunk ->
+            val url = "https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&props=sitelinks&ids=" +
+                enc(chunk.joinToString("|"))
+            result += PlacesParser.sitelinkCounts(get(url))
+        }
+        return result
+    }
+
+    /** Noms des lieux cités par Wikivoyage (français et anglais) pour la ville. */
+    suspend fun guideNames(cityWikidata: String): Set<String> {
+        val url = "https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&props=sitelinks&ids=${enc(cityWikidata)}"
+        val titles = PlacesParser.wikivoyageTitles(get(url))
+        val names = mutableSetOf<String>()
+        for ((lang, title) in titles) {
+            runCatching {
+                names += PlacesParser.guideNames(
+                    get("https://$lang.wikivoyage.org/w/index.php?action=raw&title=${enc(title.replace(' ', '_'))}"),
+                )
+            }
+        }
+        return names
     }
 
     suspend fun wikiSummary(tag: String): WikiSummary? {
@@ -139,10 +171,11 @@ object PlacesParser {
         val o = arr.optJSONObject(0) ?: return null
         val lat = o.optString("lat").toDoubleOrNull() ?: return null
         val lon = o.optString("lon").toDoubleOrNull() ?: return null
-        return GeoPoint(lat, lon, o.optString("display_name"))
+        val wikidata = o.optJSONObject("extratags")?.str("wikidata")?.ifBlank { null }
+        return GeoPoint(lat, lon, o.optString("display_name"), wikidata)
     }
 
-    fun pois(body: String, center: GeoPoint, limit: Int = 60): List<PointOfInterest> {
+    fun pois(body: String, center: GeoPoint, limit: Int = 120): List<PointOfInterest> {
         val elements = JSONObject(body).optJSONArray("elements") ?: return emptyList()
         val seen = HashSet<String>()
         return (0 until elements.length()).mapNotNull { i ->
@@ -172,6 +205,7 @@ object PlacesParser {
                 wikipedia = tags.str("wikipedia").ifBlank { null },
                 notable = tags.has("wikipedia") || tags.has("wikidata"),
                 isRestaurant = isRestaurant,
+                wikidata = tags.str("wikidata").ifBlank { null },
             )
         }.sortedWith(
             compareByDescending<PointOfInterest> { it.wikipedia != null }
@@ -179,6 +213,44 @@ object PlacesParser {
                 .thenByDescending { it.website != null }
                 .thenBy { it.distanceM },
         ).take(limit)
+    }
+
+    fun sitelinkCounts(body: String): Map<String, Int> {
+        val entities = JSONObject(body).optJSONObject("entities") ?: return emptyMap()
+        return entities.keys().asSequence().associateWith { id ->
+            val links = entities.optJSONObject(id)?.optJSONObject("sitelinks")
+            links?.keys()?.asSequence()?.count { it.endsWith("wiki") && it != "commonswiki" && it != "specieswiki" } ?: 0
+        }
+    }
+
+    fun wikivoyageTitles(body: String): List<Pair<String, String>> {
+        val entities = JSONObject(body).optJSONObject("entities") ?: return emptyList()
+        val links = entities.keys().asSequence().firstOrNull()?.let { entities.optJSONObject(it)?.optJSONObject("sitelinks") }
+            ?: return emptyList()
+        return listOf("fr", "en").mapNotNull { lang ->
+            links.optJSONObject("${lang}wikivoyage")?.str("title")?.ifBlank { null }?.let { lang to it }
+        }
+    }
+
+    /** Extrait les noms des fiches du guide : {{see|name=…}}, {{Listing|nom=…}}, etc. */
+    fun guideNames(wikitext: String): Set<String> =
+        Regex("""\|\s*(?:name|nom)\s*=\s*([^|}\n]+)""").findAll(wikitext)
+            .map { normalizeName(it.groupValues[1]) }
+            .filter { it.length >= 4 }
+            .toSet()
+
+    fun normalizeName(s: String): String {
+        val noAccents = java.text.Normalizer.normalize(s.lowercase(), java.text.Normalizer.Form.NFD)
+            .replace(Regex("\\p{Mn}+"), "")
+        return noAccents.replace("[[", " ").replace("]]", " ").replace("''", " ")
+            .replace(Regex("[^a-z0-9]+"), " ").trim()
+            .replace(Regex("^(le|la|les|l|the|el|il)\\s+"), "")
+    }
+
+    fun matchesGuide(name: String, guide: Set<String>): Boolean {
+        val n = normalizeName(name)
+        if (n.length < 4) return false
+        return guide.any { g -> g == n || (g.length >= 6 && n.contains(g)) || (n.length >= 6 && g.contains(n)) }
     }
 
     fun wiki(body: String): WikiSummary? {

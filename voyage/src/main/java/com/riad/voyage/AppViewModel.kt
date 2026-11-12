@@ -88,7 +88,16 @@ data class PlacesState(
     val items: List<com.riad.voyage.data.PointOfInterest> = emptyList(),
     val city: String = "",
     val category: ActivityLinks.Category? = null,
-)
+    val guideFound: Boolean = false,
+) {
+    /** Sélection « les meilleurs » : cités par le guide ou très connus ; sinon les premiers du classement. */
+    val best: List<com.riad.voyage.data.PointOfInterest>
+        get() {
+            val top = items.filter { it.inGuide || it.sitelinks >= 8 }
+            return if (top.size >= 5) top.take(25) else items.take(15)
+        }
+    val bestIsCurated get() = items.count { it.inGuide || it.sitelinks >= 8 } >= 5
+}
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val settingsStore = SettingsStore(app)
@@ -120,6 +129,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private var placesJob: kotlinx.coroutines.Job? = null
     private val geoCache = mutableMapOf<String, com.riad.voyage.data.GeoPoint>()
     private val wikiCache = mutableMapOf<String, com.riad.voyage.data.WikiSummary?>()
+    private val guideCache = mutableMapOf<String, Set<String>>()
 
     private val _alerts = MutableStateFlow(alertStore.all())
     val alerts: StateFlow<List<PriceAlert>> = _alerts.asStateFlow()
@@ -168,8 +178,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 if (geo == null) {
                     PlacesState(error = "Ville introuvable : vérifiez l'orthographe.", city = city, category = category)
                 } else {
-                    val items = com.riad.voyage.data.PlacesApi.search(geo, category)
-                    PlacesState(items = items, city = city, category = category,
+                    val (raw, guide) = coroutineScope {
+                        val pois = async { com.riad.voyage.data.PlacesApi.search(geo, category) }
+                        val guide = async { cityGuide(geo) }
+                        pois.await() to guide.await()
+                    }
+                    val items = rank(raw, guide)
+                    PlacesState(items = items, city = city, category = category, guideFound = guide.isNotEmpty(),
                         error = if (items.isEmpty()) "Aucun lieu trouvé pour cette ville." else null)
                 }
             } catch (e: kotlinx.coroutines.CancellationException) {
@@ -178,6 +193,35 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 PlacesState(error = TravelpayoutsApi.userMessage(e), city = city, category = category)
             }
         }
+    }
+
+    private suspend fun cityGuide(geo: com.riad.voyage.data.GeoPoint): Set<String> {
+        val id = geo.wikidata ?: return emptySet()
+        guideCache[id]?.let { return it }
+        val names = runCatching { com.riad.voyage.data.PlacesApi.guideNames(id) }.getOrDefault(emptySet())
+        if (names.isNotEmpty()) guideCache[id] = names
+        return names
+    }
+
+    /** Classe les lieux : cités par le guide + notoriété (nombre de Wikipédias), puis distance. */
+    private suspend fun rank(
+        items: List<com.riad.voyage.data.PointOfInterest>,
+        guide: Set<String>,
+    ): List<com.riad.voyage.data.PointOfInterest> {
+        val ids = items.mapNotNull { it.wikidata }.take(150)
+        val counts = if (ids.isEmpty()) emptyMap() else
+            runCatching { com.riad.voyage.data.PlacesApi.sitelinkCounts(ids) }.getOrDefault(emptyMap())
+        return items.map { p ->
+            p.copy(
+                sitelinks = p.wikidata?.let { counts[it] } ?: 0,
+                inGuide = guide.isNotEmpty() && com.riad.voyage.data.PlacesParser.matchesGuide(p.name, guide),
+            )
+        }.sortedWith(
+            compareByDescending<com.riad.voyage.data.PointOfInterest> { it.score }
+                .thenByDescending { it.wikipedia != null }
+                .thenByDescending { it.website != null }
+                .thenBy { it.distanceM },
+        )
     }
 
     suspend fun wikiSummary(tag: String): com.riad.voyage.data.WikiSummary? {

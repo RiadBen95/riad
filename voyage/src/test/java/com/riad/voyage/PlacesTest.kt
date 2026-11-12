@@ -66,4 +66,35 @@ class PlacesTest {
         assertTrue(q.contains("around:8000,48.85,2.35"))
         assertTrue(PlacesApi.overpassQuery(ActivityLinks.Category.ATTRACTIONS, 1.0, 2.0).contains("theme_park)$\""))
     }
+
+    @Test
+    fun geocodeWikidata() {
+        val g = PlacesParser.geocode("""[{"lat":"43.3","lon":"5.37","display_name":"Marseille","extratags":{"wikidata":"Q23482"}}]""")
+        assertEquals("Q23482", g!!.wikidata)
+    }
+
+    @Test
+    fun sitelinks() {
+        val json = """{"entities":{"Q1":{"sitelinks":{"enwiki":{},"frwiki":{},"enwikivoyage":{},"commonswiki":{}}},"Q2":{"sitelinks":{}}}}"""
+        assertEquals(mapOf("Q1" to 2, "Q2" to 0), PlacesParser.sitelinkCounts(json))
+        val city = """{"entities":{"Q90":{"sitelinks":{"frwikivoyage":{"title":"Paris"},"enwikivoyage":{"title":"Paris"},"frwiki":{"title":"Paris"}}}}}"""
+        assertEquals(listOf("fr" to "Paris", "en" to "Paris"), PlacesParser.wikivoyageTitles(city))
+    }
+
+    @Test
+    fun guideMatching() {
+        val text = """
+            * {{see | name=Louvre | alt=Musée du Louvre | url=https://louvre.fr }}
+            * {{Listing | type=voir | nom=Basilique Notre-Dame de la Garde | adresse=... }}
+            * {{eat | name=Le Petit Nice | content=Bouillabaisse }}
+        """.trimIndent()
+        val guide = PlacesParser.guideNames(text)
+        assertTrue(guide.contains("louvre"))
+        assertTrue(guide.contains("basilique notre dame de la garde"))
+        assertTrue(guide.contains("petit nice"))
+        assertTrue(PlacesParser.matchesGuide("Musée du Louvre", guide))
+        assertTrue(PlacesParser.matchesGuide("Notre-Dame de la Garde", guide))
+        assertTrue(PlacesParser.matchesGuide("Le Petit Nice", guide))
+        assertTrue(!PlacesParser.matchesGuide("Musée d'Orsay", guide))
+    }
 }

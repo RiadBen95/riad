@@ -92,6 +92,7 @@ fun ActivitiesScreen(
 ) {
     val context = LocalContext.current
     val focus = LocalFocusManager.current
+    var bestOnly by remember { mutableStateOf(true) }
     val search = {
         focus.clearFocus()
         onSearch()
@@ -177,15 +178,26 @@ fun ActivitiesScreen(
 
             else -> {
                 item {
-                    Text(
-                        "${places.items.size} lieux à ${places.city}",
-                        style = MaterialTheme.typography.titleSmall,
-                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(selected = bestOnly, onClick = { bestOnly = true }, label = { Text("⭐ Les meilleurs") })
+                        FilterChip(selected = !bestOnly, onClick = { bestOnly = false }, label = { Text("Tout voir (${places.items.size})") })
+                    }
                 }
-                items(places.items, key = { it.id }) { p -> PlaceCard(p, places.city, wiki) }
                 item {
                     Text(
-                        "Données © les contributeurs d'OpenStreetMap et Wikipédia.",
+                        when {
+                            !bestOnly -> "Tous les lieux trouvés à ${places.city}, les plus réputés en premier."
+                            places.bestIsCurated -> "Sélection des lieux recommandés par le guide Wikivoyage et les plus réputés de ${places.city}."
+                            else -> "Peu de recommandations trouvées pour cette ville : voici les premiers du classement."
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                items(if (bestOnly) places.best else places.items, key = { it.id }) { p -> PlaceCard(p, places.city, wiki) }
+                item {
+                    Text(
+                        "Données © les contributeurs d'OpenStreetMap, Wikipédia, Wikidata et Wikivoyage.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -218,6 +230,18 @@ private fun PlaceCard(p: PointOfInterest, city: String, wiki: suspend (String) -
             }
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(p.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                val badges = listOfNotNull(
+                    "★ Incontournable".takeIf { p.isMustSee },
+                    "📘 Recommandé par le guide".takeIf { p.inGuide },
+                )
+                if (badges.isNotEmpty()) {
+                    Text(
+                        badges.joinToString("   "),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = com.riad.voyage.ui.theme.dealColor(),
+                    )
+                }
                 Text(
                     "${p.kind} · ${formatDistance(p.distanceM)} du centre",
                     style = MaterialTheme.typography.bodySmall,
