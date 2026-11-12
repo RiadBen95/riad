@@ -25,7 +25,8 @@ pour payer : aucune donnée bancaire ne passe par l'application.
 - **Tri** par prix, durée ou nombre d'escales ; le meilleur prix est mis en évidence.
 - **Hôtels** : saisissez le séjour une fois, comparez Booking.com, Hotels.com, Expedia, Agoda et Google Hôtels
   (liens de recherche pré-remplis).
-- **Sorties** : les musées, attractions et restaurants de la ville s'affichent dans l'app (photo, description,
+- **Sorties** : filtre par type (musées, monuments, attractions, parcs, plages, restaurants, cafés, bars,
+  boîtes de nuit, shopping, visites). Les lieux de la ville s'affichent dans l'app (photo, description,
   adresse, horaires, distance) grâce à OpenStreetMap et Wikipédia. « Réserver des billets » ouvre GetYourGuide ou
   Tiqets pour ce lieu ; « Itinéraire » ouvre Google Maps. Les visites guidées renvoient vers GetYourGuide, Viator, Klook.
 - **Vol + hôtel** : depuis un vol, « Hôtels sur place » pré-remplit la destination et les dates.

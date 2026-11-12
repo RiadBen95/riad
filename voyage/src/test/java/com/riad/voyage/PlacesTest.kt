@@ -39,7 +39,7 @@ class PlacesTest {
         assertEquals("Musée", louvre.kind)
         assertEquals("99 Rue de Rivoli", louvre.address)
         assertTrue(louvre.distanceM in 1000..1500)
-        val resto = pois.first { it.isRestaurant }
+        val resto = pois.first { it.isVenue }
         assertEquals("Restaurant · algérien, méditerranéen", resto.kind)
         assertEquals("+33 1 00 00 00 00", resto.phone)
     }
@@ -96,5 +96,37 @@ class PlacesTest {
         assertTrue(PlacesParser.matchesGuide("Notre-Dame de la Garde", guide))
         assertTrue(PlacesParser.matchesGuide("Le Petit Nice", guide))
         assertTrue(!PlacesParser.matchesGuide("Musée d'Orsay", guide))
+    }
+}
+
+class PlaceTypesTest {
+    private val center = GeoPoint(43.2965, 5.3698, "Marseille")
+
+    @Test
+    fun everyCategoryHasAQuery() {
+        ActivityLinks.Category.entries.filter { it != ActivityLinks.Category.TOURS }.forEach { c ->
+            val q = PlacesApi.overpassQuery(c, 43.3, 5.37)
+            assertTrue("$c", q.contains("nwr["))
+        }
+    }
+
+    @Test
+    fun kindsAndActions() {
+        val json = """
+            {"elements":[
+              {"type":"node","id":1,"lat":43.29,"lon":5.37,"tags":{"amenity":"bar","name":"Le Bar"}},
+              {"type":"node","id":2,"lat":43.29,"lon":5.37,"tags":{"amenity":"place_of_worship","religion":"christian","name":"Basilique","wikidata":"Q1"}},
+              {"type":"node","id":3,"lat":43.29,"lon":5.37,"tags":{"natural":"beach","name":"Plage des Catalans"}},
+              {"type":"node","id":4,"lat":43.29,"lon":5.37,"tags":{"amenity":"marketplace","name":"Marché de Noailles"}}
+            ]}
+        """.trimIndent()
+        val byName = PlacesParser.pois(json, center).associateBy { it.name }
+        assertEquals("Bar", byName["Le Bar"]!!.kind)
+        assertTrue(byName["Le Bar"]!!.isVenue)
+        assertEquals("Église", byName["Basilique"]!!.kind)
+        assertEquals("Plage", byName["Plage des Catalans"]!!.kind)
+        assertTrue(byName["Plage des Catalans"]!!.isFree)
+        assertEquals("Marché", byName["Marché de Noailles"]!!.kind)
+        assertTrue(byName["Marché de Noailles"]!!.isVenue)
     }
 }

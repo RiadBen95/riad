@@ -7,9 +7,16 @@ object ActivityLinks {
 
     enum class Category(val label: String, val emoji: String) {
         MUSEUMS("Musées", "🏛️"),
+        MONUMENTS("Monuments", "🏰"),
         ATTRACTIONS("Attractions", "🎡"),
-        TOURS("Visites & excursions", "🧭"),
+        PARKS("Parcs & jardins", "🌳"),
+        BEACHES("Plages", "🏖️"),
         RESTAURANTS("Restaurants", "🍽️"),
+        CAFES("Cafés", "☕"),
+        BARS("Bars", "🍸"),
+        NIGHTLIFE("Boîtes de nuit", "🎶"),
+        SHOPPING("Shopping & marchés", "🛍️"),
+        TOURS("Visites & excursions", "🧭"),
     }
 
     fun partners(city: String, category: Category): List<HotelLinks.Partner> {
@@ -35,6 +42,10 @@ object ActivityLinks {
                 HotelLinks.Partner("Google Maps", "Restaurants autour de vous, avis et réservation", "https://www.google.com/maps/search/${enc("restaurants $c")}"),
                 HotelLinks.Partner("Tripadvisor", "Classements et avis de voyageurs", "https://www.tripadvisor.fr/Search?q=${enc("restaurants $c")}"),
                 HotelLinks.Partner("GetYourGuide", "Visites gastronomiques et cours de cuisine", "https://www.getyourguide.fr/s/?q=${enc("gastronomie $c")}"),
+            )
+            else -> listOf(
+                HotelLinks.Partner("Google Maps", "${category.label} : carte et avis", "https://www.google.com/maps/search/${enc("${category.label} $c")}"),
+                HotelLinks.Partner("Tripadvisor", "Classements et avis de voyageurs", "https://www.tripadvisor.fr/Search?q=${enc("${category.label} $c")}"),
             )
         }
     }

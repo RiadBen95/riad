@@ -5,6 +5,8 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -79,7 +81,7 @@ private object Images {
 
 private fun formatDistance(m: Int) = if (m < 1000) "à $m m" else "à ${"%.1f".format(m / 1000.0)} km"
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ActivitiesScreen(
     city: String,
@@ -124,8 +126,8 @@ fun ActivitiesScreen(
             }
         }
         item {
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(ActivityLinks.Category.entries) { c ->
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ActivityLinks.Category.entries.forEach { c ->
                     FilterChip(selected = c == category, onClick = { onCategory(c) }, label = { Text("${c.emoji} ${c.label}") })
                 }
             }
@@ -259,19 +261,25 @@ private fun PlaceCard(p: PointOfInterest, city: String, wiki: suspend (String) -
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (p.isRestaurant) {
-                        Button(onClick = { openUrl(context, ActivityLinks.restaurantUrl(p, city)) }) {
-                            Text(if (p.website != null) "Réserver" else "Voir")
+                    when {
+                        p.isVenue -> {
+                            Button(onClick = { openUrl(context, ActivityLinks.restaurantUrl(p, city)) }) {
+                                Text(if (p.website != null && p.kind.startsWith("Restaurant")) "Réserver" else "Voir")
+                            }
+                            p.phone?.let { phone ->
+                                OutlinedButton(onClick = { dial(context, phone) }) { Text("Appeler") }
+                            }
                         }
-                        p.phone?.let { phone ->
-                            OutlinedButton(onClick = { dial(context, phone) }) { Text("Appeler") }
-                        }
-                    } else {
-                        TicketButton(p, city)
+                        p.isFree -> Text(
+                            "Accès libre",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = com.riad.voyage.ui.theme.dealColor(),
+                        )
+                        else -> TicketButton(p, city)
                     }
                     TextButton(onClick = { openUrl(context, ActivityLinks.directionsUrl(p)) }) { Text("Itinéraire") }
                 }
-                val more = p.wikipedia?.let { PlacesApi.wikiPageUrl(it) } ?: p.website.takeIf { !p.isRestaurant }
+                val more = p.wikipedia?.let { PlacesApi.wikiPageUrl(it) } ?: p.website.takeIf { !p.isVenue }
                 more?.let { url ->
                     TextButton(onClick = { openUrl(context, url) }, contentPadding = PaddingValues(0.dp)) {
                         Text(if (p.wikipedia != null) "En savoir plus (Wikipédia) ›" else "Site officiel ›")

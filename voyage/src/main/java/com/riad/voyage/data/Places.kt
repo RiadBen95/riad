@@ -28,7 +28,8 @@ data class PointOfInterest(
     val phone: String?,
     val wikipedia: String?,      // ex. "fr:Musée du Louvre"
     val notable: Boolean,
-    val isRestaurant: Boolean,
+    val isVenue: Boolean,          // restaurant, bar, café, boutique… : pas de billets, on appelle ou on visite le site
+    val isFree: Boolean = false,   // parc, plage, point de vue : accès libre
     val wikidata: String? = null,
     val sitelinks: Int = 0,        // nombre de Wikipédias (langues) qui ont un article sur ce lieu
     val inGuide: Boolean = false,  // cité par le guide Wikivoyage de la ville
@@ -189,7 +190,10 @@ object PlacesParser {
             if (lat.isNaN() || lon.isNaN()) return@mapNotNull null
             // Un même lieu peut être décrit deux fois (point + bâtiment).
             if (!seen.add(name.lowercase())) return@mapNotNull null
-            val isRestaurant = tags.str("amenity") == "restaurant"
+            val amenity = tags.str("amenity")
+            val isVenue = amenity in venueAmenities || tags.has("shop")
+            val isFree = tags.str("leisure") in setOf("park", "garden", "nature_reserve") ||
+                tags.str("natural") == "beach" || tags.str("tourism") == "viewpoint"
             val street = listOf(tags.str("addr:housenumber"), tags.str("addr:street")).filter { it.isNotBlank() }.joinToString(" ")
             PointOfInterest(
                 id = "${e.optString("type")}/${e.optLong("id")}",
@@ -204,7 +208,8 @@ object PlacesParser {
                 phone = tags.str("phone").ifBlank { tags.str("contact:phone") }.ifBlank { null },
                 wikipedia = tags.str("wikipedia").ifBlank { null },
                 notable = tags.has("wikipedia") || tags.has("wikidata"),
-                isRestaurant = isRestaurant,
+                isVenue = isVenue,
+                isFree = isFree,
                 wikidata = tags.str("wikidata").ifBlank { null },
             )
         }.sortedWith(
@@ -262,11 +267,22 @@ object PlacesParser {
         return WikiSummary(extract, image, page)
     }
 
+    private val venueAmenities = setOf("restaurant", "cafe", "bar", "pub", "biergarten", "nightclub", "marketplace")
+
     private val kinds = mapOf(
         "museum" to "Musée", "gallery" to "Galerie d'art", "attraction" to "Attraction",
         "viewpoint" to "Point de vue", "zoo" to "Zoo", "theme_park" to "Parc d'attractions",
         "aquarium" to "Aquarium", "monument" to "Monument", "castle" to "Château", "memorial" to "Mémorial",
         "ruins" to "Ruines", "archaeological_site" to "Site archéologique", "fort" to "Fort", "park" to "Parc",
+        "garden" to "Jardin", "nature_reserve" to "Réserve naturelle", "city_gate" to "Porte de ville",
+        "palace" to "Palais", "manor" to "Manoir", "beach" to "Plage", "cafe" to "Café", "bar" to "Bar",
+        "pub" to "Pub", "biergarten" to "Brasserie en plein air", "nightclub" to "Boîte de nuit",
+        "marketplace" to "Marché", "mall" to "Centre commercial", "department_store" to "Grand magasin",
+    )
+
+    private val worship = mapOf(
+        "christian" to "Église", "muslim" to "Mosquée", "jewish" to "Synagogue", "buddhist" to "Temple bouddhiste",
+        "hindu" to "Temple hindou",
     )
 
     private val cuisines = mapOf(
@@ -286,7 +302,12 @@ object PlacesParser {
                 .take(2).joinToString(", ") { cuisines[it] ?: it.replace('_', ' ') }
             return if (cuisine.isBlank()) "Restaurant" else "Restaurant · $cuisine"
         }
-        return kinds[tags.str("tourism")] ?: kinds[tags.str("historic")] ?: kinds[tags.str("leisure")] ?: "Lieu à visiter"
+        if (tags.str("amenity") == "place_of_worship") {
+            if (tags.str("building") == "cathedral") return "Cathédrale"
+            return worship[tags.str("religion")] ?: "Lieu de culte"
+        }
+        return kinds[tags.str("tourism")] ?: kinds[tags.str("historic")] ?: kinds[tags.str("leisure")]
+            ?: kinds[tags.str("amenity")] ?: kinds[tags.str("natural")] ?: kinds[tags.str("shop")] ?: "Lieu à visiter"
     }
 
     private fun distance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
