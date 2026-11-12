@@ -64,7 +64,7 @@ class PlacesTest {
         assertTrue(q.startsWith("[out:json]"))
         assertTrue(q.contains("\"tourism\"=\"museum\""))
         assertTrue(q.contains("around:8000,48.85,2.35"))
-        assertTrue(PlacesApi.overpassQuery(ActivityLinks.Category.ATTRACTIONS, 1.0, 2.0).contains("theme_park)$\""))
+        assertTrue(PlacesApi.overpassQuery(ActivityLinks.Category.ATTRACTIONS, 1.0, 2.0).contains("aquarium)$\""))
     }
 
     @Test
