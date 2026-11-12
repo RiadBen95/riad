@@ -82,6 +82,14 @@ data class HotelForm(
     val rooms: Int = 1,
 )
 
+data class PlacesState(
+    val loading: Boolean = false,
+    val error: String? = null,
+    val items: List<com.riad.voyage.data.PointOfInterest> = emptyList(),
+    val city: String = "",
+    val category: ActivityLinks.Category? = null,
+)
+
 class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val settingsStore = SettingsStore(app)
     private val alertStore = AlertStore(app)
@@ -107,6 +115,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val _activityCategory = MutableStateFlow(ActivityLinks.Category.ATTRACTIONS)
     val activityCategory: StateFlow<ActivityLinks.Category> = _activityCategory.asStateFlow()
 
+    private val _places = MutableStateFlow(PlacesState())
+    val places: StateFlow<PlacesState> = _places.asStateFlow()
+    private var placesJob: kotlinx.coroutines.Job? = null
+    private val geoCache = mutableMapOf<String, com.riad.voyage.data.GeoPoint>()
+    private val wikiCache = mutableMapOf<String, com.riad.voyage.data.WikiSummary?>()
+
     private val _alerts = MutableStateFlow(alertStore.all())
     val alerts: StateFlow<List<PriceAlert>> = _alerts.asStateFlow()
 
@@ -127,10 +141,51 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             _activityCity.value = _hotel.value.city.ifBlank { _form.value.destination?.name.orEmpty() }
         }
         _tab.value = t
+        if (t == Tab.ACTIVITIES) searchActivities()
     }
 
     fun setActivityCity(city: String) { _activityCity.value = city }
-    fun setActivityCategory(c: ActivityLinks.Category) { _activityCategory.value = c }
+    fun setActivityCategory(c: ActivityLinks.Category) {
+        _activityCategory.value = c
+        searchActivities()
+    }
+
+    /** Cherche les lieux de la catégorie choisie (sauf si la même recherche est déjà affichée). */
+    fun searchActivities(force: Boolean = false) {
+        val city = _activityCity.value.trim()
+        val category = _activityCategory.value
+        if (city.isBlank() || category == ActivityLinks.Category.TOURS) return
+        val current = _places.value
+        if (!force && current.city.equals(city, ignoreCase = true) && current.category == category &&
+            (current.loading || current.items.isNotEmpty())
+        ) return
+        placesJob?.cancel()
+        _places.value = PlacesState(loading = true, city = city, category = category)
+        placesJob = viewModelScope.launch {
+            _places.value = try {
+                val key = city.lowercase()
+                val geo = geoCache[key] ?: com.riad.voyage.data.PlacesApi.geocode(city)?.also { geoCache[key] = it }
+                if (geo == null) {
+                    PlacesState(error = "Ville introuvable : vérifiez l'orthographe.", city = city, category = category)
+                } else {
+                    val items = com.riad.voyage.data.PlacesApi.search(geo, category)
+                    PlacesState(items = items, city = city, category = category,
+                        error = if (items.isEmpty()) "Aucun lieu trouvé pour cette ville." else null)
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                PlacesState(error = TravelpayoutsApi.userMessage(e), city = city, category = category)
+            }
+        }
+    }
+
+    suspend fun wikiSummary(tag: String): com.riad.voyage.data.WikiSummary? {
+        if (wikiCache.containsKey(tag)) return wikiCache[tag]
+        val summary = com.riad.voyage.data.PlacesApi.wikiSummary(tag)
+        wikiCache[tag] = summary
+        return summary
+    }
     fun clearMessage() { _message.value = null }
 
     // ---------- Vols ----------

@@ -35,6 +35,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
     val keyStatus by vm.keyStatus.collectAsStateWithLifecycle()
     val activityCity by vm.activityCity.collectAsStateWithLifecycle()
     val activityCategory by vm.activityCategory.collectAsStateWithLifecycle()
+    val places by vm.places.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(message) {
@@ -108,7 +109,15 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
 
                 Tab.ACTIVITIES -> {
                     BackHandler { vm.selectTab(Tab.FLIGHTS) }
-                    ActivitiesScreen(activityCity, activityCategory, vm::setActivityCity, vm::setActivityCategory)
+                    ActivitiesScreen(
+                        city = activityCity,
+                        category = activityCategory,
+                        places = places,
+                        onCity = vm::setActivityCity,
+                        onCategory = vm::setActivityCategory,
+                        onSearch = { vm.searchActivities(force = true) },
+                        wiki = vm::wikiSummary,
+                    )
                 }
 
                 Tab.ALERTS -> {

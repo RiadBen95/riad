@@ -39,5 +39,20 @@ object ActivityLinks {
         }
     }
 
+    /** Billets pour un lieu précis. */
+    fun ticketUrls(place: PointOfInterest, city: String): List<HotelLinks.Partner> {
+        val q = "${place.name} ${city.trim()}"
+        return listOf(
+            HotelLinks.Partner("GetYourGuide", "", "https://www.getyourguide.fr/s/?q=${enc(q)}"),
+            HotelLinks.Partner("Tiqets", "", "https://www.tiqets.com/fr/search?q=${enc(q)}"),
+        )
+    }
+
+    fun restaurantUrl(place: PointOfInterest, city: String): String =
+        place.website ?: "https://www.google.com/maps/search/?api=1&query=${enc("${place.name} ${city.trim()}")}"
+
+    fun directionsUrl(place: PointOfInterest): String =
+        "https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lon}"
+
     private fun enc(s: String) = URLEncoder.encode(s, "UTF-8").replace("+", "%20")
 }
