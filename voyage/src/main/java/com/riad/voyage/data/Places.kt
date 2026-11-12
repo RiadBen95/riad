@@ -126,7 +126,27 @@ object PlacesApi {
                    nwr["historic"~"^(monument|castle|memorial|ruins|archaeological_site|fort)$"]["name"]["wikidata"]$a;
                    nwr["leisure"="park"]["name"]["wikidata"]$a;"""
             }
+            ActivityLinks.Category.MONUMENTS -> {
+                val a = around(8000)
+                """nwr["historic"~"^(monument|castle|memorial|ruins|archaeological_site|fort|city_gate|palace|manor)$"]["name"]$a;
+                   nwr["amenity"="place_of_worship"]["name"]["wikidata"]$a;
+                   nwr["tourism"="attraction"]["historic"]["name"]$a;"""
+            }
+            ActivityLinks.Category.PARKS -> {
+                val a = around(8000)
+                """nwr["leisure"~"^(park|garden|nature_reserve)$"]["name"]["wikidata"]$a;
+                   nwr["leisure"~"^(park|garden)$"]["name"]${around(3000)};"""
+            }
+            ActivityLinks.Category.BEACHES -> """nwr["natural"="beach"]["name"]${around(25000)};"""
             ActivityLinks.Category.RESTAURANTS -> """nwr["amenity"="restaurant"]["name"]${around(1500)};"""
+            ActivityLinks.Category.CAFES -> """nwr["amenity"="cafe"]["name"]${around(1500)};"""
+            ActivityLinks.Category.BARS -> """nwr["amenity"~"^(bar|pub|biergarten)$"]["name"]${around(1500)};"""
+            ActivityLinks.Category.NIGHTLIFE -> """nwr["amenity"="nightclub"]["name"]${around(4000)};"""
+            ActivityLinks.Category.SHOPPING -> {
+                val a = around(5000)
+                """nwr["shop"~"^(mall|department_store)$"]["name"]$a;
+                   nwr["amenity"="marketplace"]["name"]$a;"""
+            }
             ActivityLinks.Category.TOURS -> ""
         }
         return "[out:json][timeout:25];($body);out center tags 200;"
