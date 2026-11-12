@@ -33,6 +33,8 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
     val checking by vm.checking.collectAsStateWithLifecycle()
     val message by vm.message.collectAsStateWithLifecycle()
     val keyStatus by vm.keyStatus.collectAsStateWithLifecycle()
+    val activityCity by vm.activityCity.collectAsStateWithLifecycle()
+    val activityCategory by vm.activityCategory.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(message) {
@@ -55,7 +57,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         selected = tab == t,
                         onClick = { vm.selectTab(t) },
                         icon = { Text(t.emoji, fontSize = 20.sp) },
-                        label = { Text(t.label) },
+                        label = { Text(t.label, maxLines = 1, fontSize = 11.sp) },
                     )
                 }
             }
@@ -98,7 +100,15 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
 
                 Tab.HOTELS -> {
                     BackHandler { vm.selectTab(Tab.FLIGHTS) }
-                    HotelScreen(hotel, vm::updateHotel)
+                    HotelScreen(hotel, vm::updateHotel) {
+                        vm.setActivityCity(hotel.city)
+                        vm.selectTab(Tab.ACTIVITIES)
+                    }
+                }
+
+                Tab.ACTIVITIES -> {
+                    BackHandler { vm.selectTab(Tab.FLIGHTS) }
+                    ActivitiesScreen(activityCity, activityCategory, vm::setActivityCity, vm::setActivityCategory)
                 }
 
                 Tab.ALERTS -> {

@@ -26,7 +26,7 @@ import java.time.temporal.ChronoUnit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HotelScreen(form: HotelForm, onUpdate: ((HotelForm) -> HotelForm) -> Unit) {
+fun HotelScreen(form: HotelForm, onUpdate: ((HotelForm) -> HotelForm) -> Unit, onActivities: () -> Unit) {
     val context = LocalContext.current
     val nights = ChronoUnit.DAYS.between(form.checkIn, form.checkOut)
     Column(
@@ -75,6 +75,9 @@ fun HotelScreen(form: HotelForm, onUpdate: ((HotelForm) -> HotelForm) -> Unit) {
                     }
                 }
             }
+        }
+        androidx.compose.material3.OutlinedButton(onClick = onActivities, modifier = Modifier.fillMaxWidth()) {
+            Text(if (form.city.isBlank()) "🎟️ Musées, attractions et restaurants" else "🎟️ Que faire à ${form.city} ?")
         }
         Text(
             "Astuce : ouvrez deux ou trois sites pour le même hôtel, les écarts de prix sont fréquents. " +

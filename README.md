@@ -25,6 +25,8 @@ pour payer : aucune donnée bancaire ne passe par l'application.
 - **Tri** par prix, durée ou nombre d'escales ; le meilleur prix est mis en évidence.
 - **Hôtels** : saisissez le séjour une fois, comparez Booking.com, Hotels.com, Expedia, Agoda et Google Hôtels
   (liens de recherche pré-remplis).
+- **Sorties** : musées, attractions, visites et restaurants de la ville (Tiqets, GetYourGuide, Klook, Viator,
+  Tripadvisor, Google Maps), avec la destination déjà remplie.
 - **Vol + hôtel** : depuis un vol, « Hôtels sur place » pré-remplit la destination et les dates.
 - **Alertes de prix** : suivez un trajet ; l'app vérifie toutes les ~12 h et envoie une notification si le prix baisse.
 - **Mode démo** avec des prix fictifs tant qu'aucune clé API n'est saisie.
@@ -47,6 +49,7 @@ La clé reste enregistrée sur le téléphone ; elle n'est jamais dans le code d
 | `data/TravelpayoutsApi.kt` | Appels HTTP (prix par dates, calendrier, autocomplétion) et liens Aviasales |
 | `data/Parsers.kt` | Lecture des réponses JSON |
 | `data/HotelLinks.kt` | Liens de recherche d'hôtels pré-remplis |
+| `data/ActivityLinks.kt` | Liens pour musées, attractions, visites et restaurants |
 | `data/DemoData.kt` | Prix fictifs du mode démo |
 | `data/Storage.kt` | Réglages et alertes enregistrés sur le téléphone |
 | `alerts/` | Vérification des prix en tâche de fond (WorkManager) et notifications |

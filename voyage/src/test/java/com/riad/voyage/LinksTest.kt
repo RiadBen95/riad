@@ -55,3 +55,17 @@ class LinksTest {
         assertEquals("ALG", PopularPlaces.filter("alg").first().code)
     }
 }
+
+class ActivityLinksTest {
+    @Test
+    fun everyCategoryHasEncodedLinks() {
+        com.riad.voyage.data.ActivityLinks.Category.entries.forEach { c ->
+            val partners = com.riad.voyage.data.ActivityLinks.partners("Saint-Émilion", c)
+            assertTrue(partners.isNotEmpty())
+            partners.forEach { p ->
+                assertTrue(p.url, p.url.startsWith("https://"))
+                assertTrue(p.url, !p.url.contains(' ') && !p.url.contains('É'))
+            }
+        }
+    }
+}

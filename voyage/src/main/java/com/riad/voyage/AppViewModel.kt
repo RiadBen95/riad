@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.riad.voyage.alerts.AlertChecker
+import com.riad.voyage.data.ActivityLinks
 import com.riad.voyage.data.AlertStore
 import com.riad.voyage.data.DayPrice
 import com.riad.voyage.data.DemoData
@@ -27,7 +28,7 @@ import java.time.YearMonth
 import java.time.temporal.ChronoUnit
 
 enum class Tab(val label: String, val emoji: String) {
-    FLIGHTS("Vols", "✈️"), HOTELS("Hôtels", "🏨"), ALERTS("Alertes", "🔔"), SETTINGS("Réglages", "⚙️")
+    FLIGHTS("Vols", "✈️"), HOTELS("Hôtels", "🏨"), ACTIVITIES("Sorties", "🎟️"), ALERTS("Alertes", "🔔"), SETTINGS("Réglages", "⚙️")
 }
 
 sealed interface KeyStatus {
@@ -100,6 +101,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val _hotel = MutableStateFlow(HotelForm())
     val hotel: StateFlow<HotelForm> = _hotel.asStateFlow()
 
+    private val _activityCity = MutableStateFlow("")
+    val activityCity: StateFlow<String> = _activityCity.asStateFlow()
+
+    private val _activityCategory = MutableStateFlow(ActivityLinks.Category.ATTRACTIONS)
+    val activityCategory: StateFlow<ActivityLinks.Category> = _activityCategory.asStateFlow()
+
     private val _alerts = MutableStateFlow(alertStore.all())
     val alerts: StateFlow<List<PriceAlert>> = _alerts.asStateFlow()
 
@@ -114,7 +121,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun api() = _settings.value.let { TravelpayoutsApi(it.token, it.currency) }
 
-    fun selectTab(t: Tab) { _tab.value = t }
+    fun selectTab(t: Tab) {
+        // Les sorties reprennent la ville de l'hôtel ou de la destination si rien n'est saisi.
+        if (t == Tab.ACTIVITIES && _activityCity.value.isBlank()) {
+            _activityCity.value = _hotel.value.city.ifBlank { _form.value.destination?.name.orEmpty() }
+        }
+        _tab.value = t
+    }
+
+    fun setActivityCity(city: String) { _activityCity.value = city }
+    fun setActivityCategory(c: ActivityLinks.Category) { _activityCategory.value = c }
     fun clearMessage() { _message.value = null }
 
     // ---------- Vols ----------
@@ -219,6 +235,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 adults = q.adults.coerceAtLeast(1),
             )
         }
+        q.destination?.name?.let { _activityCity.value = it }
         _tab.value = Tab.HOTELS
     }
 
