@@ -27,13 +27,25 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.riad.voyage.KeyStatus
 import com.riad.voyage.data.Settings
+import com.riad.voyage.ui.theme.dealColor
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Alignment
 
 private val currencies = listOf("EUR", "USD", "GBP", "CHF", "CAD", "DZD", "MAD", "TND")
 
 @Composable
-fun SettingsScreen(settings: Settings, onSave: (Settings) -> Unit) {
+fun SettingsScreen(settings: Settings, keyStatus: KeyStatus, onSave: (Settings) -> Unit) {
     val context = LocalContext.current
+    val focus = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
     var token by remember(settings) { mutableStateOf(settings.token) }
     var marker by remember(settings) { mutableStateOf(settings.marker) }
     var currency by remember(settings) { mutableStateOf(settings.currency) }
@@ -42,6 +54,7 @@ fun SettingsScreen(settings: Settings, onSave: (Settings) -> Unit) {
     Column(
         Modifier
             .fillMaxSize()
+            .imePadding()
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -77,10 +90,19 @@ fun SettingsScreen(settings: Settings, onSave: (Settings) -> Unit) {
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
+        val edited = Settings(token = token.trim(), marker = marker.trim(), currency = currency)
+        val unchanged = edited == settings
         Button(
-            onClick = { onSave(Settings(token = token, marker = marker, currency = currency)) },
+            onClick = {
+                focus.clearFocus()
+                keyboard?.hide()
+                onSave(edited)
+            },
+            enabled = !unchanged,
             modifier = Modifier.fillMaxWidth(),
-        ) { Text("Enregistrer") }
+        ) { Text(if (unchanged) "Enregistré ✓" else "Enregistrer") }
+
+        KeyStatusCard(settings, keyStatus)
 
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -102,5 +124,29 @@ fun SettingsScreen(settings: Settings, onSave: (Settings) -> Unit) {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+@Composable
+private fun KeyStatusCard(settings: Settings, status: KeyStatus) {
+    val deal = dealColor()
+    val (color, text) = when {
+        settings.isDemo -> MaterialTheme.colorScheme.onSurfaceVariant to "Aucune clé enregistrée : l'app est en mode démo (prix fictifs)."
+        status is KeyStatus.Testing -> MaterialTheme.colorScheme.onSurfaceVariant to "Clé enregistrée. Vérification en cours…"
+        status is KeyStatus.Ok -> deal to "✓ Clé enregistrée et valide : les vrais prix sont activés."
+        status is KeyStatus.Failed -> MaterialTheme.colorScheme.error to "Clé enregistrée, mais le test a échoué : ${status.message}"
+        else -> deal to "Clé enregistrée : les vrais prix sont activés."
+    }
+    Card(
+        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.12f)),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (status is KeyStatus.Testing && !settings.isDemo) {
+                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                androidx.compose.foundation.layout.Spacer(Modifier.size(10.dp))
+            }
+            Text(text, color = color, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+        }
     }
 }

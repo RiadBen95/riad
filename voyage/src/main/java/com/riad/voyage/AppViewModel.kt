@@ -30,6 +30,13 @@ enum class Tab(val label: String, val emoji: String) {
     FLIGHTS("Vols", "✈️"), HOTELS("Hôtels", "🏨"), ALERTS("Alertes", "🔔"), SETTINGS("Réglages", "⚙️")
 }
 
+sealed interface KeyStatus {
+    data object Unknown : KeyStatus
+    data object Testing : KeyStatus
+    data object Ok : KeyStatus
+    data class Failed(val message: String) : KeyStatus
+}
+
 enum class Sort(val label: String) { PRICE("Prix"), DURATION("Durée"), TRANSFERS("Escales") }
 
 data class FlightForm(
@@ -98,6 +105,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _checking = MutableStateFlow(false)
     val checking: StateFlow<Boolean> = _checking.asStateFlow()
+
+    private val _keyStatus = MutableStateFlow<KeyStatus>(KeyStatus.Unknown)
+    val keyStatus: StateFlow<KeyStatus> = _keyStatus.asStateFlow()
 
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message.asStateFlow()
@@ -280,6 +290,26 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun saveSettings(s: Settings) {
         settingsStore.save(s)
         _settings.value = settingsStore.load()
-        _message.value = if (_settings.value.isDemo) "Réglages enregistrés (mode démo)." else "Réglages enregistrés : vrais prix activés."
+        testKey()
+    }
+
+    /** Vérifie la clé avec une petite recherche réelle (Paris → Londres le mois prochain). */
+    fun testKey() {
+        val s = _settings.value
+        if (s.isDemo) {
+            _keyStatus.value = KeyStatus.Unknown
+            return
+        }
+        _keyStatus.value = KeyStatus.Testing
+        viewModelScope.launch {
+            _keyStatus.value = try {
+                TravelpayoutsApi(s.token, s.currency).pricesForDates(
+                    "PAR", "LON", YearMonth.now().plusMonths(1).toString(), null, false, limit = 1,
+                )
+                KeyStatus.Ok
+            } catch (e: Exception) {
+                KeyStatus.Failed(TravelpayoutsApi.userMessage(e))
+            }
+        }
     }
 }

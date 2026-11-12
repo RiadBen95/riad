@@ -32,6 +32,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
     val alerts by vm.alerts.collectAsStateWithLifecycle()
     val checking by vm.checking.collectAsStateWithLifecycle()
     val message by vm.message.collectAsStateWithLifecycle()
+    val keyStatus by vm.keyStatus.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(message) {
@@ -42,6 +43,8 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
     }
 
     val configure = { vm.selectTab(Tab.SETTINGS) }
+    // Vérifie la clé enregistrée au démarrage, pour afficher son état dans Réglages.
+    LaunchedEffect(Unit) { vm.testKey() }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
@@ -105,7 +108,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
 
                 Tab.SETTINGS -> {
                     BackHandler { vm.selectTab(Tab.FLIGHTS) }
-                    SettingsScreen(settings, vm::saveSettings)
+                    SettingsScreen(settings, keyStatus, vm::saveSettings)
                 }
             }
         }
