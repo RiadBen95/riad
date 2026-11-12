@@ -20,24 +20,32 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Tests unitaires
         run: ./gradlew testDebugUnitTest
-      - name: Construire l'APK
+      - name: Construire les APK
         run: |
           ./gradlew assembleDebug
           cp app/build/outputs/apk/debug/app-debug.apk accordeur-guitare.apk
+          cp voyage/build/outputs/apk/debug/voyage-debug.apk voyage-malin.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: accordeur-guitare-apk
-          path: accordeur-guitare.apk
-      # Publie l'APK dans une Release : lien direct
+          name: apk
+          path: |
+            accordeur-guitare.apk
+            voyage-malin.apk
+      # Publie les APK dans une Release : liens directs
       # https://github.com/<owner>/<repo>/releases/latest/download/accordeur-guitare.apk
+      # https://github.com/<owner>/<repo>/releases/latest/download/voyage-malin.apk
       - name: Publier la release
         if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: Accordeur Guitare (build ${{ github.run_number }})
+          name: Applications Android (build ${{ github.run_number }})
           body: |
-            APK de l'accordeur de guitare, compilé depuis ${{ github.sha }}.
-            Téléchargez `accordeur-guitare.apk` et ouvrez-le sur votre téléphone Android (8.0 minimum).
-          files: accordeur-guitare.apk
+            Compilé depuis ${{ github.sha }}.
+            - `voyage-malin.apk` : recherche de vols et d'hôtels au meilleur prix
+            - `accordeur-guitare.apk` : accordeur de guitare
+            Téléchargez l'APK voulu et ouvrez-le sur votre téléphone Android (8.0 minimum).
+          files: |
+            accordeur-guitare.apk
+            voyage-malin.apk
           make_latest: true
