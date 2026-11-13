@@ -609,6 +609,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** « Lire l'article complet » depuis la fiche d'un lieu : ouvre le lecteur du Blogue. */
+    fun readPlaceArticle(tag: String) {
+        _tab.value = Tab.BLOG
+        openArticle(tag)
+    }
+
     fun closeArticle() = _blog.update { it.copy(article = null, articleLoading = false) }
 
     suspend fun searchArticles(q: String): List<Pair<String, String>> =

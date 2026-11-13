@@ -68,6 +68,10 @@ fun ExperienceScreen(
     alternatives: (Int, Int) -> List<Pair<ActivityLinks.Category, com.riad.voyage.data.PointOfInterest>> = { _, _ -> emptyList() },
     onReplace: (Int, Int, Pair<ActivityLinks.Category, com.riad.voyage.data.PointOfInterest>?) -> Unit = { _, _, _ -> },
     onHotels: () -> Unit = {},
+    wiki: suspend (String) -> com.riad.voyage.data.WikiSummary? = { null },
+    isFavorite: (String) -> Boolean = { false },
+    onFavorite: (com.riad.voyage.data.PointOfInterest) -> Unit = {},
+    onReadArticle: (String) -> Unit = {},
 ) {
     when {
         state.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -78,7 +82,8 @@ fun ExperienceScreen(
                 Text(state.stage, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
             }
         }
-        state.result != null -> ExperienceResult(state, onRegenerate, onEdit, onSave, alternatives, onReplace, onHotels)
+        state.result != null -> ExperienceResult(state, onRegenerate, onEdit, onSave, alternatives, onReplace, onHotels,
+            wiki, isFavorite, onFavorite, onReadArticle)
         else -> Questionnaire(state, onAnswers, onStep, onGenerate, suggestCities)
     }
 }
@@ -288,8 +293,23 @@ private fun ExperienceResult(
     alternatives: (Int, Int) -> List<Pair<ActivityLinks.Category, com.riad.voyage.data.PointOfInterest>>,
     onReplace: (Int, Int, Pair<ActivityLinks.Category, com.riad.voyage.data.PointOfInterest>?) -> Unit,
     onHotels: () -> Unit,
+    wiki: suspend (String) -> com.riad.voyage.data.WikiSummary?,
+    isFavorite: (String) -> Boolean,
+    onFavorite: (com.riad.voyage.data.PointOfInterest) -> Unit,
+    onReadArticle: (String) -> Unit,
 ) {
     val exp = state.result ?: return
+    // Étape dont la fiche détaillée est ouverte.
+    var detail by remember { mutableStateOf<ExperienceStep?>(null) }
+    detail?.let { s ->
+        PlaceDetailSheet(
+            place = s.place, category = s.category, city = exp.city,
+            extra = PlaceExtra(why = s.why, time = s.time, durationMin = s.durationMin),
+            wiki = wiki, favorite = isFavorite(s.place.name), onFavorite = { onFavorite(s.place) },
+            onReadArticle = { tag -> detail = null; onReadArticle(tag) },
+            onDismiss = { detail = null },
+        )
+    }
     // Étape en cours de remplacement (jour, étape) et lieux proposés à la place.
     var editing by remember { mutableStateOf<Pair<Int, Int>?>(null) }
     editing?.let { (d, i) ->
@@ -325,7 +345,7 @@ private fun ExperienceResult(
         }
         exp.days.forEachIndexed { dayIndex, day ->
             item { DayHeader(day, exp.city) }
-            itemsIndexed(day.steps) { stepIndex, s -> StepCard(s, exp.city) { editing = dayIndex to stepIndex } }
+            itemsIndexed(day.steps) { stepIndex, s -> StepCard(s, exp.city, onOpen = { detail = s }) { editing = dayIndex to stepIndex } }
         }
         item {
             Text(
@@ -360,15 +380,16 @@ private fun DayHeader(day: ExperienceDay, city: String) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun StepCard(s: ExperienceStep, city: String, onChange: () -> Unit = {}) {
+private fun StepCard(s: ExperienceStep, city: String, onOpen: () -> Unit = {}, onChange: () -> Unit = {}) {
     val context = LocalContext.current
     Row {
         Column(Modifier.width(58.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(s.time, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             Text(s.category.emoji, style = MaterialTheme.typography.titleLarge)
         }
-        Card(Modifier.weight(1f), shape = RoundedCornerShape(16.dp)) {
+        Card(onClick = onOpen, modifier = Modifier.weight(1f), shape = RoundedCornerShape(16.dp)) {
             Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(t(s.moment).uppercase(), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(s.place.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)

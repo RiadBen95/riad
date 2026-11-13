@@ -581,3 +581,10 @@ Remplacer « {0} »	Replace "{0}"	استبدال «{0}»	Reemplazar «{0}»	替�
 Retirer sans remplacer	Remove without replacing	إزالة دون استبدال	Quitar sin reemplazar	删除且不替换	入れ替えずに削除	बिना बदले हटाएँ
 Ou choisissez un autre lieu :	Or choose another place:	أو اختر مكانًا آخر:	O elige otro lugar:	或选择其他地点：	または別のスポットを選択：	या कोई और जगह चुनें:
 Pas d'autre lieu disponible pour cette étape.	No other place available for this stop.	لا يوجد مكان آخر متاح لهذه المحطة.	No hay otro lugar disponible para esta parada.	此站没有其他可选地点。	この行程に代わりのスポットはありません。	इस पड़ाव के लिए कोई और जगह उपलब्ध नहीं।
+Description	Description	الوصف	Descripción	简介	概要	विवरण
+Pourquoi ce lieu	Why this place	لماذا هذا المكان	Por qué este lugar	推荐理由	おすすめの理由	यह जगह क्यों
+Infos pratiques	Practical info	معلومات عملية	Información práctica	实用信息	基本情報	व्यावहारिक जानकारी
+Aucune description disponible pour ce lieu.	No description available for this place.	لا يتوفر وصف لهذا المكان.	No hay descripción disponible para este lugar.	暂无此地点的简介。	このスポットの説明はありません。	इस जगह का कोई विवरण उपलब्ध नहीं है।
+Lire l'article complet ›	Read the full article ›	اقرأ المقال كاملًا ›	Leer el artículo completo ›	阅读全文 ›	記事全文を読む ›	पूरा लेख पढ़ें ›
+Temps de visite conseillé : {0}	Suggested visit time: {0}	مدة الزيارة المقترحة: {0}	Tiempo de visita recomendado: {0}	建议游览时间：{0}	おすすめ滞在時間：{0}	सुझाया गया समय: {0}
+Prévu à {0}	Planned at {0}	مقرر في {0}	Previsto a las {0}	计划于 {0}	{0} の予定	{0} बजे तय

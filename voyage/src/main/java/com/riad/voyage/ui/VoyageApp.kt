@@ -154,6 +154,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         wiki = vm::wikiSummary,
                         isFavorite = { name -> trips.any { tr -> tr.places.any { it.name.equals(name, ignoreCase = true) } } },
                         onFavorite = { p -> vm.toggleFavorite(p, activityCity.ifBlank { places.city }) },
+                        onReadArticle = vm::readPlaceArticle,
                     )
                 }
 
@@ -180,6 +181,10 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                             vm.openHotels(a.city, a.place, a.startDate, a.startDate.plusDays(a.duration.days.toLong()))
                         },
                         onReplace = vm::replaceExperienceStep,
+                        wiki = vm::wikiSummary,
+                        isFavorite = { name -> trips.any { tr -> tr.places.any { it.name.equals(name, ignoreCase = true) } } },
+                        onFavorite = { p -> vm.toggleFavorite(p, experience.result?.city ?: experience.answers.city) },
+                        onReadArticle = vm::readPlaceArticle,
                     )
                 }
 
@@ -240,6 +245,8 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         onRemove = vm::removeFromTrip,
                         onReadArticle = vm::readSavedArticle,
                         onAlerts = { vm.selectTab(Tab.ALERTS) },
+                        wiki = vm::wikiSummary,
+                        onReadArticle2 = vm::readPlaceArticle,
                         onHotels = { tr ->
                             vm.openHotels(tr.city, null, tr.startDate?.let { runCatching { java.time.LocalDate.parse(it) }.getOrNull() },
                                 tr.endDate?.let { runCatching { java.time.LocalDate.parse(it) }.getOrNull() })

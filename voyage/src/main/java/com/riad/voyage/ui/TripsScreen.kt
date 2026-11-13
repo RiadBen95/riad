@@ -26,6 +26,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -53,11 +55,13 @@ fun TripsScreen(
     onAlerts: () -> Unit,
     alertCount: Int,
     onHotels: (Trip) -> Unit = {},
+    wiki: suspend (String) -> com.riad.voyage.data.WikiSummary? = { null },
+    onReadArticle2: (String) -> Unit = {},
 ) {
     val trip = trips.firstOrNull { it.id == openId }
     when {
         article != null -> ArticleReader(article, onClose = { onReadArticle(null) })
-        trip != null -> TripDetail(trip, onBack = { onOpen(null) }, onDelete, onRemove, onReadArticle, onHotels)
+        trip != null -> TripDetail(trip, onBack = { onOpen(null) }, onDelete, onRemove, onReadArticle, onHotels, wiki, onReadArticle2)
         else -> TripList(trips, onOpen, onAlerts, alertCount)
     }
 }
@@ -124,8 +128,19 @@ private fun TripDetail(
     onRemove: (String, String, Int) -> Unit,
     onReadArticle: (SavedArticle?) -> Unit,
     onHotels: (Trip) -> Unit,
+    wiki: suspend (String) -> com.riad.voyage.data.WikiSummary?,
+    onPlaceArticle: (String) -> Unit,
 ) {
     val context = LocalContext.current
+    var detail by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Pair<com.riad.voyage.data.SavedPlace, PlaceExtra>?>(null) }
+    detail?.let { (p, extra) ->
+        PlaceDetailSheet(
+            place = p.toPoi(), category = null, city = trip.city, extra = extra, wiki = wiki,
+            favorite = trip.places.any { it.name == p.name }, onFavorite = {},
+            onReadArticle = { tag -> detail = null; onPlaceArticle(tag) },
+            onDismiss = { detail = null },
+        )
+    }
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         item {
             TextButton(onClick = onBack, contentPadding = PaddingValues(0.dp)) { Text(t("← Mes voyages")) }
@@ -180,7 +195,7 @@ private fun TripDetail(
                 }
                 items(day.steps) { s ->
                     Card(
-                        onClick = { openUrl(context, ActivityLinks.directionsUrl(s.place.toPoi(), trip.city)) },
+                        onClick = { detail = s.place to PlaceExtra(why = s.why, time = s.time, durationMin = s.durationMin) },
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
@@ -200,7 +215,7 @@ private fun TripDetail(
         if (trip.places.isNotEmpty()) {
             item { SectionHeader("♥ " + t("Lieux favoris")) }
             itemsIndexed(trip.places) { i, p ->
-                Card(modifier = Modifier.fillMaxWidth()) {
+                Card(onClick = { detail = p to PlaceExtra() }, modifier = Modifier.fillMaxWidth()) {
                     Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text(p.name, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)

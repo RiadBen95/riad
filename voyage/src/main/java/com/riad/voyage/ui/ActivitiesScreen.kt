@@ -101,7 +101,17 @@ fun ActivitiesScreen(
     wiki: suspend (String) -> WikiSummary?,
     isFavorite: (String) -> Boolean = { false },
     onFavorite: (PointOfInterest) -> Unit = {},
+    onReadArticle: (String) -> Unit = {},
 ) {
+    var detail by remember { mutableStateOf<PointOfInterest?>(null) }
+    detail?.let { p ->
+        PlaceDetailSheet(
+            place = p, category = places.category, city = places.city, wiki = wiki,
+            favorite = isFavorite(p.name), onFavorite = { onFavorite(p) },
+            onReadArticle = { tag -> detail = null; onReadArticle(tag) },
+            onDismiss = { detail = null },
+        )
+    }
     val context = LocalContext.current
     val focus = LocalFocusManager.current
     val search = {
@@ -209,7 +219,7 @@ fun ActivitiesScreen(
                         }
                     }
                 }
-                itemsIndexed(places.items, key = { _, it -> it.id }) { i, p -> PlaceCard(i + 1, p, places.city, wiki, isFavorite(p.name)) { onFavorite(p) } }
+                itemsIndexed(places.items, key = { _, it -> it.id }) { i, p -> PlaceCard(i + 1, p, places.city, wiki, isFavorite(p.name), onOpen = { detail = p }) { onFavorite(p) } }
                 item {
                     Text(
                         t("Données © les contributeurs d'OpenStreetMap, Wikipédia, Wikidata et Wikivoyage."),
@@ -222,14 +232,23 @@ fun ActivitiesScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PlaceCard(rank: Int, p: PointOfInterest, city: String, wiki: suspend (String) -> WikiSummary?, favorite: Boolean = false, onFavorite: () -> Unit = {}) {
+private fun PlaceCard(
+    rank: Int,
+    p: PointOfInterest,
+    city: String,
+    wiki: suspend (String) -> WikiSummary?,
+    favorite: Boolean = false,
+    onOpen: () -> Unit = {},
+    onFavorite: () -> Unit = {},
+) {
     val context = LocalContext.current
     var summary by remember(p.id) { mutableStateOf<WikiSummary?>(null) }
     LaunchedEffect(p.id) {
         p.wikipedia?.let { summary = wiki(it) }
     }
-    Card(Modifier.fillMaxWidth()) {
+    Card(onClick = onOpen, modifier = Modifier.fillMaxWidth()) {
         Column {
             (p.imageUrl ?: summary?.imageUrl)?.let { url ->
                 AsyncImage(
