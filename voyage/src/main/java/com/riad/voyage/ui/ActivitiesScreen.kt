@@ -3,6 +3,7 @@ package com.riad.voyage.ui
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -189,12 +190,18 @@ fun ActivitiesScreen(
                             when (places.source) {
                                 com.riad.voyage.SOURCE_FAME -> "Classés par notoriété : nombre de langues dans lesquelles Wikipédia consacre un article au lieu."
                                 com.riad.voyage.SOURCE_GUIDE -> "Les adresses sélectionnées par le guide de voyage Wikivoyage, dans l'ordre du guide."
+                                com.riad.voyage.SOURCE_RATINGS -> "Classés en combinant les notes et avis de " +
+                                    places.ratingSources.joinToString(", ") +
+                                    (if (places.guideFound) " et les recommandations du guide Wikivoyage." else ".")
                                 else -> if (places.guideFound) "Adresses du guide Wikivoyage, complétées par la carte OpenStreetMap."
                                 else "Le guide ne couvre pas assez cette ville : adresses trouvées sur la carte OpenStreetMap."
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                        places.notice?.let {
+                            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
+                        }
                     }
                 }
                 itemsIndexed(places.items, key = { _, it -> it.id }) { i, p -> PlaceCard(i + 1, p, places.city, wiki) }
@@ -250,6 +257,14 @@ private fun PlaceCard(rank: Int, p: PointOfInterest, city: String, wiki: suspend
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                 )
+                if (p.ratings.isNotEmpty()) RatingsRow(p)
+                p.openNow?.let { open ->
+                    Text(
+                        if (open) "Ouvert en ce moment" else "Fermé en ce moment",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (open) com.riad.voyage.ui.theme.dealColor() else MaterialTheme.colorScheme.error,
+                    )
+                }
                 (summary?.extract ?: p.description)?.let {
                     Text(it, style = MaterialTheme.typography.bodyMedium, maxLines = 4, overflow = TextOverflow.Ellipsis)
                 }
@@ -325,5 +340,31 @@ private fun dial(context: Context, phone: String) {
         context.startActivity(
             Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + phone.replace(" ", ""))).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
         )
+    }
+}
+
+@Composable
+private fun RatingsRow(p: PointOfInterest) {
+    val context = LocalContext.current
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        p.ratings.forEach { r ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "★ ${"%.1f".format(r.rating)}",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = com.riad.voyage.ui.theme.BrandCoral,
+                )
+                Text(
+                    " ${r.source.label} · ${"%,d".format(r.count).replace(',', ' ')} avis",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = if (r.url != null) Modifier.clickable { openUrl(context, r.url) } else Modifier,
+                )
+            }
+            r.ranking?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
+            }
+        }
     }
 }

@@ -38,6 +38,10 @@ data class PointOfInterest(
     val imageUrl: String? = null,  // photo connue d'avance (base des lieux)
     val description: String? = null, // texte du guide
     val hasCoordinates: Boolean = true,
+    val ratings: List<RatingInfo> = emptyList(), // notes Google / Tripadvisor
+    val openNow: Boolean? = null,
+    val mapsUrl: String? = null,     // fiche Google Maps ou Tripadvisor
+    val score: Double = 0.0,
 ) {
     val isMustSee get() = sitelinks >= 20
     val score get() = sitelinks + (if (inGuide) 30 else 0)

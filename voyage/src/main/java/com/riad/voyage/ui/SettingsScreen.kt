@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -42,7 +43,13 @@ import androidx.compose.ui.Alignment
 private val currencies = listOf("EUR", "USD", "GBP", "CHF", "CAD", "DZD", "MAD", "TND")
 
 @Composable
-fun SettingsScreen(settings: Settings, keyStatus: KeyStatus, onSave: (Settings) -> Unit) {
+fun SettingsScreen(
+    settings: Settings,
+    keyStatus: KeyStatus,
+    onSave: (Settings) -> Unit,
+    quotas: com.riad.voyage.data.QuotaStore,
+    onQuotaLimit: (com.riad.voyage.data.RatingSource, Int) -> Unit,
+) {
     val context = LocalContext.current
     val focus = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
@@ -50,6 +57,9 @@ fun SettingsScreen(settings: Settings, keyStatus: KeyStatus, onSave: (Settings) 
     var marker by remember(settings) { mutableStateOf(settings.marker) }
     var currency by remember(settings) { mutableStateOf(settings.currency) }
     var showToken by remember { mutableStateOf(false) }
+    var googleKey by remember(settings) { mutableStateOf(settings.googleKey) }
+    var tripadvisorKey by remember(settings) { mutableStateOf(settings.tripadvisorKey) }
+    var foursquareKey by remember(settings) { mutableStateOf(settings.foursquareKey) }
 
     Column(
         Modifier
@@ -90,7 +100,21 @@ fun SettingsScreen(settings: Settings, keyStatus: KeyStatus, onSave: (Settings) 
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
-        val edited = Settings(token = token.trim(), marker = marker.trim(), currency = currency)
+        Text("Notes des restaurants, cafés et bars (facultatif)", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
+        Text(
+            "Ajoutez une ou plusieurs clés : l'app combine les notes Google et Tripadvisor et la popularité Foursquare. " +
+                "Chaque source s'arrête d'elle-même à sa limite mensuelle gratuite, puis l'app revient aux sources gratuites.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        RatingKeyField(com.riad.voyage.data.RatingSource.GOOGLE, "Clé Google Places API", googleKey, { googleKey = it }, quotas, onQuotaLimit)
+        RatingKeyField(com.riad.voyage.data.RatingSource.TRIPADVISOR, "Clé Tripadvisor Content API", tripadvisorKey, { tripadvisorKey = it }, quotas, onQuotaLimit)
+        RatingKeyField(com.riad.voyage.data.RatingSource.FOURSQUARE, "Clé Foursquare Places API", foursquareKey, { foursquareKey = it }, quotas, onQuotaLimit)
+
+        val edited = Settings(
+            token = token.trim(), marker = marker.trim(), currency = currency,
+            googleKey = googleKey.trim(), tripadvisorKey = tripadvisorKey.trim(), foursquareKey = foursquareKey.trim(),
+        )
         val unchanged = edited == settings
         Button(
             onClick = {
@@ -147,6 +171,51 @@ private fun KeyStatusCard(settings: Settings, status: KeyStatus) {
                 androidx.compose.foundation.layout.Spacer(Modifier.size(10.dp))
             }
             Text(text, color = color, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+        }
+    }
+}
+
+@Composable
+private fun RatingKeyField(
+    source: com.riad.voyage.data.RatingSource,
+    label: String,
+    value: String,
+    onChange: (String) -> Unit,
+    quotas: com.riad.voyage.data.QuotaStore,
+    onQuotaLimit: (com.riad.voyage.data.RatingSource, Int) -> Unit,
+) {
+    var limitText by remember { mutableStateOf(quotas.limit(source).toString()) }
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            OutlinedTextField(
+                value = value,
+                onValueChange = onChange,
+                label = { Text(label) },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Text(
+                    "Utilisé ce mois-ci : ${quotas.used(source)}" +
+                        if (quotas.exhaustedToday(source)) " · quota du fournisseur atteint aujourd'hui" else "",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.weight(1f),
+                )
+                OutlinedTextField(
+                    value = limitText,
+                    onValueChange = { t ->
+                        limitText = t.filter { it.isDigit() }.take(6)
+                        limitText.toIntOrNull()?.let { onQuotaLimit(source, it) }
+                    },
+                    label = { Text("Limite / mois") },
+                    singleLine = true,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Number,
+                    ),
+                    modifier = Modifier.width(130.dp),
+                )
+            }
         }
     }
 }

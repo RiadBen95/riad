@@ -86,16 +86,20 @@ data class PlacesState(
     val guideFound: Boolean = false,
     val stage: String = "",
     val source: String = "",
+    val ratingSources: List<String> = emptyList(),
+    val notice: String? = null,
 )
 
 const val SOURCE_FAME = "fame"
 const val SOURCE_GUIDE = "guide"
 const val SOURCE_MAP = "map"
+const val SOURCE_RATINGS = "ratings"
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val settingsStore = SettingsStore(app)
     private val alertStore = AlertStore(app)
     private val recentStore = RecentStore(app)
+    val quotas = com.riad.voyage.data.QuotaStore(app)
 
     private val _recents = MutableStateFlow(recentStore.all())
     val recents: StateFlow<List<RecentSearch>> = _recents.asStateFlow()
@@ -217,8 +221,31 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 com.riad.voyage.data.GuideParser.select(listings, category).take(30)
                     .map { com.riad.voyage.data.GuideParser.toPoi(it, category, geo) }
             } else emptyList()
+            // 2 bis) Notes Google + Tripadvisor + popularité Foursquare, chacune dans sa limite gratuite.
+            val agg = com.riad.voyage.data.RatingsAggregator
+            val st = _settings.value
+            val hasRatingKeys = st.googleKey.isNotBlank() || st.tripadvisorKey.isNotBlank() || st.foursquareKey.isNotBlank()
+            var quotaNotice: String? = null
+            if (hasRatingKeys && agg.supports(category)) {
+                _places.value = _places.value.copy(stage = "Récupération des notes…")
+                val outcome = kotlinx.coroutines.withTimeoutOrNull(20_000) {
+                    runCatching { agg.search(st, quotas, city, geo, category, guidePicks) }.getOrNull()
+                }
+                if (outcome != null && outcome.skipped.isNotEmpty()) {
+                    quotaNotice = "Limite gratuite atteinte pour " + outcome.skipped.joinToString(", ") { it.label } +
+                        " : source mise en pause jusqu'au mois prochain."
+                }
+                if (outcome != null && outcome.places.size >= 3) {
+                    publish(key, PlacesState(items = outcome.places, city = city, category = category,
+                        guideFound = outcome.places.any { it.inGuide }, source = SOURCE_RATINGS,
+                        ratingSources = outcome.usedSources.map { it.label }, notice = quotaNotice))
+                    return@launch
+                }
+            }
+
             if (guidePicks.size >= 5) {
-                publish(key, PlacesState(items = guidePicks, city = city, category = category, guideFound = true, source = SOURCE_GUIDE))
+                publish(key, PlacesState(items = guidePicks, city = city, category = category, guideFound = true,
+                    source = SOURCE_GUIDE, notice = quotaNotice))
                 return@launch
             }
 
@@ -500,7 +527,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     // ---------- Réglages ----------
 
+    fun setQuotaLimit(src: com.riad.voyage.data.RatingSource, limit: Int) {
+        quotas.setLimit(src, limit)
+        placesCache.clear()
+    }
+
     fun saveSettings(s: Settings) {
+        placesCache.clear()
         settingsStore.save(s)
         _settings.value = settingsStore.load()
         testKey()

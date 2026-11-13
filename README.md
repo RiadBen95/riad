@@ -48,6 +48,21 @@ Ce sont les tarifs trouvés par les voyageurs ces derniers jours : le prix final
 
 La clé reste enregistrée sur le téléphone ; elle n'est jamais dans le code du dépôt.
 
+## Notes des restaurants, cafés et bars (facultatif)
+
+Dans **Réglages**, ajoutez une ou plusieurs clés ; l'app combine :
+
+| Source | Apporte | Coût par recherche | Limite par défaut |
+|---|---|---|---|
+| Google Places API (New) | note, nombre d'avis, prix, « ouvert maintenant » | 1 appel | 950 / mois (1 000 gratuits) |
+| Tripadvisor Content API | note, avis, classement dans la ville | 1 + jusqu'à 10 appels | 900 / mois (à ajuster selon votre offre) |
+| Foursquare Places API | classement par popularité | 1 appel | 5 000 / mois (à ajuster) |
+
+Chaque source s'arrête d'elle-même à sa limite mensuelle (réglable) ou dès que le fournisseur répond
+« quota dépassé » ; l'app revient alors au guide Wikivoyage et à la carte. Pour une vraie garantie,
+fixez aussi un **quota par jour** chez le fournisseur (Google Cloud : APIs et services → Places API → Quotas).
+Pour Tripadvisor, autorisez le domaine `riadben95.github.io` sur votre clé : l'app l'envoie comme référent.
+
 ## Structure
 
 | Fichier | Rôle |

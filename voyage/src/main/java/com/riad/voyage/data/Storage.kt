@@ -8,6 +8,9 @@ data class Settings(
     val token: String = "",
     val marker: String = "",
     val currency: String = "EUR",
+    val googleKey: String = "",
+    val tripadvisorKey: String = "",
+    val foursquareKey: String = "",
 ) {
     val isDemo get() = token.isBlank()
 }
@@ -19,6 +22,9 @@ class SettingsStore(context: Context) {
         token = prefs.getString("token", "").orEmpty(),
         marker = prefs.getString("marker", "").orEmpty(),
         currency = prefs.getString("currency", "EUR").orEmpty().ifBlank { "EUR" },
+        googleKey = prefs.getString("googleKey", "").orEmpty(),
+        tripadvisorKey = prefs.getString("tripadvisorKey", "").orEmpty(),
+        foursquareKey = prefs.getString("foursquareKey", "").orEmpty(),
     )
 
     fun save(s: Settings) {
@@ -26,6 +32,9 @@ class SettingsStore(context: Context) {
             .putString("token", s.token.trim())
             .putString("marker", s.marker.trim())
             .putString("currency", s.currency)
+            .putString("googleKey", s.googleKey.trim())
+            .putString("tripadvisorKey", s.tripadvisorKey.trim())
+            .putString("foursquareKey", s.foursquareKey.trim())
             .apply()
     }
 }
