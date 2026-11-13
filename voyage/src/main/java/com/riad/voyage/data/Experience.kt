@@ -26,6 +26,70 @@ object Quiz {
         NIGHT("Vie nocturne", "🍸", "sorties", null),
     }
 
+    /**
+     * Goûts précis pour chaque envie (questions de suivi). Les mots-clés servent à repérer les lieux
+     * correspondants ; [hint] précise la recherche en ligne (restaurants et bars).
+     */
+    enum class Taste(
+        val interest: Interest,
+        val label: String,
+        val short: String,
+        val keywords: List<String>,
+        val hint: String? = null,
+    ) {
+        CLASSIC_ART(Interest.ART, "Peinture et beaux-arts", "beaux-arts", listOf("beaux-arts", "beaux arts", "peinture", "louvre", "art", "galerie", "fine arts")),
+        MODERN_ART(Interest.ART, "Art moderne et contemporain", "art moderne", listOf("moderne", "contemporain", "pompidou", "modern", "contemporary", "mac ")),
+        SCIENCE(Interest.ART, "Sciences et techniques", "sciences", listOf("science", "technique", "histoire naturelle", "museum", "decouverte", "cite des", "aquarium", "planetarium")),
+        SOCIETY(Interest.ART, "Histoire et civilisations", "musées d'histoire", listOf("histoire", "militaire", "civilisation", "societe", "archeolog", "traditions", "armee", "guerre")),
+
+        CASTLES(Interest.HISTORY, "Châteaux et palais", "châteaux", listOf("chateau", "palais", "fort", "forteresse", "citadelle", "kasbah", "casbah", "manoir")),
+        RELIGIOUS(Interest.HISTORY, "Lieux de culte", "lieux de culte", listOf("cathedrale", "basilique", "eglise", "mosquee", "synagogue", "temple", "abbaye", "monastere", "djamaa")),
+        ANCIENT(Interest.HISTORY, "Sites antiques et archéologiques", "sites antiques", listOf("archeolog", "antique", "romain", "ruines", "amphitheatre", "theatre antique", "thermes")),
+        LANDMARKS(Interest.HISTORY, "Monuments et places célèbres", "monuments", listOf("monument", "place", "arc ", "tour", "memorial", "pont", "fontaine", "porte")),
+
+        GARDENS(Interest.NATURE, "Jardins et jardins botaniques", "jardins", listOf("jardin", "botanique", "roseraie", "serre")),
+        BIG_PARKS(Interest.NATURE, "Grands parcs pour se balader", "grands parcs", listOf("parc", "bois", "foret", "promenade")),
+        WILD(Interest.NATURE, "Nature sauvage", "nature sauvage", listOf("reserve", "parc national", "naturel", "lac", "montagne", "cascade", "gorges")),
+
+        ANIMALS(Interest.FUN, "Zoos et aquariums", "zoos et aquariums", listOf("zoo", "aquarium", "animalier", "biodome", "safari")),
+        THRILLS(Interest.FUN, "Parcs d'attractions", "parcs d'attractions", listOf("attractions", "parc d'attractions", "fete foraine", "disney", "aventure")),
+        VIEWS(Interest.FUN, "Points de vue et panoramas", "panoramas", listOf("tour", "observation", "panorama", "vue", "belvedere", "point de vue", "roue")),
+        SHOWS(Interest.FUN, "Spectacles et stades", "spectacles", listOf("opera", "theatre", "stade", "concert", "salle", "arena", "cirque")),
+
+        LOCAL_FOOD(Interest.FOOD, "Cuisine locale et traditionnelle", "cuisine locale",
+            listOf("tradition", "local", "regional", "francais", "algerien", "marocain", "tunisien", "bistrot", "brasserie", "terroir", "typique", "maison"),
+            "restaurants traditionnels"),
+        ITALIAN(Interest.FOOD, "Italien et pizza", "cuisine italienne", listOf("italien", "pizza", "pizzeria", "trattoria", "italian", "pasta"), "restaurants italiens"),
+        ASIAN(Interest.FOOD, "Cuisine asiatique", "cuisine asiatique",
+            listOf("japonais", "sushi", "chinois", "thai", "vietnamien", "coreen", "asiatique", "ramen", "indien", "asian", "japanese"), "restaurants asiatiques"),
+        STREET(Interest.FOOD, "Street food et sur le pouce", "street food", listOf("street", "burger", "kebab", "snack", "fast", "sandwich", "tacos", "food truck"), "street food"),
+        VEGGIE(Interest.FOOD, "Végétarien et vegan", "cuisine végétarienne", listOf("vegetarien", "vegan", "vegetarian", "vegetal", "veggie"), "restaurants végétariens"),
+        FINE(Interest.FOOD, "Gastronomique", "gastronomie", listOf("gastronom", "etoile", "michelin", "fine dining", "chef"), "restaurants gastronomiques"),
+        SEAFOOD(Interest.FOOD, "Poissons et fruits de mer", "fruits de mer", listOf("poisson", "fruits de mer", "seafood", "bouillabaisse", "huitre", "fish"), "restaurants de fruits de mer"),
+
+        COCKTAILS(Interest.NIGHT, "Bars à cocktails", "cocktails", listOf("cocktail", "speakeasy", "mixolog", "lounge"), "bars à cocktails"),
+        WINE(Interest.NIGHT, "Bars à vin", "bars à vin", listOf("vin", "wine", "cave", "oeno"), "bars à vin"),
+        PUBS(Interest.NIGHT, "Pubs et bières", "pubs", listOf("pub", "biere", "beer", "brasserie", "craft", "taproom"), "pubs"),
+        LIVE(Interest.NIGHT, "Musique live et jazz", "musique live", listOf("live", "concert", "jazz", "musique", "blues"), "bars musique live"),
+        CLUBS(Interest.NIGHT, "Boîtes de nuit", "boîtes de nuit", listOf("club", "discotheque", "boite", "dj", "dancing")),
+
+        MARKETS(Interest.SHOPPING, "Marchés et produits locaux", "marchés", listOf("marche", "halle", "souk", "bazar", "market", "medina")),
+        MALLS(Interest.SHOPPING, "Centres commerciaux", "centres commerciaux", listOf("centre commercial", "mall", "galeries", "shopping")),
+        FASHION(Interest.SHOPPING, "Mode et créateurs", "mode", listOf("mode", "luxe", "boutique", "createur", "concept", "fashion")),
+        ;
+
+        companion object {
+            fun of(interest: Interest) = entries.filter { it.interest == interest }
+        }
+    }
+
+    /** Étapes du questionnaire : une question de suivi par envie qui en propose. */
+    fun steps(a: Answers): List<String> = buildList {
+        add("city"); add("duration"); add("company"); add("interests")
+        Interest.entries.filter { it in a.interests && Taste.of(it).isNotEmpty() }.forEach { add("taste:${it.name}") }
+        add("pace"); add("budget")
+    }
+
     enum class Pace(val label: String, val description: String, val morning: Int, val afternoon: Int) {
         RELAXED("Tranquille", "Peu de visites, du temps pour flâner", 1, 1),
         BALANCED("Équilibré", "Un bon mélange visites et pauses", 1, 2),
@@ -44,6 +108,7 @@ object Quiz {
         val duration: Duration = Duration.DAY,
         val company: Company = Company.COUPLE,
         val interests: Set<Interest> = emptySet(),
+        val tastes: Set<Taste> = emptySet(),
         val pace: Pace = Pace.BALANCED,
         val budget: Budget = Budget.MEDIUM,
     )
@@ -84,7 +149,34 @@ object ExperienceBuilder {
         (Quiz.Interest.NIGHT in a.interests || a.company == Quiz.Company.COUPLE || a.company == Quiz.Company.FRIENDS)
 
     private fun wantsClub(a: Quiz.Answers) = !a.duration.halfDay && Quiz.Interest.NIGHT in a.interests &&
-        (a.company == Quiz.Company.FRIENDS || a.company == Quiz.Company.SOLO)
+        a.company != Quiz.Company.FAMILY &&
+        (Quiz.Taste.CLUBS in a.tastes || a.company == Quiz.Company.FRIENDS || a.company == Quiz.Company.SOLO)
+
+    /** Goûts actifs (envie cochée) qui concernent une catégorie de lieux. */
+    fun tastesFor(a: Quiz.Answers, category: ActivityLinks.Category): List<Quiz.Taste> {
+        val interests = when (category) {
+            ActivityLinks.Category.RESTAURANTS, ActivityLinks.Category.CAFES -> listOf(Quiz.Interest.FOOD)
+            ActivityLinks.Category.BARS, ActivityLinks.Category.NIGHTLIFE -> listOf(Quiz.Interest.NIGHT)
+            else -> Quiz.Interest.entries.filter { it.category == category }
+        }
+        return a.tastes.filter { it.interest in interests && it.interest in a.interests }
+    }
+
+    /** Précision de recherche en ligne quand un seul goût est choisi (ex. « restaurants italiens »). */
+    fun searchHint(a: Quiz.Answers, category: ActivityLinks.Category): String? {
+        if (category != ActivityLinks.Category.RESTAURANTS && category != ActivityLinks.Category.BARS) return null
+        return tastesFor(a, category).mapNotNull { it.hint }.singleOrNull()
+    }
+
+    private fun normalize(s: String) = java.text.Normalizer.normalize(s.lowercase(), java.text.Normalizer.Form.NFD)
+        .replace(Regex("\\p{Mn}+"), "")
+
+    /** Goût correspondant à ce lieu (nom, type, description), s'il y en a un. */
+    fun matchingTaste(p: PointOfInterest, tastes: List<Quiz.Taste>): Quiz.Taste? {
+        if (tastes.isEmpty()) return null
+        val text = " " + normalize("${p.name} ${p.kind} ${p.description.orEmpty()}") + " "
+        return tastes.firstOrNull { t -> t.keywords.any { k -> text.contains(normalize(k)) } }
+    }
 
     /** Catégories à charger pour composer l'expérience. */
     fun neededCategories(a: Quiz.Answers): Set<ActivityLinks.Category> = buildSet {
@@ -127,7 +219,13 @@ object ExperienceBuilder {
 
         /** Meilleur lieu de la catégorie, en tenant compte du classement et de la distance au lieu précédent. */
         fun pick(category: ActivityLinks.Category, near: PointOfInterest?): PointOfInterest? {
-            val pool = pools[category].orEmpty().filter { it.id !in used }
+            val tastes = tastesFor(a, category)
+            val all = pools[category].orEmpty().filter { it.id !in used }
+            // Les lieux qui correspondent aux goûts passent devant, dans l'ordre du classement.
+            val pool = if (tastes.isEmpty()) all else {
+                val (match, rest) = all.partition { matchingTaste(it, tastes) != null }
+                match + rest
+            }
             val affordable = pool.filter { budgetOk(it) }.ifEmpty { pool }
             if (affordable.isEmpty()) return null
             val top = affordable.take(10)
@@ -152,13 +250,15 @@ object ExperienceBuilder {
 
         fun why(category: ActivityLinks.Category, p: PointOfInterest): String {
             val rating = p.ratings.maxByOrNull { it.count }
-            return when {
+            val taste = matchingTaste(p, tastesFor(a, category))
+            val base = when {
                 rating != null -> "Noté ${"%.1f".format(rating.rating)} sur ${rating.source.label} (${rating.count} avis)"
                 p.isMustSee -> "Un incontournable de $city"
                 p.inGuide -> "Recommandé par le guide Wikivoyage"
                 category == ActivityLinks.Category.PARKS || category == ActivityLinks.Category.BEACHES -> "Pour souffler au grand air"
                 else -> "Parmi les lieux les plus réputés de la ville"
             }
+            return if (taste != null) "Pour votre envie « ${taste.label.lowercase()} » · $base" else base
         }
 
         val days = (1..a.duration.days).map { dayIndex ->
@@ -187,7 +287,9 @@ object ExperienceBuilder {
             ExperienceDay(if (a.duration.days > 1) "Jour $dayIndex" else a.duration.label, steps)
         }.filter { it.steps.isNotEmpty() }
 
-        val themes = a.interests.map { it.theme }.ifEmpty { listOf("découverte") }
+        val themes = a.interests.map { i ->
+            a.tastes.filter { it.interest == i }.takeIf { it.size == 1 }?.first()?.short ?: i.theme
+        }.ifEmpty { listOf("découverte") }
         val themeText = when (themes.size) {
             1 -> themes[0]
             else -> themes.dropLast(1).joinToString(", ") + " et " + themes.last()

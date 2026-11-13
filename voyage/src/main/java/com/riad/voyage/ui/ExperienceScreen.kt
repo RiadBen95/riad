@@ -40,7 +40,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.riad.voyage.ExperienceState
-import com.riad.voyage.QUIZ_STEPS
 import com.riad.voyage.data.ActivityLinks
 import com.riad.voyage.data.ExperienceDay
 import com.riad.voyage.data.ExperienceStep
@@ -82,10 +81,12 @@ private fun Questionnaire(
     suggestCities: suspend (String) -> List<Place>,
 ) {
     val a = state.answers
-    val step = state.step
-    val canContinue = when (step) {
-        0 -> a.city.isNotBlank()
-        3 -> a.interests.isNotEmpty()
+    val steps = Quiz.steps(a)
+    val step = state.step.coerceIn(0, steps.size - 1)
+    val id = steps[step]
+    val canContinue = when (id) {
+        "city" -> a.city.isNotBlank()
+        "interests" -> a.interests.isNotEmpty()
         else -> true
     }
     Column(Modifier.fillMaxSize()) {
@@ -98,14 +99,14 @@ private fun Questionnaire(
         ) {
             Text("Votre expérience sur mesure", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             Text(
-                "Répondez à ${QUIZ_STEPS} questions : nous composons un programme qui mêle visites, balades, restaurants et sorties.",
+                "Quelques questions sur vos envies et vos goûts : nous composons un programme qui mêle visites, balades, restaurants et sorties.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            LinearProgressIndicator(progress = { (step + 1f) / QUIZ_STEPS }, modifier = Modifier.fillMaxWidth())
-            Text("Question ${step + 1} sur $QUIZ_STEPS", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            LinearProgressIndicator(progress = { (step + 1f) / steps.size }, modifier = Modifier.fillMaxWidth())
+            Text("Question ${step + 1} sur ${steps.size}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-            when (step) {
-                0 -> {
+            when {
+                id == "city" -> {
                     QuestionTitle("Où voulez-vous vivre l'expérience ?")
                     PlaceField(
                         label = "Ville",
@@ -118,19 +119,19 @@ private fun Questionnaire(
                         citiesOnly = true,
                     )
                 }
-                1 -> {
+                id == "duration" -> {
                     QuestionTitle("Combien de temps avez-vous ?")
                     Quiz.Duration.entries.forEach { d ->
                         ChoiceCard(d.label, null, a.duration == d) { onAnswers { it.copy(duration = d) } }
                     }
                 }
-                2 -> {
+                id == "company" -> {
                     QuestionTitle("Avec qui partez-vous ?")
                     Quiz.Company.entries.forEach { c ->
                         ChoiceCard("${c.emoji}  ${c.label}", null, a.company == c) { onAnswers { it.copy(company = c) } }
                     }
                 }
-                3 -> {
+                id == "interests" -> {
                     QuestionTitle("Qu'est-ce qui vous fait envie ?")
                     Text("Plusieurs choix possibles.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -144,13 +145,24 @@ private fun Questionnaire(
                         }
                     }
                 }
-                4 -> {
+                id.startsWith("taste:") -> {
+                    val interest = Quiz.Interest.valueOf(id.removePrefix("taste:"))
+                    QuestionTitle(tasteQuestion(interest))
+                    Text("Plusieurs choix possibles, ou aucun si tout vous va.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Quiz.Taste.of(interest).forEach { t ->
+                        val selected = t in a.tastes
+                        ChoiceCard(if (selected) "✓  ${t.label}" else t.label, null, selected) {
+                            onAnswers { it.copy(tastes = if (selected) it.tastes - t else it.tastes + t) }
+                        }
+                    }
+                }
+                id == "pace" -> {
                     QuestionTitle("Quel rythme préférez-vous ?")
                     Quiz.Pace.entries.forEach { p ->
                         ChoiceCard(p.label, p.description, a.pace == p) { onAnswers { it.copy(pace = p) } }
                     }
                 }
-                5 -> {
+                id == "budget" -> {
                     QuestionTitle("Quel budget pour les repas et les sorties ?")
                     Quiz.Budget.entries.forEach { b ->
                         ChoiceCard(b.label, b.description, a.budget == b) { onAnswers { it.copy(budget = b) } }
@@ -166,7 +178,7 @@ private fun Questionnaire(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             if (step > 0) OutlinedButton(onClick = { onStep(-1) }, modifier = Modifier.weight(1f)) { Text("Retour") }
-            val last = step == QUIZ_STEPS - 1
+            val last = step == steps.size - 1
             Button(
                 onClick = { if (last) onGenerate() else onStep(1) },
                 enabled = canContinue,
@@ -311,4 +323,15 @@ private fun dayRouteUrl(day: ExperienceDay, city: String): String {
     val waypoints = stops.drop(1).dropLast(1).take(8).joinToString("%7C")
     return "https://www.google.com/maps/dir/?api=1&origin=${stops.first()}&destination=${stops.last()}" +
         (if (waypoints.isNotEmpty()) "&waypoints=$waypoints" else "") + "&travelmode=walking"
+}
+
+private fun tasteQuestion(i: Quiz.Interest) = when (i) {
+    Quiz.Interest.ART -> "Quels musées vous attirent ?"
+    Quiz.Interest.HISTORY -> "Quel genre de patrimoine ?"
+    Quiz.Interest.NATURE -> "Quelle nature vous fait envie ?"
+    Quiz.Interest.FUN -> "Quelles activités de loisirs ?"
+    Quiz.Interest.FOOD -> "Quelle cuisine vous tente ?"
+    Quiz.Interest.NIGHT -> "Quelle ambiance pour vos soirées ?"
+    Quiz.Interest.SHOPPING -> "Quel shopping ?"
+    Quiz.Interest.BEACH -> "Quelles plages ?"
 }

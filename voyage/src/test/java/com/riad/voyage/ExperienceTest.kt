@@ -56,4 +56,39 @@ class ExperienceTest {
         assertTrue(steps.last().place.kind.endsWith("€") && !steps.last().place.kind.contains("€€"))
         assertEquals(4, ExperienceBuilder.priceLevel(expensive[0]))
     }
+
+    @Test
+    fun followUpQuestionsAppearForChosenInterests() {
+        val a = Quiz.Answers(interests = setOf(Quiz.Interest.FOOD, Quiz.Interest.BEACH, Quiz.Interest.ART))
+        assertEquals(
+            listOf("city", "duration", "company", "interests", "taste:ART", "taste:FOOD", "pace", "budget"),
+            Quiz.steps(a),
+        )
+    }
+
+    @Test
+    fun tastesDrivePlaceChoiceAndSearch() {
+        val restaurants = listOf(
+            poi(Category.RESTAURANTS, 0, "Restaurant · €€"),
+            poi(Category.RESTAURANTS, 1, "Restaurant chinois"),
+            poi(Category.RESTAURANTS, 2, "Restaurant · italien"),
+            poi(Category.RESTAURANTS, 3, "Pizzeria"),
+        )
+        val museums = listOf(
+            poi(Category.MUSEUMS, 0, "Musée d'histoire"),
+            poi(Category.MUSEUMS, 1, "Musée"),
+            poi(Category.MUSEUMS, 2, "Musée d'art moderne"),
+        )
+        val a = Quiz.Answers(
+            city = "Paris", duration = Quiz.Duration.HALF, pace = Quiz.Pace.RELAXED,
+            interests = setOf(Quiz.Interest.ART, Quiz.Interest.FOOD),
+            tastes = setOf(Quiz.Taste.ITALIAN, Quiz.Taste.MODERN_ART),
+        )
+        val steps = ExperienceBuilder.build(a, "Paris", mapOf(Category.RESTAURANTS to restaurants, Category.MUSEUMS to museums, Category.CAFES to emptyList())).days.single().steps
+        assertEquals("Musée d'art moderne", steps.first().place.kind)
+        assertTrue(steps.first().why.startsWith("Pour votre envie « art moderne et contemporain »"))
+        assertTrue(steps.first { it.category == Category.RESTAURANTS }.place.kind.let { it.contains("italien") || it == "Pizzeria" })
+        assertEquals("restaurants italiens", ExperienceBuilder.searchHint(a, Category.RESTAURANTS))
+        assertEquals("Une demi-journée art moderne et cuisine italienne à Paris", ExperienceBuilder.build(a, "Paris", emptyMap()).title)
+    }
 }

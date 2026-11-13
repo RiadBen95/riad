@@ -72,6 +72,7 @@ data class Candidate(
     val popularityRank: Int? = null,   // position dans le classement de popularité (Foursquare)
     val openNow: Boolean? = null,
     val mapsUrl: String? = null,
+    val typeLabel: String? = null,     // ex. « Restaurant italien », « Bar à cocktails »
 )
 
 private object Http {
@@ -110,7 +111,8 @@ private fun JSONObject.s(key: String): String? = if (isNull(key)) null else optS
 object GoogleRatings {
     private const val FIELDS = "places.id,places.displayName,places.location,places.formattedAddress," +
         "places.rating,places.userRatingCount,places.priceLevel,places.websiteUri," +
-        "places.nationalPhoneNumber,places.googleMapsUri,places.currentOpeningHours.openNow"
+        "places.nationalPhoneNumber,places.googleMapsUri,places.currentOpeningHours.openNow," +
+        "places.primaryTypeDisplayName"
 
     suspend fun search(key: String, query: String, center: GeoPoint): List<Candidate> {
         val body = JSONObject()
@@ -165,6 +167,7 @@ object GoogleRatings {
                     ?.let { RatingInfo(RatingSource.GOOGLE, it, count, url = p.s("googleMapsUri")) },
                 openNow = p.optJSONObject("currentOpeningHours")?.let { if (it.has("openNow")) it.optBoolean("openNow") else null },
                 mapsUrl = p.s("googleMapsUri"),
+                typeLabel = p.optJSONObject("primaryTypeDisplayName")?.s("text"),
             )
         }
     }
@@ -215,6 +218,10 @@ object TripadvisorRatings {
                 RatingInfo(RatingSource.TRIPADVISOR, it, count, o.optJSONObject("ranking_data")?.s("ranking_string"), o.s("web_url"))
             },
             mapsUrl = o.s("web_url"),
+            typeLabel = o.optJSONArray("cuisine")?.let { arr ->
+                List(arr.length()) { arr.optJSONObject(it)?.s("localized_name") }.filterNotNull().take(2)
+                    .joinToString(", ").ifBlank { null }?.let { "Cuisine $it".lowercase().replaceFirstChar { c -> c.uppercase() } }
+            },
         )
     }
 }
@@ -249,6 +256,7 @@ object FoursquareRatings {
                 phone = p.s("tel"),
                 website = p.s("website"),
                 popularityRank = i,
+                typeLabel = p.optJSONArray("categories")?.optJSONObject(0)?.s("name"),
             )
         }
     }
@@ -276,8 +284,11 @@ object RatingsAggregator {
         center: GeoPoint,
         category: ActivityLinks.Category,
         guide: List<PointOfInterest>,
+        hint: String? = null,   // précise la recherche selon les goûts : « restaurants italiens »…
     ): Outcome {
-        val (plural, singular, taCategory) = terms(category) ?: return Outcome(emptyList(), emptySet(), emptySet())
+        val (basePlural, baseSingular, taCategory) = terms(category) ?: return Outcome(emptyList(), emptySet(), emptySet())
+        val plural = hint ?: basePlural
+        val singular = hint ?: baseSingular
         val skipped = mutableSetOf<RatingSource>()
         fun ready(s: RatingSource, key: String, cost: Int): Boolean {
             if (key.isBlank()) return false
@@ -365,14 +376,14 @@ object RatingsAggregator {
             val lon = pick { it.lon }
             val hasCoords = lat != null && lon != null
             val ratings = g.items.mapNotNull { it.rating }.sortedBy { it.source.ordinal }
-            val kind = when (category) {
+            val kind = (pick { it.typeLabel } ?: when (category) {
                 ActivityLinks.Category.RESTAURANTS -> "Restaurant"
                 ActivityLinks.Category.CAFES -> "Café"
                 ActivityLinks.Category.BARS -> "Bar"
                 ActivityLinks.Category.NIGHTLIFE -> "Sortie de nuit"
                 ActivityLinks.Category.SHOPPING -> "Shopping"
                 else -> "Lieu"
-            } + (pick { it.price }?.let { " · $it" } ?: "")
+            }) + (pick { it.price }?.let { " · $it" } ?: "")
             PointOfInterest(
                 id = "rt/" + PlacesParser.normalizeName(pick { it.name } ?: "?") + "/$lat,$lon",
                 name = pick { it.name } ?: "?",
