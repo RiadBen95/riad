@@ -46,7 +46,7 @@ class ExperienceTest {
         assertEquals(75, ExperienceBuilder.visitMinutes(poi(Category.MUSEUMS, 0, "Musée", fame = 3), Category.MUSEUMS))
         assertEquals(40, ExperienceBuilder.visitMinutes(poi(Category.MONUMENTS, 0, "Église", fame = 5), Category.MONUMENTS))
         assertEquals(300, ExperienceBuilder.visitMinutes(poi(Category.ATTRACTIONS, 0, "Parc d'attractions"), Category.ATTRACTIONS))
-        assertEquals(90, ExperienceBuilder.visitMinutes(poi(Category.MUSEUMS, 0, "Musée", fame = 3), Category.MUSEUMS, Quiz.Depth.DEEP))
+        assertEquals(100, ExperienceBuilder.visitMinutes(poi(Category.MUSEUMS, 0, "Musée", fame = 3), Category.MUSEUMS, Quiz.Depth.DEEP))
     }
 
     @Test

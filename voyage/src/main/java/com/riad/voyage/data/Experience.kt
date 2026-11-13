@@ -299,7 +299,7 @@ object ExperienceBuilder {
                 else -> 60
             }
         }
-        return ((base * depth.factor / 15).toInt().coerceAtLeast(1)) * 15
+        return (Math.round(base * depth.factor / 5).toInt().coerceAtLeast(2)) * 5
     }
 
     /** Lieux visités à l'intérieur : fermés le soir (dernière entrée vers 17h). */
