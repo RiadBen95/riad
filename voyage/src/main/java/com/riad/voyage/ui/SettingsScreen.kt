@@ -64,6 +64,7 @@ fun SettingsScreen(
     var tripadvisorKey by remember(settings) { mutableStateOf(settings.tripadvisorKey) }
     var foursquareKey by remember(settings) { mutableStateOf(settings.foursquareKey) }
     var liteApiKey by remember(settings) { mutableStateOf(settings.liteApiKey) }
+    var tiqetsPartner by remember(settings) { mutableStateOf(settings.tiqetsPartner) }
 
     Column(
         Modifier
@@ -132,10 +133,19 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxWidth(),
         )
 
+        OutlinedTextField(
+            value = tiqetsPartner,
+            onValueChange = { tiqetsPartner = it },
+            label = { Text(t("Identifiant partenaire Tiqets (facultatif)")) },
+            supportingText = { Text(t("Ajouté aux liens de billets Tiqets pour toucher une commission.")) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
         val edited = Settings(
             token = token.trim(), marker = marker.trim(), currency = currency,
             googleKey = googleKey.trim(), tripadvisorKey = tripadvisorKey.trim(), foursquareKey = foursquareKey.trim(),
-            liteApiKey = liteApiKey.trim(),
+            liteApiKey = liteApiKey.trim(), tiqetsPartner = tiqetsPartner.trim(),
         )
         val unchanged = edited == settings
         Button(

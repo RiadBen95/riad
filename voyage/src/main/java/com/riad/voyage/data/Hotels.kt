@@ -117,7 +117,8 @@ object LiteApi {
         val out = mutableMapOf<String, Rate>()
         for (i in 0 until arr.length()) {
             val h = arr.getJSONObject(i)
-            val hotelId = h.optString("hotelId").ifBlank { continue }
+            val hotelId = h.optString("hotelId")
+            if (hotelId.isBlank()) continue
             val rooms = h.optJSONArray("roomTypes") ?: continue
             for (j in 0 until rooms.length()) {
                 val room = rooms.getJSONObject(j)

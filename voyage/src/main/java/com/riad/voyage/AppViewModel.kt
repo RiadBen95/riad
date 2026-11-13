@@ -160,7 +160,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val _recents = MutableStateFlow(recentStore.all())
     val recents: StateFlow<List<RecentSearch>> = _recents.asStateFlow()
 
-    private val _settings = MutableStateFlow(settingsStore.load())
+    private val _settings = MutableStateFlow(settingsStore.load().also { com.riad.voyage.data.ActivityLinks.tiqetsPartner = it.tiqetsPartner })
     val settings: StateFlow<Settings> = _settings.asStateFlow()
 
     private val _tab = MutableStateFlow(Tab.HOME)
@@ -1035,6 +1035,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun saveSettings(s: Settings) {
         placesCache.clear()
+        com.riad.voyage.data.ActivityLinks.tiqetsPartner = s.tiqetsPartner
         settingsStore.save(s)
         _settings.value = settingsStore.load()
         testKey()

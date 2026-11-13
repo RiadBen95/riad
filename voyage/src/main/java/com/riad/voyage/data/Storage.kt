@@ -12,6 +12,7 @@ data class Settings(
     val tripadvisorKey: String = "",
     val foursquareKey: String = "",
     val liteApiKey: String = "",
+    val tiqetsPartner: String = "",
 ) {
     val isDemo get() = token.isBlank()
 }
@@ -27,6 +28,7 @@ class SettingsStore(context: Context) {
         tripadvisorKey = prefs.getString("tripadvisorKey", "").orEmpty(),
         foursquareKey = prefs.getString("foursquareKey", "").orEmpty(),
         liteApiKey = prefs.getString("liteApiKey", "").orEmpty(),
+        tiqetsPartner = prefs.getString("tiqetsPartner", "").orEmpty(),
     )
 
     fun save(s: Settings) {
@@ -38,6 +40,7 @@ class SettingsStore(context: Context) {
             .putString("tripadvisorKey", s.tripadvisorKey.trim())
             .putString("foursquareKey", s.foursquareKey.trim())
             .putString("liteApiKey", s.liteApiKey.trim())
+            .putString("tiqetsPartner", s.tiqetsPartner.trim())
             .apply()
     }
 }

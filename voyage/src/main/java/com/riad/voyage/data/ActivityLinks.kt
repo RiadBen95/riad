@@ -5,6 +5,15 @@ import java.net.URLEncoder
 /** Liens de recherche pré-remplis pour les sorties : musées, attractions, visites, restaurants. */
 object ActivityLinks {
 
+    /** Identifiant partenaire Tiqets (programme d'affiliation) : ajouté à tous les liens Tiqets. */
+    @Volatile var tiqetsPartner: String = ""
+
+    private fun tiqets(query: String): String {
+        val lang = com.riad.voyage.I18n.lang.code.let { if (it in setOf("fr", "en", "es", "ja", "zh")) it else "en" }
+        val base = "https://www.tiqets.com/$lang/search?q=${enc(query)}"
+        return if (tiqetsPartner.isBlank()) base else "$base&partner=${enc(tiqetsPartner.trim())}"
+    }
+
     data class Partner(val name: String, val description: String, val url: String)
 
     enum class Category(val label: String, val emoji: String) {
@@ -25,13 +34,13 @@ object ActivityLinks {
         val c = city.trim()
         return when (category) {
             Category.MUSEUMS -> listOf(
-                Partner("Tiqets", "Billets coupe-file pour musées et monuments", "https://www.tiqets.com/fr/search?q=${enc(c)}"),
+                Partner("Tiqets", "Billets coupe-file pour musées et monuments", tiqets(c)),
                 Partner("GetYourGuide", "Billets et visites guidées de musées", "https://www.getyourguide.fr/s/?q=${enc("musées $c")}"),
                 Partner("Google", "Horaires, avis et sites officiels", "https://www.google.com/search?q=${enc("musées $c")}"),
             )
             Category.ATTRACTIONS -> listOf(
                 Partner("GetYourGuide", "Attractions et activités, annulation gratuite fréquente", "https://www.getyourguide.fr/s/?q=${enc(c)}"),
-                Partner("Tiqets", "Billets d'entrée instantanés sur mobile", "https://www.tiqets.com/fr/search?q=${enc(c)}"),
+                Partner("Tiqets", "Billets d'entrée instantanés sur mobile", tiqets(c)),
                 Partner("Klook", "Parcs d'attractions et pass, fort en Asie", "https://www.klook.com/fr/search/result/?query=${enc(c)}"),
                 Partner("Viator", "Large choix d'activités (groupe Tripadvisor)", "https://www.viator.com/fr-FR/searchResults/all?text=${enc(c)}"),
             )
@@ -57,7 +66,7 @@ object ActivityLinks {
         val q = "${place.name} ${city.trim()}"
         return listOf(
             Partner("GetYourGuide", "", "https://www.getyourguide.fr/s/?q=${enc(q)}"),
-            Partner("Tiqets", "", "https://www.tiqets.com/fr/search?q=${enc(q)}"),
+            Partner("Tiqets", "", tiqets(q)),
         )
     }
 
