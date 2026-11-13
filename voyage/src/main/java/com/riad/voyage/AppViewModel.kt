@@ -286,6 +286,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         if (t == Tab.BLOG && _blog.value.city == null) blogContext().firstOrNull()?.let { (c, why) -> openBlogCity(c, why) }
     }
 
+    /** Efface l'historique des recherches de vols. */
+    fun clearRecents() {
+        recentStore.clear()
+        _recents.value = emptyList()
+    }
+
     fun setActivityCity(city: String) { _activityCity.value = city }
 
     /** Ville choisie dans les suggestions : on garde sa position et on lance la recherche. */
@@ -1181,12 +1187,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
         recentStore.add(RecentSearch(origin, destination, f.departure.toString(), if (f.roundTrip) f.returnDate.toString() else null, f.adults))
         _recents.value = recentStore.all()
-    }
-
-    /** Efface l'historique des recherches de vols. */
-    fun clearRecents() {
-        recentStore.clear()
-        _recents.value = emptyList()
         _tab.value = Tab.FLIGHTS
         val s = _settings.value
         _results.update {
