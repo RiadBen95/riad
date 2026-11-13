@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """
 Génère la base des lieux remarquables du monde (musées, monuments, attractions, parcs, plages)
-à partir de Wikidata, pour une recherche instantanée et hors ligne dans l'application.
+à partir de Wikidata, découpée en zones de 2° × 2°, publiée en ligne (data/places/) et
+téléchargée par l'application zone par zone : la recherche est quasi instantanée.
 
-Usage : python tools/build_places.py voyage/src/main/assets/places.json.gz
+Usage : python tools/build_places.py data/places
 """
-import gzip
 import json
+import math
+import os
 import sys
 import time
 import urllib.parse
@@ -144,13 +146,25 @@ def main(out):
 
     if len(items) < 5000:
         sys.exit(f"Trop peu de lieux ({len(items)}) : la génération a sans doute échoué.")
-    payload = {"v": 1, "categories": CATEGORIES, "kinds": kinds,
-               "fields": ["name", "lat", "lon", "sitelinks", "category", "kind", "image", "wiki"],
-               "items": list(items.values())}
-    raw = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode()
-    with gzip.open(out, "wb", compresslevel=9) as f:
-        f.write(raw)
-    print(f"Écrit {out} : {len(items)} lieux, {len(raw) // 1024} Ko non compressés")
+    # Découpage en zones de 2° × 2° (environ 200 km), une par fichier.
+    tiles = {}
+    for item in items.values():
+        key = f"{math.floor(item[1] / 2)}_{math.floor(item[2] / 2)}"
+        tiles.setdefault(key, []).append(item)
+    os.makedirs(out, exist_ok=True)
+    total = 0
+    for key, tile_items in tiles.items():
+        tile_items.sort(key=lambda i: -i[3])
+        payload = {"v": 1, "categories": CATEGORIES, "kinds": kinds, "items": tile_items}
+        raw = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode()
+        total += len(raw)
+        with open(os.path.join(out, f"{key}.json"), "wb") as f:
+            f.write(raw)
+    with open(os.path.join(out, "index.json"), "w") as f:
+        json.dump({"v": 1, "places": len(items), "tiles": {k: len(v) for k, v in sorted(tiles.items())}}, f)
+    biggest = max(tiles.items(), key=lambda kv: len(kv[1]))
+    print(f"{len(items)} lieux dans {len(tiles)} zones, {total // 1024} Ko au total ; "
+          f"plus grosse zone {biggest[0]} : {len(biggest[1])} lieux")
     per_cat = {c: sum(1 for i in items.values() if i[4] == n) for n, c in enumerate(CATEGORIES)}
     print("Par catégorie :", per_cat)
 

@@ -1,11 +1,14 @@
 name: Données des lieux
 
-# Génère la base des lieux remarquables (Wikidata) embarquée dans l'application.
+# Génère la base des lieux remarquables (Wikidata), publiée en ligne dans data/places/
+# et téléchargée par l'application zone par zone.
 on:
   workflow_dispatch:
   push:
     paths:
       - tools/build_places.py
+  schedule:
+    - cron: "17 3 * * 1"   # chaque lundi : données à jour
 
 permissions:
   contents: write
@@ -20,16 +23,12 @@ jobs:
         with:
           python-version: "3.12"
       - name: Interroger Wikidata
-        run: python tools/build_places.py voyage/src/main/assets/places.json.gz
-      - uses: actions/upload-artifact@v4
-        with:
-          name: places-data
-          path: voyage/src/main/assets/places.json.gz
+        run: python tools/build_places.py data/places
       - name: Enregistrer dans le dépôt
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add voyage/src/main/assets/places.json.gz
+          git add data/places
           if git diff --cached --quiet; then echo "Aucun changement"; exit 0; fi
           git commit -m "Mettre à jour la base des lieux (Wikidata)"
           # La branche a pu avancer pendant la génération : on se replace dessus avant d'envoyer.

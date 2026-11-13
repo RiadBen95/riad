@@ -134,10 +134,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val geoCache = mutableMapOf<String, com.riad.voyage.data.GeoPoint>()
     private val placesCache = mutableMapOf<String, PlacesState>()
 
-    /** Chargement de la base des lieux remarquables, lancé dès l'ouverture de l'app. */
-    private val notableReady = viewModelScope.async(kotlinx.coroutines.Dispatchers.IO) {
-        com.riad.voyage.data.NotablePlaces.load(getApplication())
-    }
     private val wikiCache = mutableMapOf<String, com.riad.voyage.data.WikiSummary?>()
     private val guideCache = mutableMapOf<String, Set<String>>()
 
@@ -202,10 +198,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 return@launch
             }
 
-            // 1) Lieux remarquables : base embarquée, instantané et hors ligne.
+            // 1) Lieux remarquables : zone de la ville téléchargée en ligne (CDN), quasi instantané.
             val notable = if (com.riad.voyage.data.NotablePlaces.supports(category)) {
-                notableReady.await()
-                com.riad.voyage.data.NotablePlaces.search(geo, category)
+                _places.value = _places.value.copy(stage = "Recherche des lieux…")
+                kotlinx.coroutines.withTimeoutOrNull(12_000) {
+                    runCatching { com.riad.voyage.data.NotablePlaces.search(geo, category) }.getOrNull()
+                } ?: emptyList()
             } else emptyList()
             if (notable.size >= 5) {
                 val state = PlacesState(items = notable, city = city, category = category)

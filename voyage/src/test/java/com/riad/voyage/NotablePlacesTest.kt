@@ -6,6 +6,7 @@ import com.riad.voyage.data.NotablePlaces
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlinx.coroutines.runBlocking
 
 class NotablePlacesTest {
     private val json = """
@@ -20,8 +21,9 @@ class NotablePlacesTest {
     """.trimIndent()
 
     @Test
-    fun searchAroundParis() {
-        NotablePlaces.loadFromJson(json)
+    fun searchAroundParis() = runBlocking {
+        // Les zones sont placées en mémoire : aucun téléchargement pendant le test.
+        listOf("24_0", "24_1", "23_0", "23_1", "21_2", "21_1", "22_2", "22_1", "21_3", "22_3").forEach { NotablePlaces.putTileForTest(it, json) }
         val paris = GeoPoint(48.8566, 2.3522, "Paris")
         val museums = NotablePlaces.search(paris, ActivityLinks.Category.MUSEUMS)
         assertEquals(listOf("Musée du Louvre", "Musée d'Orsay"), museums.map { it.name })
@@ -38,5 +40,7 @@ class NotablePlacesTest {
         assertEquals("Plage", beaches.single().kind)
         assertTrue(beaches.single().isFree)
         assertTrue(!NotablePlaces.supports(ActivityLinks.Category.RESTAURANTS))
+        assertEquals("24_1", NotablePlaces.tileKey(48.85, 2.35))
+        assertEquals("-17_-24", NotablePlaces.tileKey(-33.9, -47.9))
     }
 }
