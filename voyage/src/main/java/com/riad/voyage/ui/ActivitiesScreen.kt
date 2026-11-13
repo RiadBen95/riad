@@ -186,11 +186,6 @@ fun ActivitiesScreen(
                 item {
                     Column {
                         Text(
-                            "Top ${places.items.size} · ${category.label} à ${places.city}",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                        )
-                        Text(
                             when (places.source) {
                                 com.riad.voyage.SOURCE_FAME -> "Classés par notoriété : nombre de langues dans lesquelles Wikipédia consacre un article au lieu."
                                 com.riad.voyage.SOURCE_GUIDE -> "Les adresses sélectionnées par le guide de voyage Wikivoyage, dans l'ordre du guide."
