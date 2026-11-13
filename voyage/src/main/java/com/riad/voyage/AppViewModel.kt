@@ -102,7 +102,7 @@ data class ExperienceState(
     val stage: String = "",
     val result: com.riad.voyage.data.Experience? = null,
     val error: String? = null,
-    val seed: Int = 0,
+    val previous: Set<String> = emptySet(),
 )
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
@@ -329,23 +329,39 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 }
                     .map { it.await() }.toMap()
             }
-            experiencePools = pools
-            val seed = (System.currentTimeMillis() % 100_000).toInt()
-            val exp = com.riad.voyage.data.ExperienceBuilder.build(a, city, pools, seed)
+            // Analyse des lieux : description Wikipédia des meilleurs candidats, pour vérifier
+            // qu'ils correspondent vraiment aux goûts (et non au seul nom).
+            _experience.update { it.copy(stage = "Analyse des lieux selon vos goûts…") }
+            val analysed = coroutineScope {
+                pools.map { (c, list) ->
+                    async {
+                        c to list.mapIndexed { i, p ->
+                            if (i >= 25 || p.description != null || p.wikipedia == null) p
+                            else {
+                                val summary = kotlinx.coroutines.withTimeoutOrNull(6_000) { wikiSummary(p.wikipedia) }
+                                if (summary != null) p.copy(description = summary.extract) else p
+                            }
+                        }
+                    }
+                }.map { it.await() }.toMap()
+            }
+            experiencePools = analysed
+            _experience.update { it.copy(stage = "Composition du programme…") }
+            val exp = com.riad.voyage.data.ExperienceBuilder.build(a, city, analysed)
             _experience.update {
                 if (exp.days.isEmpty()) it.copy(loading = false, error = "Pas assez de lieux trouvés pour $city. Essayez d'autres envies ou une grande ville proche.")
-                else it.copy(loading = false, result = exp, seed = seed)
+                else it.copy(loading = false, result = exp, previous = emptySet())
             }
         }
     }
 
-    /** Autre proposition avec les mêmes réponses (instantané : les lieux sont déjà chargés). */
+    /** Autre proposition : mêmes réponses, en écartant les lieux de la proposition affichée (pas de hasard). */
     fun regenerateExperience() {
         val st = _experience.value
         if (experiencePools.isEmpty()) return generateExperience()
-        val seed = st.seed + 7919
-        val exp = com.riad.voyage.data.ExperienceBuilder.build(st.answers, st.answers.city.trim(), experiencePools, seed)
-        _experience.update { it.copy(result = exp, seed = seed) }
+        val avoid = st.previous + (st.result?.placeIds ?: emptySet())
+        val exp = com.riad.voyage.data.ExperienceBuilder.build(st.answers, st.answers.city.trim(), experiencePools, avoid)
+        _experience.update { it.copy(result = exp, previous = avoid) }
     }
 
     /** Meilleurs lieux d'une catégorie (même logique que l'onglet Sorties, sans l'afficher). */

@@ -156,6 +156,36 @@ private fun Questionnaire(
                         }
                     }
                 }
+                id == "style" -> {
+                    QuestionTitle("Plutôt incontournables ou pépites ?")
+                    Quiz.Style.entries.forEach { st ->
+                        ChoiceCard(st.label, st.description, a.style == st) { onAnswers { it.copy(style = st) } }
+                    }
+                }
+                id == "depth" -> {
+                    QuestionTitle("Combien de temps aimez-vous passer dans chaque lieu ?")
+                    Quiz.Depth.entries.forEach { d ->
+                        ChoiceCard(d.label, d.description, a.depth == d) { onAnswers { it.copy(depth = d) } }
+                    }
+                }
+                id == "start" -> {
+                    QuestionTitle("À quelle heure aimez-vous commencer la journée ?")
+                    Quiz.Start.entries.forEach { st ->
+                        ChoiceCard(st.label, null, a.start == st) { onAnswers { it.copy(start = st) } }
+                    }
+                }
+                id == "mobility" -> {
+                    QuestionTitle("Comment vous déplacez-vous ?")
+                    Quiz.Mobility.entries.forEach { m ->
+                        ChoiceCard(m.label, m.description, a.mobility == m) { onAnswers { it.copy(mobility = m) } }
+                    }
+                }
+                id == "diet" -> {
+                    QuestionTitle("Des préférences pour les repas et les soirées ?")
+                    Quiz.Diet.entries.forEach { d ->
+                        ChoiceCard(d.label, null, a.diet == d) { onAnswers { it.copy(diet = d) } }
+                    }
+                }
                 id == "pace" -> {
                     QuestionTitle("Quel rythme préférez-vous ?")
                     Quiz.Pace.entries.forEach { p ->
@@ -281,11 +311,21 @@ private fun StepCard(s: ExperienceStep, city: String) {
                 Text(s.place.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(s.place.kind, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                 Text(s.why, style = MaterialTheme.typography.bodySmall)
-                s.fromPreviousM?.let { m ->
-                    val walk = (m / 80).coerceAtLeast(1)
+                if (s.durationMin > 0) {
                     Text(
-                        if (m < 2500) "🚶 ${formatMeters(m)} depuis l'étape précédente · ~$walk min à pied"
-                        else "🚇 ${formatMeters(m)} depuis l'étape précédente · transport conseillé",
+                        "⏱ ${com.riad.voyage.data.ExperienceBuilder.formatDuration(s.durationMin)} sur place",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
+                s.travelMin?.let { t ->
+                    val m = s.fromPreviousM
+                    Text(
+                        when {
+                            m == null -> "Trajet d'environ $t min depuis l'étape précédente"
+                            m < 1500 || t <= m / 80 + 1 -> "🚶 ${formatMeters(m)} · ~$t min à pied depuis l'étape précédente"
+                            else -> "🚇 ${formatMeters(m)} · ~$t min en transports depuis l'étape précédente"
+                        },
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
