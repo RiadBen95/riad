@@ -117,7 +117,8 @@ object PlacesApi {
         return names
     }
 
-    suspend fun wikiSummary(tag: String): WikiSummary? {
+    suspend fun wikiSummary(original: String): WikiSummary? {
+        val tag = WikiLang.localize(original)
         val (lang, title) = splitWikiTag(tag) ?: return null
         val url = "https://$lang.wikipedia.org/api/rest_v1/page/summary/${enc(title.replace(' ', '_'))}"
         return runCatching { PlacesParser.wiki(get(url)) }.getOrNull()
@@ -193,7 +194,7 @@ object PlacesApi {
             val code = conn.responseCode
             if (code !in 200..299) {
                 throw ApiException(
-                    if (code == 429 || code == 504) "Le service des lieux est très sollicité, réessayez dans un instant."
+                    if (code == 429 || code == 504) com.riad.voyage.t("Le service des lieux est très sollicité, réessayez dans un instant.")
                     else "Erreur du service des lieux ($code).",
                     code,
                 )

@@ -44,6 +44,15 @@ pour payer : aucune donnée bancaire ne passe par l'application.
 - **Alertes de prix** : suivez un trajet ; l'app vérifie toutes les ~12 h et envoie une notification si le prix baisse.
 - **Mode démo** avec des prix fictifs tant qu'aucune clé API n'est saisie.
 
+## Langues
+
+Français, anglais, arabe (affichage de droite à gauche), espagnol, chinois, japonais et hindi. L'app suit la
+langue du téléphone, avec un choix dans **Réglages**. Les articles du blogue et les descriptions Wikipédia
+s'affichent dans la langue choisie quand l'article existe (sinon en anglais).
+
+Les traductions sont dans `tools/i18n/part*.py` (une ligne par texte, le français sert de clé) ;
+`python3 tools/i18n/build.py` génère `voyage/src/main/res/raw/translations.tsv`.
+
 ## Activer les vrais prix (gratuit)
 
 Les prix des vols viennent de l'API de données Aviasales, via le programme d'affiliation **Travelpayouts**.

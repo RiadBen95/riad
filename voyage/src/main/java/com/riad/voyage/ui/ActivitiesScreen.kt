@@ -1,5 +1,8 @@
 package com.riad.voyage.ui
 
+import com.riad.voyage.tk
+import com.riad.voyage.tf
+import com.riad.voyage.t
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -81,7 +84,7 @@ internal object Images {
     }
 }
 
-private fun formatDistance(m: Int) = if (m < 1000) "à $m m" else "à ${"%.1f".format(m / 1000.0)} km"
+private fun formatDistance(m: Int) = if (m < 1000) "$m m" else "${"%.1f".format(m / 1000.0)} km"
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -109,21 +112,21 @@ fun ActivitiesScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            Text("Sorties", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Text(t("Sorties"), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             Text(
-                "Musées, attractions et restaurants de la ville. Réservez vos billets à l'avance pour éviter la file d'attente.",
+                t("Musées, attractions et restaurants de la ville. Réservez vos billets à l'avance pour éviter la file d'attente."),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         item {
             Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 PlaceField(
-                    label = "Ville",
+                    label = t("Ville"),
                     selected = selectedPlace,
                     onSelect = onPlace,
                     suggest = suggestCities,
                     modifier = Modifier.weight(1f),
-                    placeholder = "Ex. Paris, Alger, Rome…",
+                    placeholder = t("Ex. Paris, Alger, Rome…"),
                     onTextChange = onCity,
                     initialText = city,
                     citiesOnly = true,
@@ -134,18 +137,18 @@ fun ActivitiesScreen(
         item {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ActivityLinks.Category.entries.forEach { c ->
-                    FilterChip(selected = c == category, onClick = { onCategory(c) }, label = { Text("${c.emoji} ${c.label}") })
+                    FilterChip(selected = c == category, onClick = { onCategory(c) }, label = { Text("${c.emoji} ${t(c.label)}") })
                 }
             }
         }
 
         when {
-            city.isBlank() -> item { Text("Indiquez une ville.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            city.isBlank() -> item { Text(t("Indiquez une ville."), color = MaterialTheme.colorScheme.onSurfaceVariant) }
 
             category == ActivityLinks.Category.TOURS -> {
                 item {
                     Text(
-                        "Les visites guidées et excursions sont proposées par des organisateurs : comparez-les ici.",
+                        t("Les visites guidées et excursions sont proposées par des organisateurs : comparez-les ici."),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -156,7 +159,7 @@ fun ActivitiesScreen(
                                 Text(p.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                                 Text(p.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            Text("Voir ›", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                            Text(t("Voir ›"), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -166,7 +169,7 @@ fun ActivitiesScreen(
                 Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         CircularProgressIndicator()
-                        Text(places.stage.ifBlank { "Recherche des lieux…" }, modifier = Modifier.padding(top = 12.dp))
+                        Text(places.stage.ifBlank { t("Recherche des lieux…") }, modifier = Modifier.padding(top = 12.dp))
                     }
                 }
             }
@@ -175,13 +178,13 @@ fun ActivitiesScreen(
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(places.error)
-                        Button(onClick = search) { Text("Réessayer") }
+                        Button(onClick = search) { Text(t("Réessayer")) }
                     }
                 }
             }
 
             places.city.isBlank() || places.category != category -> item {
-                Button(onClick = search, modifier = Modifier.fillMaxWidth()) { Text("Afficher les lieux") }
+                Button(onClick = search, modifier = Modifier.fillMaxWidth()) { Text(t("Afficher les lieux")) }
             }
 
             else -> {
@@ -189,13 +192,12 @@ fun ActivitiesScreen(
                     Column {
                         Text(
                             when (places.source) {
-                                com.riad.voyage.SOURCE_FAME -> "Classés par notoriété : nombre de langues dans lesquelles Wikipédia consacre un article au lieu."
-                                com.riad.voyage.SOURCE_GUIDE -> "Les adresses sélectionnées par le guide de voyage Wikivoyage, dans l'ordre du guide."
-                                com.riad.voyage.SOURCE_RATINGS -> "Classés selon les notes et avis " +
-                                    places.ratingSources.joinToString(", ") +
-                                    (if (places.guideFound) " et les recommandations du guide Wikivoyage." else ".")
-                                else -> if (places.guideFound) "Adresses du guide Wikivoyage, complétées par la carte OpenStreetMap."
-                                else "Le guide ne couvre pas assez cette ville : adresses trouvées sur la carte OpenStreetMap."
+                                com.riad.voyage.SOURCE_FAME -> t("Classés par notoriété : nombre de langues dans lesquelles Wikipédia consacre un article au lieu.")
+                                com.riad.voyage.SOURCE_GUIDE -> t("Les adresses sélectionnées par le guide de voyage Wikivoyage, dans l'ordre du guide.")
+                                com.riad.voyage.SOURCE_RATINGS -> tf("Classés selon les notes et avis {0}", places.ratingSources.joinToString(", ")) +
+                                    (if (places.guideFound) t(" et les recommandations du guide Wikivoyage.") else ".")
+                                else -> if (places.guideFound) t("Adresses du guide Wikivoyage, complétées par la carte OpenStreetMap.")
+                                else t("Le guide ne couvre pas assez cette ville : adresses trouvées sur la carte OpenStreetMap.")
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -208,7 +210,7 @@ fun ActivitiesScreen(
                 itemsIndexed(places.items, key = { _, it -> it.id }) { i, p -> PlaceCard(i + 1, p, places.city, wiki) }
                 item {
                     Text(
-                        "Données © les contributeurs d'OpenStreetMap, Wikipédia, Wikidata et Wikivoyage.",
+                        t("Données © les contributeurs d'OpenStreetMap, Wikipédia, Wikidata et Wikivoyage."),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -254,14 +256,14 @@ private fun PlaceCard(rank: Int, p: PointOfInterest, city: String, wiki: suspend
                     )
                 }
                 Text(
-                    if (p.distanceM >= 0) "${p.kind} · ${formatDistance(p.distanceM)} du centre" else p.kind,
+                    if (p.distanceM >= 0) tk(p.kind) + " · " + tf("à {0} du centre", formatDistance(p.distanceM)) else tk(p.kind),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                 )
                 if (p.ratings.isNotEmpty()) RatingsRow(p)
                 p.openNow?.let { open ->
                     Text(
-                        if (open) "Ouvert en ce moment" else "Fermé en ce moment",
+                        if (open) t("Ouvert en ce moment") else t("Fermé en ce moment"),
                         style = MaterialTheme.typography.labelMedium,
                         color = if (open) com.riad.voyage.ui.theme.dealColor() else MaterialTheme.colorScheme.error,
                     )
@@ -271,7 +273,7 @@ private fun PlaceCard(rank: Int, p: PointOfInterest, city: String, wiki: suspend
                 }
                 p.address?.let { Text("📍 $it", style = MaterialTheme.typography.bodySmall) }
                 p.openingHours?.let {
-                    Text("🕒 ${PlacesParser.frenchHours(it)}", style = MaterialTheme.typography.bodySmall, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                    Text("🕒 " + (if (com.riad.voyage.I18n.lang == com.riad.voyage.Lang.FR) PlacesParser.frenchHours(it) else it), style = MaterialTheme.typography.bodySmall, maxLines = 3, overflow = TextOverflow.Ellipsis)
                 }
                 Row(
                     Modifier.padding(top = 8.dp),
@@ -281,25 +283,25 @@ private fun PlaceCard(rank: Int, p: PointOfInterest, city: String, wiki: suspend
                     when {
                         p.isVenue -> {
                             Button(onClick = { openUrl(context, ActivityLinks.restaurantUrl(p, city)) }) {
-                                Text(if (p.website != null && p.kind.startsWith("Restaurant")) "Réserver" else "Voir")
+                                Text(if (p.website != null && p.kind.startsWith("Restaurant")) t("Réserver") else t("Voir"))
                             }
                             p.phone?.let { phone ->
-                                OutlinedButton(onClick = { dial(context, phone) }) { Text("Appeler") }
+                                OutlinedButton(onClick = { dial(context, phone) }) { Text(t("Appeler")) }
                             }
                         }
                         p.isFree -> Text(
-                            "Accès libre",
+                            t("Accès libre"),
                             style = MaterialTheme.typography.labelLarge,
                             color = com.riad.voyage.ui.theme.dealColor(),
                         )
                         else -> TicketButton(p, city)
                     }
-                    TextButton(onClick = { openUrl(context, ActivityLinks.directionsUrl(p, city)) }) { Text("Itinéraire") }
+                    TextButton(onClick = { openUrl(context, ActivityLinks.directionsUrl(p, city)) }) { Text(t("Itinéraire")) }
                 }
                 val more = p.wikipedia?.let { PlacesApi.wikiPageUrl(it) } ?: p.website.takeIf { !p.isVenue }
                 more?.let { url ->
                     TextButton(onClick = { openUrl(context, url) }, contentPadding = PaddingValues(0.dp)) {
-                        Text(if (p.wikipedia != null) "En savoir plus (Wikipédia) ›" else "Site officiel ›")
+                        Text(if (p.wikipedia != null) t("En savoir plus (Wikipédia) ›") else t("Site officiel ›"))
                     }
                 }
             }
@@ -312,11 +314,11 @@ private fun TicketButton(p: PointOfInterest, city: String) {
     val context = LocalContext.current
     var open by remember { mutableStateOf(false) }
     Box {
-        Button(onClick = { open = true }) { Text("Réserver des billets") }
+        Button(onClick = { open = true }) { Text(t("Réserver des billets")) }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             ActivityLinks.ticketUrls(p, city).forEach { partner ->
                 DropdownMenuItem(
-                    text = { Text("Billets sur ${partner.name}") },
+                    text = { Text(tf("Billets sur {0}", partner.name)) },
                     onClick = {
                         open = false
                         openUrl(context, partner.url)
@@ -325,7 +327,7 @@ private fun TicketButton(p: PointOfInterest, city: String) {
             }
             p.website?.let { site ->
                 DropdownMenuItem(
-                    text = { Text("Site officiel du lieu") },
+                    text = { Text(t("Site officiel du lieu")) },
                     onClick = {
                         open = false
                         openUrl(context, site)
@@ -357,7 +359,7 @@ private fun RatingsRow(p: PointOfInterest) {
                     color = com.riad.voyage.ui.theme.BrandCoral,
                 )
                 Text(
-                    " ${r.source.label} · ${"%,d".format(r.count).replace(',', ' ')} avis",
+                    " ${r.source.label} · " + tf("{0} avis", "%,d".format(r.count).replace(',', ' ')),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = if (r.url != null) Modifier.clickable { openUrl(context, r.url) } else Modifier,

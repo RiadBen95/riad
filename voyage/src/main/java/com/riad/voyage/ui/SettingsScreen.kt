@@ -1,5 +1,7 @@
 package com.riad.voyage.ui
 
+import com.riad.voyage.tf
+import com.riad.voyage.t
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -49,6 +51,7 @@ fun SettingsScreen(
     onSave: (Settings) -> Unit,
     quotas: com.riad.voyage.data.QuotaStore,
     onQuotaLimit: (com.riad.voyage.data.RatingSource, Int) -> Unit,
+    onLanguage: (com.riad.voyage.Lang?) -> Unit,
 ) {
     val context = LocalContext.current
     val focus = LocalFocusManager.current
@@ -69,25 +72,28 @@ fun SettingsScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("Réglages", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Text(t("Réglages"), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
 
-        Text("Devise des prix", style = MaterialTheme.typography.titleMedium)
+        Text(t("Langue de l'application"), style = MaterialTheme.typography.titleMedium)
+        LanguagePicker(onLanguage)
+
+        Text(t("Devise des prix"), style = MaterialTheme.typography.titleMedium)
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             items(currencies) { c ->
                 FilterChip(selected = currency == c, onClick = { currency = c }, label = { Text(c) })
             }
         }
 
-        Text("Accès aux vrais prix", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
+        Text(t("Accès aux vrais prix"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
         OutlinedTextField(
             value = token,
             onValueChange = { token = it },
-            label = { Text("Clé API Travelpayouts (token)") },
+            label = { Text(t("Clé API Travelpayouts (token)")) },
             singleLine = true,
             visualTransformation = if (showToken) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
                 androidx.compose.material3.TextButton(onClick = { showToken = !showToken }) {
-                    Text(if (showToken) "Masquer" else "Afficher")
+                    Text(if (showToken) t("Masquer") else t("Afficher"))
                 }
             },
             modifier = Modifier.fillMaxWidth(),
@@ -95,21 +101,20 @@ fun SettingsScreen(
         OutlinedTextField(
             value = marker,
             onValueChange = { marker = it },
-            label = { Text("Identifiant partenaire (marker), facultatif") },
-            supportingText = { Text("Permet de toucher une commission sur les réservations faites via l'app.") },
+            label = { Text(t("Identifiant partenaire (marker), facultatif")) },
+            supportingText = { Text(t("Permet de toucher une commission sur les réservations faites via l'app.")) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
-        Text("Notes des restaurants, cafés et bars (facultatif)", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
+        Text(t("Notes des restaurants, cafés et bars (facultatif)"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
         Text(
-            "L'app utilise Google tant que sa limite gratuite du mois n'est pas atteinte, puis Tripadvisor, " +
-                "puis Foursquare. Quand toutes sont épuisées, elle revient au guide Wikivoyage et à la carte.",
+            t("L'app utilise Google tant que sa limite gratuite du mois n'est pas atteinte, puis Tripadvisor, puis Foursquare. Quand toutes sont épuisées, elle revient au guide Wikivoyage et à la carte."),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        RatingKeyField(com.riad.voyage.data.RatingSource.GOOGLE, "Clé Google Places API", googleKey, { googleKey = it }, quotas, onQuotaLimit)
-        RatingKeyField(com.riad.voyage.data.RatingSource.TRIPADVISOR, "Clé Tripadvisor Content API", tripadvisorKey, { tripadvisorKey = it }, quotas, onQuotaLimit)
-        RatingKeyField(com.riad.voyage.data.RatingSource.FOURSQUARE, "Clé Foursquare Places API", foursquareKey, { foursquareKey = it }, quotas, onQuotaLimit)
+        RatingKeyField(com.riad.voyage.data.RatingSource.GOOGLE, t("Clé Google Places API"), googleKey, { googleKey = it }, quotas, onQuotaLimit)
+        RatingKeyField(com.riad.voyage.data.RatingSource.TRIPADVISOR, t("Clé Tripadvisor Content API"), tripadvisorKey, { tripadvisorKey = it }, quotas, onQuotaLimit)
+        RatingKeyField(com.riad.voyage.data.RatingSource.FOURSQUARE, t("Clé Foursquare Places API"), foursquareKey, { foursquareKey = it }, quotas, onQuotaLimit)
 
         val edited = Settings(
             token = token.trim(), marker = marker.trim(), currency = currency,
@@ -124,27 +129,26 @@ fun SettingsScreen(
             },
             enabled = !unchanged,
             modifier = Modifier.fillMaxWidth(),
-        ) { Text(if (unchanged) "Enregistré ✓" else "Enregistrer") }
+        ) { Text(if (unchanged) t("Enregistré ✓") else t("Enregistrer")) }
 
         KeyStatusCard(settings, keyStatus)
 
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("Obtenir une clé gratuite", fontWeight = FontWeight.Bold)
-                Text("1. Créez un compte sur travelpayouts.com.", style = MaterialTheme.typography.bodyMedium)
-                Text("2. Rejoignez le programme « Aviasales ».", style = MaterialTheme.typography.bodyMedium)
+                Text(t("Obtenir une clé gratuite"), fontWeight = FontWeight.Bold)
+                Text(t("1. Créez un compte sur travelpayouts.com."), style = MaterialTheme.typography.bodyMedium)
+                Text(t("2. Rejoignez le programme « Aviasales »."), style = MaterialTheme.typography.bodyMedium)
                 Text(
-                    "3. Dans votre profil, section API, copiez le « token » et collez-le ci-dessus. " +
-                        "Le « marker » est votre identifiant partenaire, affiché au même endroit.",
+                    t("3. Dans votre profil, section API, copiez le « token » et collez-le ci-dessus. Le « marker » est votre identifiant partenaire, affiché au même endroit."),
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 OutlinedButton(onClick = { openUrl(context, "https://www.travelpayouts.com/") }) {
-                    Text("Ouvrir travelpayouts.com")
+                    Text(t("Ouvrir travelpayouts.com"))
                 }
             }
         }
         Text(
-            "La clé est enregistrée uniquement sur ce téléphone.",
+            t("La clé est enregistrée uniquement sur ce téléphone."),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -158,7 +162,7 @@ private fun KeyStatusCard(settings: Settings, status: KeyStatus) {
         settings.isDemo -> MaterialTheme.colorScheme.onSurfaceVariant to "Aucune clé enregistrée : l'app est en mode démo (prix fictifs)."
         status is KeyStatus.Testing -> MaterialTheme.colorScheme.onSurfaceVariant to "Clé enregistrée. Vérification en cours…"
         status is KeyStatus.Ok -> deal to "✓ Clé enregistrée et valide : les vrais prix sont activés."
-        status is KeyStatus.Failed -> MaterialTheme.colorScheme.error to "Clé enregistrée, mais le test a échoué : ${status.message}"
+        status is KeyStatus.Failed -> MaterialTheme.colorScheme.error to tf("Clé enregistrée, mais le test a échoué : {0}", status.message)
         else -> deal to "Clé enregistrée : les vrais prix sont activés."
     }
     Card(
@@ -197,8 +201,8 @@ private fun RatingKeyField(
             )
             androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Text(
-                    "Utilisé ce mois-ci : ${quotas.used(source)}" +
-                        if (quotas.exhaustedToday(source)) " · quota du fournisseur atteint aujourd'hui" else "",
+                    tf("Utilisé ce mois-ci : {0}", quotas.used(source)) +
+                        if (quotas.exhaustedToday(source)) t(" · quota du fournisseur atteint aujourd'hui") else "",
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.weight(1f),
                 )
@@ -208,7 +212,7 @@ private fun RatingKeyField(
                         limitText = t.filter { it.isDigit() }.take(6)
                         limitText.toIntOrNull()?.let { onQuotaLimit(source, it) }
                     },
-                    label = { Text("Limite / mois") },
+                    label = { Text(t("Limite / mois")) },
                     singleLine = true,
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         keyboardType = androidx.compose.ui.text.input.KeyboardType.Number,
@@ -216,6 +220,21 @@ private fun RatingKeyField(
                     modifier = Modifier.width(130.dp),
                 )
             }
+        }
+    }
+}
+
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun LanguagePicker(onLanguage: (com.riad.voyage.Lang?) -> Unit) {
+    val current = com.riad.voyage.I18n.chosen
+    androidx.compose.foundation.layout.FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        FilterChip(selected = current == null, onClick = { onLanguage(null) }, label = { Text(t("Automatique (langue du téléphone)")) })
+        com.riad.voyage.Lang.entries.forEach { l ->
+            FilterChip(selected = current == l, onClick = { onLanguage(l) }, label = { Text(l.nativeName) })
         }
     }
 }

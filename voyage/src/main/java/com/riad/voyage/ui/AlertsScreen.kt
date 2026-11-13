@@ -1,5 +1,7 @@
 package com.riad.voyage.ui
 
+import com.riad.voyage.tf
+import com.riad.voyage.t
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -40,9 +42,9 @@ fun AlertsScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            Text("Alertes de prix", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Text(t("Alertes de prix"), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             Text(
-                "L'application vérifie ces trajets environ toutes les 12 heures et vous envoie une notification si le prix baisse.",
+                t("L'application vérifie ces trajets environ toutes les 12 heures et vous envoie une notification si le prix baisse."),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -51,7 +53,7 @@ fun AlertsScreen(
             item {
                 Card(Modifier.fillMaxWidth()) {
                     Text(
-                        "Aucun trajet suivi. Lancez une recherche de vol, puis touchez « 🔔 Suivre ce prix ».",
+                        t("Aucun trajet suivi. Lancez une recherche de vol, puis touchez « 🔔 Suivre ce prix »."),
                         modifier = Modifier.padding(16.dp),
                     )
                 }
@@ -59,7 +61,7 @@ fun AlertsScreen(
         } else {
             item {
                 Button(onClick = onCheck, enabled = !checking, modifier = Modifier.fillMaxWidth()) {
-                    Text(if (checking) "Vérification…" else "Vérifier les prix maintenant")
+                    Text(if (checking) t("Vérification…") else t("Vérifier les prix maintenant"))
                 }
             }
             items(alerts, key = { it.id }) { a -> AlertCard(a, onRemove) }
@@ -84,23 +86,23 @@ private fun AlertCard(a: PriceAlert, onRemove: (String) -> Unit) {
                 )
                 Text(
                     when {
-                        expired -> "Date passée"
-                        a.lastPrice != null -> "Dernier prix : ${formatPrice(a.lastPrice, a.currency)}"
-                        else -> "Pas encore de prix"
+                        expired -> t("Date passée")
+                        a.lastPrice != null -> tf("Dernier prix : {0}", formatPrice(a.lastPrice, a.currency))
+                        else -> t("Pas encore de prix")
                     },
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold,
                 )
                 if (a.lastChecked > 0) {
-                    val df = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.FRANCE)
+                    val df = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, com.riad.voyage.I18n.lang.locale)
                     Text(
-                        "Vérifié le ${df.format(Date(a.lastChecked))}",
+                        tf("Vérifié le {0}", df.format(Date(a.lastChecked))),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
-            TextButton(onClick = { onRemove(a.id) }) { Text("Supprimer") }
+            TextButton(onClick = { onRemove(a.id) }) { Text(t("Supprimer")) }
         }
     }
 }

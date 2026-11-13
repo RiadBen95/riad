@@ -1,5 +1,6 @@
 package com.riad.voyage.ui
 
+import com.riad.voyage.t
 import com.riad.voyage.data.parseDateTime
 import java.text.NumberFormat
 import java.time.LocalDate
@@ -7,7 +8,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Currency
 import java.util.Locale
 
-private val FR = Locale.FRANCE
+private val FR: Locale get() = com.riad.voyage.I18n.lang.locale
 
 fun formatPrice(amount: Int, currency: String): String {
     val nf = NumberFormat.getCurrencyInstance(FR)
@@ -25,14 +26,14 @@ fun formatDuration(minutes: Int): String {
 }
 
 fun formatStops(n: Int): String = when (n) {
-    0 -> "Direct"
-    1 -> "1 escale"
+    0 -> t("Direct")
+    1 -> t("1 escale")
     else -> "$n escales"
 }
 
-private val dayFmt = DateTimeFormatter.ofPattern("EEE d MMM", Locale.FRENCH)
-private val longDayFmt = DateTimeFormatter.ofPattern("EEE d MMM yyyy", Locale.FRENCH)
-private val monthFmt = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.FRENCH)
+private val dayFmt get() = DateTimeFormatter.ofPattern("EEE d MMM", FR)
+private val longDayFmt get() = DateTimeFormatter.ofPattern("EEE d MMM yyyy", FR)
+private val monthFmt get() = DateTimeFormatter.ofPattern("MMMM yyyy", FR)
 private val timeFmt = DateTimeFormatter.ofPattern("HH:mm")
 
 fun formatDay(d: LocalDate): String = d.format(dayFmt)
@@ -45,5 +46,5 @@ fun formatDateTime(iso: String): String {
 }
 
 fun formatDateOrMonth(param: String): String = runCatching {
-    if (param.length == 7) "tout ${formatMonth(LocalDate.parse("$param-01"))}" else formatDay(LocalDate.parse(param))
+    if (param.length == 7) (if (com.riad.voyage.I18n.lang == com.riad.voyage.Lang.FR) "tout " else "") + formatMonth(LocalDate.parse("$param-01")) else formatDay(LocalDate.parse(param))
 }.getOrDefault(param)

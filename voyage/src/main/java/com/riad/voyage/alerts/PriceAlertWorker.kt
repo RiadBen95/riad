@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit
 class PriceAlertWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result = try {
+        com.riad.voyage.I18n.init(applicationContext)
         AlertChecker.notify(applicationContext, AlertChecker.checkAll(applicationContext))
         Result.success()
     } catch (e: Exception) {

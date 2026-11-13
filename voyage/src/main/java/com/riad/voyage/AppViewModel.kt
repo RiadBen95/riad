@@ -223,18 +223,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
         placesJob?.cancel()
         val chosen = _activityPlace.value?.takeIf { it.name.equals(city, ignoreCase = true) }
-        _places.value = PlacesState(loading = true, stage = "Recherche de la ville…", city = city, category = category)
+        _places.value = PlacesState(loading = true, stage = t("Recherche de la ville…"), city = city, category = category)
         placesJob = viewModelScope.launch {
             val geo = resolveCity(city, chosen)
             if (geo == null) {
                 _places.value = PlacesState(
-                    error = "Ville introuvable ou connexion indisponible. Choisissez la ville dans la liste proposée.",
+                    error = t("Ville introuvable ou connexion indisponible. Choisissez la ville dans la liste proposée."),
                     city = city, category = category,
                 )
                 return@launch
             }
 
-            _places.value = _places.value.copy(stage = "Recherche des meilleurs lieux…")
+            _places.value = _places.value.copy(stage = t("Recherche des meilleurs lieux…"))
             val db = com.riad.voyage.data.NotablePlaces
 
             // 1) Musées, monuments, attractions, parcs, plages : top 30 de la ville par notoriété.
@@ -262,13 +262,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             val hasRatingKeys = st.googleKey.isNotBlank() || st.tripadvisorKey.isNotBlank() || st.foursquareKey.isNotBlank()
             var quotaNotice: String? = null
             if (hasRatingKeys && agg.supports(category)) {
-                _places.value = _places.value.copy(stage = "Récupération des notes…")
+                _places.value = _places.value.copy(stage = t("Récupération des notes…"))
                 val outcome = kotlinx.coroutines.withTimeoutOrNull(20_000) {
                     runCatching { agg.search(st, quotas, city, geo, category, guidePicks) }.getOrNull()
                 }
                 if (outcome != null && outcome.skipped.isNotEmpty()) {
-                    quotaNotice = "Limite gratuite atteinte pour " + outcome.skipped.joinToString(", ") { it.label } +
-                        (if (outcome.usedSources.isNotEmpty()) " : relais pris par " + outcome.usedSources.joinToString { it.label } + "." else ".")
+                    quotaNotice = if (outcome.usedSources.isNotEmpty()) tf("Limite gratuite atteinte pour {0} : relais pris par {1}.", outcome.skipped.joinToString(", ") { it.label }, outcome.usedSources.joinToString { it.label })
+                        else tf("Limite gratuite atteinte pour {0}.", outcome.skipped.joinToString(", ") { it.label })
                 }
                 if (outcome != null && outcome.places.size >= 3) {
                     publish(key, PlacesState(items = outcome.places, city = city, category = category,
@@ -285,7 +285,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             }
 
             // 3) Secours : carte OpenStreetMap en direct (petite ville ou guide trop pauvre).
-            _places.value = _places.value.copy(stage = "Recherche sur la carte…")
+            _places.value = _places.value.copy(stage = t("Recherche sur la carte…"))
             var liveError: String? = null
             val live = kotlinx.coroutines.withTimeoutOrNull(20_000) {
                 runCatching { com.riad.voyage.data.PlacesApi.search(geo, category) }
@@ -300,9 +300,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             if (merged.isEmpty()) {
                 _places.value = PlacesState(
                     error = when {
-                        live != null -> "Aucun lieu trouvé pour cette ville."
-                        liveError != null -> "Recherche impossible : $liveError"
-                        else -> "Les serveurs de carte ne répondent pas (plus de 20 s). Réessayez dans un instant."
+                        live != null -> t("Aucun lieu trouvé pour cette ville.")
+                        liveError != null -> tf("Recherche impossible : {0}", liveError ?: "")
+                        else -> t("Les serveurs de carte ne répondent pas (plus de 20 s). Réessayez dans un instant.")
                     },
                     city = city, category = category,
                 )
@@ -349,7 +349,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun openBlogPlace(p: Place) {
         viewModelScope.launch {
             val geo = resolveCity(p.name, p) ?: run {
-                _blog.update { it.copy(error = "Lieu introuvable.") }
+                _blog.update { it.copy(error = t("Lieu introuvable.")) }
                 return@launch
             }
             openBlogCity(com.riad.voyage.data.Blog.city(p.name) ?: com.riad.voyage.data.BlogCity(p.name, p.country, "fr:${p.name}", geo.lat, geo.lon))
@@ -394,9 +394,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     .sortedWith(compareByDescending<com.riad.voyage.data.ArticleCard> { it.tasteMatch }.thenByDescending { it.fame })
                     .take(40)
             }
-            val cityCard = com.riad.voyage.data.ArticleCard(city.wiki, "Découvrir ${city.name}", "Ville · ${city.country}", null, null, 10_000)
+            val cityCard = com.riad.voyage.data.ArticleCard(city.wiki, tf("Découvrir {0}", t(city.name)), tf("Ville · {0}", t(city.country)), null, null, 10_000)
             _blog.update {
-                if (cards == null) it.copy(loading = false, error = "Les articles ne se chargent pas. Vérifiez la connexion.", cards = listOf(cityCard))
+                if (cards == null) it.copy(loading = false, error = t("Les articles ne se chargent pas. Vérifiez la connexion."), cards = listOf(cityCard))
                 else it.copy(loading = false, cards = listOf(cityCard) + cards)
             }
         }
@@ -409,7 +409,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 runCatching { com.riad.voyage.data.WikiArticles.article(tag) }.getOrNull()
             }
             _blog.update {
-                if (article == null) it.copy(articleLoading = false, error = "Article indisponible pour le moment.")
+                if (article == null) it.copy(articleLoading = false, error = t("Article indisponible pour le moment."))
                 else it.copy(articleLoading = false, article = article)
             }
         }
@@ -437,15 +437,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val a = _experience.value.answers
         val city = a.city.trim()
         if (city.isBlank()) return
-        _experience.update { it.copy(loading = true, stage = "Recherche de la ville…", error = null, result = null) }
+        _experience.update { it.copy(loading = true, stage = t("Recherche de la ville…"), error = null, result = null) }
         viewModelScope.launch {
             val geo = resolveCity(city, a.place?.takeIf { it.name.equals(city, ignoreCase = true) })
             if (geo == null) {
-                _experience.update { it.copy(loading = false, error = "Ville introuvable : choisissez-la dans la liste proposée.") }
+                _experience.update { it.copy(loading = false, error = t("Ville introuvable : choisissez-la dans la liste proposée.")) }
                 return@launch
             }
             val needed = com.riad.voyage.data.ExperienceBuilder.neededCategories(a)
-            _experience.update { it.copy(stage = "Sélection des meilleurs lieux de $city…") }
+            _experience.update { it.copy(stage = tf("Sélection des meilleurs lieux de {0}…", t(city))) }
             val pools = coroutineScope {
                 needed.map { c ->
                     val hint = com.riad.voyage.data.ExperienceBuilder.searchHint(a, c)
@@ -455,7 +455,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             }
             // Analyse des lieux : description Wikipédia des meilleurs candidats, pour vérifier
             // qu'ils correspondent vraiment aux goûts (et non au seul nom).
-            _experience.update { it.copy(stage = "Analyse des lieux selon vos goûts…") }
+            _experience.update { it.copy(stage = t("Analyse des lieux selon vos goûts…")) }
             val analysed = coroutineScope {
                 pools.map { (c, list) ->
                     async {
@@ -470,10 +470,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 }.map { it.await() }.toMap()
             }
             experiencePools = analysed
-            _experience.update { it.copy(stage = "Composition du programme…") }
+            _experience.update { it.copy(stage = t("Composition du programme…")) }
             val exp = com.riad.voyage.data.ExperienceBuilder.build(a, city, analysed)
             _experience.update {
-                if (exp.days.isEmpty()) it.copy(loading = false, error = "Pas assez de lieux trouvés pour $city. Essayez d'autres envies ou une grande ville proche.")
+                if (exp.days.isEmpty()) it.copy(loading = false, error = tf("Pas assez de lieux trouvés pour {0}. Essayez d'autres envies ou une grande ville proche.", t(city)))
                 else it.copy(loading = false, result = exp, previous = emptySet())
             }
         }
@@ -612,11 +612,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val origin = f.origin
         val destination = f.destination
         if (origin == null || destination == null) {
-            _message.value = "Choisissez le départ et la destination dans la liste proposée."
+            _message.value = t("Choisissez le départ et la destination dans la liste proposée.")
             return
         }
         if (origin.code == destination.code) {
-            _message.value = "Le départ et la destination sont identiques."
+            _message.value = t("Le départ et la destination sont identiques.")
             return
         }
         recentStore.add(RecentSearch(origin, destination, f.departure.toString(), if (f.roundTrip) f.returnDate.toString() else null, f.adults))
@@ -723,7 +723,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val d = q.destination ?: return
         val id = listOf(o.code, d.code, q.departureParam, q.returnParam ?: "-", q.directOnly).joinToString("_")
         if (_alerts.value.any { it.id == id }) {
-            _message.value = "Ce trajet est déjà suivi."
+            _message.value = t("Ce trajet est déjà suivi.")
             return
         }
         val cheapest = if (r.demo) null else r.flights.minOfOrNull { it.price }
@@ -737,8 +737,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         )
         _alerts.value = alertStore.all()
         _message.value = if (r.demo) {
-            "Trajet suivi. Ajoutez votre clé API dans Réglages pour activer la surveillance."
-        } else "Trajet suivi : vous serez prévenu si le prix baisse."
+            t("Trajet suivi. Ajoutez votre clé API dans Réglages pour activer la surveillance.")
+        } else t("Trajet suivi : vous serez prévenu si le prix baisse.")
     }
 
     fun removeAlert(id: String) {
@@ -748,7 +748,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun checkAlertsNow() {
         if (_settings.value.isDemo) {
-            _message.value = "Ajoutez votre clé API dans Réglages pour vérifier les prix."
+            _message.value = t("Ajoutez votre clé API dans Réglages pour vérifier les prix.")
             return
         }
         if (_checking.value) return
@@ -756,7 +756,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             try {
                 val drops = AlertChecker.checkAll(getApplication())
-                _message.value = if (drops.isEmpty()) "Prix vérifiés : pas de baisse pour le moment." else
+                _message.value = if (drops.isEmpty()) t("Prix vérifiés : pas de baisse pour le moment.") else
                     drops.joinToString("\n") {
                         "${it.alert.originName} → ${it.alert.destinationName} : " +
                             "${formatPrice(it.newPrice, it.alert.currency)} (avant ${formatPrice(it.oldPrice, it.alert.currency)})"
@@ -775,6 +775,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun setQuotaLimit(src: com.riad.voyage.data.RatingSource, limit: Int) {
         quotas.setLimit(src, limit)
         placesCache.clear()
+    }
+
+    /** Changement de langue : on vide les données déjà traduites (Wikipédia, lieux) pour les recharger. */
+    fun setLanguage(l: Lang?) {
+        I18n.choose(getApplication(), l)
+        wikiCache.clear()
+        placesCache.clear()
+        _places.value = PlacesState()
+        if (_blog.value.city != null) loadBlogCards()
+        _experience.update { it.copy(result = null) }
     }
 
     fun saveSettings(s: Settings) {

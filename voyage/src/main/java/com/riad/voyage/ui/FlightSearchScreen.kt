@@ -1,5 +1,7 @@
 package com.riad.voyage.ui
 
+import com.riad.voyage.tf
+import com.riad.voyage.t
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -74,7 +76,7 @@ fun FlightSearchScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("Trouver un vol", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Text(t("Trouver un vol"), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         if (demo) DemoBanner(onConfigure)
 
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
@@ -82,36 +84,36 @@ fun FlightSearchScreen(
                 selected = form.roundTrip,
                 onClick = { onUpdate { it.copy(roundTrip = true) } },
                 shape = SegmentedButtonDefaults.itemShape(0, 2),
-            ) { Text("Aller-retour") }
+            ) { Text(t("Aller-retour")) }
             SegmentedButton(
                 selected = !form.roundTrip,
                 onClick = { onUpdate { it.copy(roundTrip = false) } },
                 shape = SegmentedButtonDefaults.itemShape(1, 2),
-            ) { Text("Aller simple") }
+            ) { Text(t("Aller simple")) }
         }
 
         // Départ et destination, avec le bouton d'inversion à cheval sur les deux champs.
         Box {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                PlaceField("Départ", form.origin, { p -> onUpdate { it.copy(origin = p) } }, suggest, Modifier.padding(end = 56.dp))
-                PlaceField("Destination", form.destination, { p -> onUpdate { it.copy(destination = p) } }, suggest, Modifier.padding(end = 56.dp))
+                PlaceField(t("Départ"), form.origin, { p -> onUpdate { it.copy(origin = p) } }, suggest, Modifier.padding(end = 56.dp))
+                PlaceField(t("Destination"), form.destination, { p -> onUpdate { it.copy(destination = p) } }, suggest, Modifier.padding(end = 56.dp))
             }
             FilledTonalIconButton(
                 onClick = onSwap,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(top = 44.dp),
-            ) { Icon(AppIcons.Swap, contentDescription = "Inverser départ et destination") }
+            ) { Icon(AppIcons.Swap, contentDescription = t("Inverser départ et destination")) }
         }
 
         if (form.destination == null) {
-            Text("Idées de destinations", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(t("Idées de destinations"), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val ideas = (recents.map { it.destination } + quickDestinations.mapNotNull { PopularPlaces.find(it) })
                     .distinctBy { it.code }
                     .filter { it.code != form.origin?.code }
                 items(ideas) { p ->
-                    AssistChip(onClick = { onUpdate { it.copy(destination = p) } }, label = { Text(p.name) })
+                    AssistChip(onClick = { onUpdate { it.copy(destination = p) } }, label = { Text(t(p.name)) })
                 }
             }
         }
@@ -121,7 +123,7 @@ fun FlightSearchScreen(
         } else {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 DateButton(
-                    label = if (form.flexibleMonth) "Aller (mois)" else "Aller",
+                    label = if (form.flexibleMonth) t("Aller (mois)") else t("Aller"),
                     date = form.departure,
                     minDate = LocalDate.now(),
                     onPick = { d -> onUpdate { it.copy(departure = d) } },
@@ -129,7 +131,7 @@ fun FlightSearchScreen(
                 )
                 if (form.roundTrip) {
                     DateButton(
-                        label = "Retour (mois)",
+                        label = t("Retour (mois)"),
                         date = form.returnDate,
                         minDate = form.departure,
                         onPick = { d -> onUpdate { it.copy(returnDate = d) } },
@@ -141,15 +143,15 @@ fun FlightSearchScreen(
 
         OutlinedCard(shape = RoundedCornerShape(16.dp)) {
             Column(Modifier.padding(horizontal = 14.dp, vertical = 6.dp)) {
-                Stepper("Passagers", form.adults, 1..9, { n -> onUpdate { it.copy(adults = n) } })
+                Stepper(t("Passagers"), form.adults, 1..9, { n -> onUpdate { it.copy(adults = n) } })
                 SwitchRow(
-                    title = "Dates flexibles",
-                    subtitle = "Meilleur prix sur tout le mois",
+                    title = t("Dates flexibles"),
+                    subtitle = t("Meilleur prix sur tout le mois"),
                     checked = form.flexibleMonth,
                     onChange = { v -> onUpdate { it.copy(flexibleMonth = v) } },
                 )
                 SwitchRow(
-                    title = "Vols directs uniquement",
+                    title = t("Vols directs uniquement"),
                     subtitle = null,
                     checked = form.directOnly,
                     onChange = { v -> onUpdate { it.copy(directOnly = v) } },
@@ -167,14 +169,14 @@ fun FlightSearchScreen(
         ) {
             Icon(AppIcons.Search, null)
             Spacer(Modifier.width(8.dp))
-            Text("Rechercher les meilleurs prix", style = MaterialTheme.typography.titleMedium)
+            Text(t("Rechercher les meilleurs prix"), style = MaterialTheme.typography.titleMedium)
         }
 
         if (recents.isNotEmpty()) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
                 Icon(AppIcons.History, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
-                Text("Recherches récentes", style = MaterialTheme.typography.titleSmall)
+                Text(t("Recherches récentes"), style = MaterialTheme.typography.titleSmall)
             }
             recents.take(4).forEach { r ->
                 Card(onClick = { onRecent(r) }, shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
@@ -198,8 +200,7 @@ fun FlightSearchScreen(
         }
 
         Text(
-            "Les prix viennent des recherches récentes des voyageurs sur Aviasales. " +
-                "Le prix final est confirmé sur le site du vendeur avant paiement.",
+            t("Les prix viennent des recherches récentes des voyageurs sur Aviasales. Le prix final est confirmé sur le site du vendeur avant paiement."),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -220,10 +221,10 @@ private fun DateRangeButton(departure: LocalDate, returnDate: LocalDate, onPick:
             Icon(AppIcons.Calendar, null, tint = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text("Aller – retour", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(t("Aller – retour"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("${formatDay(departure)}  →  ${formatDay(returnDate)}", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
             }
-            Text("$nights nuit${if (nights > 1) "s" else ""}", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+            Text(tf("{0} nuit(s)", nights), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
         }
     }
     if (open) {
@@ -248,11 +249,11 @@ private fun DateRangeButton(departure: LocalDate, returnDate: LocalDate, onPick:
                     },
                 ) { Text("OK") }
             },
-            dismissButton = { TextButton(onClick = { open = false }) { Text("Annuler") } },
+            dismissButton = { TextButton(onClick = { open = false }) { Text(t("Annuler")) } },
         ) {
             DateRangePicker(
                 state = state,
-                title = { Text("Choisissez l'aller puis le retour", modifier = Modifier.padding(start = 24.dp, top = 16.dp)) },
+                title = { Text(t("Choisissez l'aller puis le retour"), modifier = Modifier.padding(start = 24.dp, top = 16.dp)) },
                 modifier = Modifier.weight(1f),
             )
         }

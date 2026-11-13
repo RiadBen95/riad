@@ -1,5 +1,6 @@
 package com.riad.voyage.ui
 
+import com.riad.voyage.t
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -47,7 +48,7 @@ fun openUrl(context: Context, url: String) {
     try {
         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     } catch (_: ActivityNotFoundException) {
-        Toast.makeText(context, "Aucun navigateur installé", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, t("Aucun navigateur installé"), Toast.LENGTH_SHORT).show()
     }
 }
 
@@ -59,7 +60,7 @@ fun PlaceField(
     onSelect: (Place) -> Unit,
     suggest: suspend (String) -> List<Place>,
     modifier: Modifier = Modifier,
-    placeholder: String = "Ville ou aéroport",
+    placeholder: String = t("Ville ou aéroport"),
     onTextChange: ((String) -> Unit)? = null,
     initialText: String? = null,
     citiesOnly: Boolean = false,   // Sorties : pas de code ni de mention d'aéroport
@@ -96,7 +97,7 @@ fun PlaceField(
                 }
             },
             supportingText = if (editing && text.length >= 2 && suggestions.isEmpty()) {
-                { Text("Recherche…") }
+                { Text(t("Recherche…")) }
             } else null,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -179,7 +180,7 @@ fun DateButton(
                     open = false
                 }) { Text("OK") }
             },
-            dismissButton = { TextButton(onClick = { open = false }) { Text("Annuler") } },
+            dismissButton = { TextButton(onClick = { open = false }) { Text(t("Annuler")) } },
         ) {
             DatePicker(state = state)
         }
@@ -208,13 +209,13 @@ fun DemoBanner(onConfigure: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("Mode démo : prix fictifs", fontWeight = FontWeight.Bold)
+            Text(t("Mode démo : prix fictifs"), fontWeight = FontWeight.Bold)
             Text(
-                "Ajoutez votre clé API Travelpayouts (gratuite) pour afficher les vrais prix.",
+                t("Ajoutez votre clé API Travelpayouts (gratuite) pour afficher les vrais prix."),
                 style = MaterialTheme.typography.bodySmall,
             )
             TextButton(onClick = onConfigure, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
-                Text("Configurer la clé ›")
+                Text(t("Configurer la clé ›"))
             }
         }
     }

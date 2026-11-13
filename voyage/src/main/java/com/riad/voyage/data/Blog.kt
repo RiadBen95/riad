@@ -98,7 +98,7 @@ object WikiArticles {
     private fun enc(s: String) = URLEncoder.encode(s, "UTF-8").replace("+", "%20")
 
     /** Recherche d'articles (titres) pour la barre de recherche du blogue. */
-    suspend fun search(query: String, lang: String = "fr"): List<Pair<String, String>> {
+    suspend fun search(query: String, lang: String = com.riad.voyage.I18n.wikiLang): List<Pair<String, String>> {
         if (query.trim().length < 2) return emptyList()
         val json = PlacesApi.get(
             "https://$lang.wikipedia.org/w/api.php?action=opensearch&format=json&namespace=0&limit=8&search=${enc(query.trim())}",
@@ -116,7 +116,8 @@ object WikiArticles {
     }
 
     /** Texte complet de l'article, découpé en sections lisibles. */
-    suspend fun article(tag: String): Article? {
+    suspend fun article(original: String): Article? {
+        val tag = WikiLang.localize(original)
         cache[tag]?.let { return it }
         val (lang, title) = split(tag)
         val json = PlacesApi.get(
@@ -154,5 +155,41 @@ object WikiArticles {
             wiki = "$lang:$title", title = title, imageUrl = image, intro = intro, sections = sections,
             url = "https://$lang.wikipedia.org/wiki/${enc(title.replace(' ', '_'))}",
         )
+    }
+}
+
+/**
+ * Article Wikipédia équivalent dans la langue de l'app (liens interlangues), avec repli sur
+ * l'anglais puis sur la langue d'origine si l'article n'existe pas.
+ */
+object WikiLang {
+    private val cache = ConcurrentHashMap<String, String>()
+
+    private fun enc(s: String) = URLEncoder.encode(s, "UTF-8").replace("+", "%20")
+
+    suspend fun localize(tag: String): String {
+        val target = com.riad.voyage.I18n.wikiLang
+        val i = tag.indexOf(':')
+        if (i !in 2..3) return tag
+        val lang = tag.substring(0, i)
+        val title = tag.substring(i + 1)
+        if (lang == target) return tag
+        val key = "$target|$tag"
+        cache[key]?.let { return it }
+        suspend fun link(to: String): String? = runCatching {
+            val json = PlacesApi.get(
+                "https://$lang.wikipedia.org/w/api.php?action=query&format=json&redirects=1&prop=langlinks" +
+                    "&lllang=$to&titles=${enc(title)}",
+            )
+            val pages = JSONObject(json).optJSONObject("query")?.optJSONObject("pages") ?: return@runCatching null
+            pages.keys().asSequence()
+                .mapNotNull { pages.optJSONObject(it)?.optJSONArray("langlinks")?.optJSONObject(0)?.optString("*") }
+                .firstOrNull()?.ifBlank { null }
+        }.getOrNull()
+        val out = link(target)?.let { "$target:$it" }
+            ?: (if (target != "en" && lang != "en") link("en")?.let { "en:$it" } else null)
+            ?: tag
+        cache[key] = out
+        return out
     }
 }

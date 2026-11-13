@@ -1,5 +1,8 @@
 package com.riad.voyage.ui
 
+import com.riad.voyage.tk
+import com.riad.voyage.tf
+import com.riad.voyage.t
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -81,9 +84,9 @@ fun BlogScreen(
         state.articleLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
         else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item {
-                Text("Blogue", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                Text(t("Blogue"), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                 Text(
-                    "Récits et histoire des lieux les plus emblématiques, choisis selon vos voyages et vos envies.",
+                    t("Récits et histoire des lieux les plus emblématiques, choisis selon vos voyages et vos envies."),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -93,14 +96,14 @@ fun BlogScreen(
             val city = state.city
             if (city == null) {
                 if (context.isNotEmpty()) {
-                    item { Text("Selon vos recherches", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
+                    item { Text(t("Selon vos recherches"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
                     item {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            context.take(3).forEach { (c, why) -> AssistChip(onClick = { onCity(c, why) }, label = { Text(c.name) }) }
+                            context.take(3).forEach { (c, why) -> AssistChip(onClick = { onCity(c, why) }, label = { Text(t(c.name)) }) }
                         }
                     }
                 }
-                item { Text("Les villes emblématiques du monde", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
+                item { Text(t("Les villes emblématiques du monde"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
                 items(Blog.cities.chunked(3)) { row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                         row.forEach { c -> CityIcon(c, wiki, Modifier.weight(1f)) { onCity(c, null) } }
@@ -115,11 +118,11 @@ fun BlogScreen(
                 }
                 items(state.cards, key = { it.wiki }) { card -> ArticleCardView(card, wiki) { onArticle(card.wiki) } }
                 if (!state.loading && state.cards.size <= 1) {
-                    item { Text("Peu d'articles pour ce filtre : essayez « Tout ».", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    item { Text(t("Peu d'articles pour ce filtre : essayez « Tout »."), color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
                 item {
                     Text(
-                        "Textes : Wikipédia, licence CC BY-SA. Photos : Wikimedia Commons.",
+                        t("Textes : Wikipédia, licence CC BY-SA. Photos : Wikimedia Commons."),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -152,7 +155,7 @@ private fun BlogSearchBar(
             value = text,
             onValueChange = { text = it },
             leadingIcon = { Icon(AppIcons.Search, null) },
-            placeholder = { Text("Une ville, un monument, un lieu…") },
+            placeholder = { Text(t("Une ville, un monument, un lieu…")) },
             singleLine = true,
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier.fillMaxWidth(),
@@ -160,7 +163,7 @@ private fun BlogSearchBar(
         if (cities.isNotEmpty() || articles.isNotEmpty()) {
             Card(Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)) {
                 cities.forEach { p ->
-                    SuggestionRow("🏙️", p.name, p.country) {
+                    SuggestionRow("🏙️", p.name, t(p.country)) {
                         focus.clearFocus(); text = ""; onPlace(p)
                     }
                     HorizontalDivider()
@@ -213,8 +216,8 @@ private fun CityIcon(c: BlogCity, wiki: suspend (String) -> WikiSummary?, modifi
             }
         }
         Spacer(Modifier.height(6.dp))
-        Text(c.name, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Text(c.country, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(t(c.name), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(t(c.country), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -229,15 +232,15 @@ private fun CityHeader(
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                reason?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary) }
-                Text(city.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                reason?.let { Text(t(it), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary) }
+                Text(t(city.name), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             }
-            TextButton(onClick = onClear) { Text("Toutes les villes") }
+            TextButton(onClick = onClear) { Text(t("Toutes les villes")) }
         }
         val others = context.filter { it.first.name != city.name }
         if (others.isNotEmpty()) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                others.take(3).forEach { (c, why) -> AssistChip(onClick = { onCity(c, why) }, label = { Text(c.name) }) }
+                others.take(3).forEach { (c, why) -> AssistChip(onClick = { onCity(c, why) }, label = { Text(t(c.name)) }) }
             }
         }
     }
@@ -248,7 +251,7 @@ private fun CityHeader(
 private fun Filters(current: BlogFilter, personal: Boolean, onFilter: (BlogFilter) -> Unit) {
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         BlogFilter.entries.filter { it != BlogFilter.FOR_YOU || personal }.forEach { f ->
-            FilterChip(selected = f == current, onClick = { onFilter(f) }, label = { Text(if (f == BlogFilter.FOR_YOU) "✨ ${f.label}" else f.label) })
+            FilterChip(selected = f == current, onClick = { onFilter(f) }, label = { Text(if (f == BlogFilter.FOR_YOU) "✨ ${t(f.label)}" else t(f.label)) })
         }
     }
 }
@@ -274,7 +277,7 @@ private fun ArticleCardView(card: ArticleCard, wiki: suspend (String) -> WikiSum
                 }
                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.55f)))))
                 Column(Modifier.align(Alignment.BottomStart).padding(14.dp)) {
-                    Text(card.kind, color = Color.White.copy(alpha = 0.9f), style = MaterialTheme.typography.labelMedium)
+                    Text(tk(card.kind), color = Color.White.copy(alpha = 0.9f), style = MaterialTheme.typography.labelMedium)
                     Text(card.title, color = Color.White, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold,
                         maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
@@ -289,12 +292,12 @@ private fun ArticleCardView(card: ArticleCard, wiki: suspend (String) -> WikiSum
                         color = com.riad.voyage.ui.theme.dealColor())
                 }
                 Text(
-                    summary?.extract ?: "Chargement…",
+                    summary?.extract ?: t("Chargement…"),
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text("Lire l'article ›", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                Text(t("Lire l'article ›"), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -311,10 +314,10 @@ private fun ArticleReader(article: Article, onClose: () -> Unit) {
                         contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                 }
                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.35f), Color.Transparent, Color.Black.copy(alpha = 0.6f)))))
-                TextButton(onClick = onClose, modifier = Modifier.padding(8.dp)) { Text("← Retour", color = Color.White) }
+                TextButton(onClick = onClose, modifier = Modifier.padding(8.dp)) { Text(t("← Retour"), color = Color.White) }
                 Column(Modifier.align(Alignment.BottomStart).padding(16.dp)) {
                     Text(article.title, color = Color.White, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                    Text("${article.readingMinutes} min de lecture", color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.labelMedium)
+                    Text(tf("{0} min de lecture", article.readingMinutes), color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.labelMedium)
                 }
             }
         }
@@ -330,9 +333,9 @@ private fun ArticleReader(article: Article, onClose: () -> Unit) {
         }
         item {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { openUrl(context, article.url) }) { Text("Lire sur Wikipédia") }
+                OutlinedButton(onClick = { openUrl(context, article.url) }) { Text(t("Lire sur Wikipédia")) }
                 Text(
-                    "Texte issu de l'article Wikipédia « ${article.title} », licence CC BY-SA 4.0.",
+                    tf("Texte issu de l'article Wikipédia « {0} », licence CC BY-SA 4.0.", article.title),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

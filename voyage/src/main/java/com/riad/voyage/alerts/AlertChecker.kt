@@ -62,7 +62,7 @@ object AlertChecker {
         ) return
         val nm = context.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
-            NotificationChannel(CHANNEL, "Alertes de prix", NotificationManager.IMPORTANCE_DEFAULT),
+            NotificationChannel(CHANNEL, com.riad.voyage.t("Alertes de prix"), NotificationManager.IMPORTANCE_DEFAULT),
         )
         val intent = PendingIntent.getActivity(
             context, 0,
@@ -72,9 +72,9 @@ object AlertChecker {
         drops.forEach { d ->
             val n = NotificationCompat.Builder(context, CHANNEL)
                 .setSmallIcon(R.drawable.ic_notification)
-                .setContentTitle("Prix en baisse : ${d.alert.originName} → ${d.alert.destinationName}")
+                .setContentTitle(com.riad.voyage.tf("Prix en baisse : {0} → {1}", com.riad.voyage.t(d.alert.originName), com.riad.voyage.t(d.alert.destinationName)))
                 .setContentText(
-                    "${formatPrice(d.newPrice, d.alert.currency)} au lieu de ${formatPrice(d.oldPrice, d.alert.currency)}",
+                    com.riad.voyage.tf("{0} au lieu de {1}", formatPrice(d.newPrice, d.alert.currency), formatPrice(d.oldPrice, d.alert.currency)),
                 )
                 .setContentIntent(intent)
                 .setAutoCancel(true)

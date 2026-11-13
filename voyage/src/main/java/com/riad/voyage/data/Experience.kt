@@ -1,5 +1,8 @@
 package com.riad.voyage.data
 
+import com.riad.voyage.tlist
+import com.riad.voyage.tf
+import com.riad.voyage.t
 import kotlin.math.ln
 import kotlin.math.max
 
@@ -399,14 +402,14 @@ object ExperienceBuilder {
             val rating = p.ratings.maxByOrNull { it.count }
             val taste = matchingTaste(p, tastesFor(a, category))
             val base = when {
-                rating != null -> "Noté ${"%.1f".format(rating.rating)} sur ${rating.source.label} (${rating.count} avis)"
-                p.sitelinks >= 60 -> "L'un des lieux les plus célèbres de $city"
-                p.isMustSee -> "Un incontournable de $city"
-                p.inGuide -> "Recommandé par le guide Wikivoyage"
-                category == ActivityLinks.Category.PARKS || category == ActivityLinks.Category.BEACHES -> "Pour souffler au grand air"
-                else -> "Parmi les lieux les plus réputés de la ville"
+                rating != null -> tf("Noté {0} sur {1} ({2} avis)", "%.1f".format(rating.rating), rating.source.label, rating.count)
+                p.sitelinks >= 60 -> tf("L'un des lieux les plus célèbres de {0}", t(city))
+                p.isMustSee -> tf("Un incontournable de {0}", t(city))
+                p.inGuide -> t("Recommandé par le guide Wikivoyage")
+                category == ActivityLinks.Category.PARKS || category == ActivityLinks.Category.BEACHES -> t("Pour souffler au grand air")
+                else -> t("Parmi les lieux les plus réputés de la ville")
             }
-            return if (taste != null) "Pour votre envie « ${taste.label.lowercase()} » · $base" else base
+            return if (taste != null) tf("Pour votre envie « {0} » · {1}", t(taste.label).lowercase(), base) else base
         }
 
         val days = (1..a.duration.days).map { dayIndex ->
@@ -486,17 +489,17 @@ object ExperienceBuilder {
                     }?.let { place(ActivityLinks.Category.NIGHTLIFE, it, "Pour finir la nuit", 120) }
                 }
             }
-            ExperienceDay(if (a.duration.days > 1) "Jour $dayIndex" else a.duration.label, steps)
+            ExperienceDay(if (a.duration.days > 1) tf("Jour {0}", dayIndex) else t(a.duration.label), steps)
         }.filter { it.steps.isNotEmpty() }
 
         val themes = a.interests.map { i ->
-            a.tastes.filter { it.interest == i }.takeIf { it.size == 1 }?.first()?.short ?: i.theme
-        }.ifEmpty { listOf("découverte") }
-        val themeText = if (themes.size == 1) themes[0] else themes.dropLast(1).joinToString(", ") + " et " + themes.last()
+            t(a.tastes.filter { it.interest == i }.takeIf { it.size == 1 }?.first()?.short ?: i.theme)
+        }.ifEmpty { listOf(t("découverte")) }
+        val themeText = tlist(themes)
         val subtitle = listOfNotNull(
-            a.company.label, a.style.label.lowercase(), "rythme ${a.pace.label.lowercase()}",
-            a.mobility.label.lowercase(), a.diet.takeIf { it != Quiz.Diet.NONE }?.label?.lowercase(), a.budget.label.lowercase(),
+            t(a.company.label), t(a.style.label).lowercase(), tf("rythme {0}", t(a.pace.label).lowercase()),
+            t(a.mobility.label).lowercase(), a.diet.takeIf { it != Quiz.Diet.NONE }?.label?.let { t(it).lowercase() }, t(a.budget.label).lowercase(),
         ).joinToString(" · ")
-        return Experience(city, "${a.duration.label} $themeText à $city", subtitle, days)
+        return Experience(city, tf("{0} {1} à {2}", t(a.duration.label), themeText, t(city)), subtitle, days)
     }
 }

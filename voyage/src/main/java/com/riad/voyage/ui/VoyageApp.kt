@@ -62,8 +62,8 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                     NavigationBarItem(
                         selected = tab == t,
                         onClick = { vm.selectTab(t) },
-                        icon = { Icon(tabIcon(t), contentDescription = t.label) },
-                        label = { Text(t.label, maxLines = 1, fontSize = 11.sp) },
+                        icon = { Icon(tabIcon(t), contentDescription = com.riad.voyage.t(t.label)) },
+                        label = { Text(com.riad.voyage.t(t.label), maxLines = 1, fontSize = 11.sp) },
                     )
                 }
             }
@@ -192,7 +192,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
 
                 Tab.SETTINGS -> {
                     BackHandler { vm.selectTab(Tab.HOME) }
-                    SettingsScreen(settings, keyStatus, vm::saveSettings, vm.quotas, vm::setQuotaLimit)
+                    SettingsScreen(settings, keyStatus, vm::saveSettings, vm.quotas, vm::setQuotaLimit, vm::setLanguage)
                 }
             }
         }

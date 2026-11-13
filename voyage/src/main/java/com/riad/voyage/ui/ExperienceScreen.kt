@@ -1,5 +1,8 @@
 package com.riad.voyage.ui
 
+import com.riad.voyage.tk
+import com.riad.voyage.tf
+import com.riad.voyage.t
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -62,7 +65,7 @@ fun ExperienceScreen(
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
                 CircularProgressIndicator()
                 Spacer(Modifier.height(16.dp))
-                Text("Création de votre expérience…", style = MaterialTheme.typography.titleMedium)
+                Text(t("Création de votre expérience…"), style = MaterialTheme.typography.titleMedium)
                 Text(state.stage, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
             }
         }
@@ -97,50 +100,50 @@ private fun Questionnaire(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("Votre expérience sur mesure", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Text(t("Votre expérience sur mesure"), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             Text(
-                "Quelques questions sur vos envies et vos goûts : nous composons un programme qui mêle visites, balades, restaurants et sorties.",
+                t("Quelques questions sur vos envies et vos goûts : nous composons un programme qui mêle visites, balades, restaurants et sorties."),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             LinearProgressIndicator(progress = { (step + 1f) / steps.size }, modifier = Modifier.fillMaxWidth())
-            Text("Question ${step + 1} sur ${steps.size}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(tf("Question {0} sur {1}", step + 1, steps.size), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             when {
                 id == "city" -> {
-                    QuestionTitle("Où voulez-vous vivre l'expérience ?")
+                    QuestionTitle(t("Où voulez-vous vivre l'expérience ?"))
                     PlaceField(
-                        label = "Ville",
+                        label = t("Ville"),
                         selected = a.place,
                         onSelect = { p -> onAnswers { it.copy(city = p.name, place = p) } },
                         suggest = suggestCities,
-                        placeholder = "Ex. Paris, Alger, Rome…",
+                        placeholder = t("Ex. Paris, Alger, Rome…"),
                         onTextChange = { t -> onAnswers { it.copy(city = t, place = null) } },
                         initialText = a.city,
                         citiesOnly = true,
                     )
                 }
                 id == "duration" -> {
-                    QuestionTitle("Combien de temps avez-vous ?")
+                    QuestionTitle(t("Combien de temps avez-vous ?"))
                     Quiz.Duration.entries.forEach { d ->
-                        ChoiceCard(d.label, null, a.duration == d) { onAnswers { it.copy(duration = d) } }
+                        ChoiceCard(t(d.label), null, a.duration == d) { onAnswers { it.copy(duration = d) } }
                     }
                 }
                 id == "company" -> {
-                    QuestionTitle("Avec qui partez-vous ?")
+                    QuestionTitle(t("Avec qui partez-vous ?"))
                     Quiz.Company.entries.forEach { c ->
-                        ChoiceCard("${c.emoji}  ${c.label}", null, a.company == c) { onAnswers { it.copy(company = c) } }
+                        ChoiceCard("${c.emoji}  ${t(c.label)}", null, a.company == c) { onAnswers { it.copy(company = c) } }
                     }
                 }
                 id == "interests" -> {
-                    QuestionTitle("Qu'est-ce qui vous fait envie ?")
-                    Text("Plusieurs choix possibles.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    QuestionTitle(t("Qu'est-ce qui vous fait envie ?"))
+                    Text(t("Plusieurs choix possibles."), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Quiz.Interest.entries.forEach { i ->
                             val selected = i in a.interests
                             FilterChip(
                                 selected = selected,
                                 onClick = { onAnswers { it.copy(interests = if (selected) it.interests - i else it.interests + i) } },
-                                label = { Text("${i.emoji} ${i.label}") },
+                                label = { Text("${i.emoji} ${t(i.label)}") },
                             )
                         }
                     }
@@ -148,54 +151,54 @@ private fun Questionnaire(
                 id.startsWith("taste:") -> {
                     val interest = Quiz.Interest.valueOf(id.removePrefix("taste:"))
                     QuestionTitle(tasteQuestion(interest))
-                    Text("Plusieurs choix possibles, ou aucun si tout vous va.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(t("Plusieurs choix possibles, ou aucun si tout vous va."), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Quiz.Taste.of(interest).forEach { t ->
                         val selected = t in a.tastes
-                        ChoiceCard(if (selected) "✓  ${t.label}" else t.label, null, selected) {
+                        ChoiceCard(if (selected) "✓  ${com.riad.voyage.t(t.label)}" else com.riad.voyage.t(t.label), null, selected) {
                             onAnswers { it.copy(tastes = if (selected) it.tastes - t else it.tastes + t) }
                         }
                     }
                 }
                 id == "style" -> {
-                    QuestionTitle("Plutôt incontournables ou pépites ?")
+                    QuestionTitle(t("Plutôt incontournables ou pépites ?"))
                     Quiz.Style.entries.forEach { st ->
-                        ChoiceCard(st.label, st.description, a.style == st) { onAnswers { it.copy(style = st) } }
+                        ChoiceCard(t(st.label), t(st.description), a.style == st) { onAnswers { it.copy(style = st) } }
                     }
                 }
                 id == "depth" -> {
-                    QuestionTitle("Combien de temps aimez-vous passer dans chaque lieu ?")
+                    QuestionTitle(t("Combien de temps aimez-vous passer dans chaque lieu ?"))
                     Quiz.Depth.entries.forEach { d ->
-                        ChoiceCard(d.label, d.description, a.depth == d) { onAnswers { it.copy(depth = d) } }
+                        ChoiceCard(t(d.label), t(d.description), a.depth == d) { onAnswers { it.copy(depth = d) } }
                     }
                 }
                 id == "start" -> {
-                    QuestionTitle("À quelle heure aimez-vous commencer la journée ?")
+                    QuestionTitle(t("À quelle heure aimez-vous commencer la journée ?"))
                     Quiz.Start.entries.forEach { st ->
-                        ChoiceCard(st.label, null, a.start == st) { onAnswers { it.copy(start = st) } }
+                        ChoiceCard(t(st.label), null, a.start == st) { onAnswers { it.copy(start = st) } }
                     }
                 }
                 id == "mobility" -> {
-                    QuestionTitle("Comment vous déplacez-vous ?")
+                    QuestionTitle(t("Comment vous déplacez-vous ?"))
                     Quiz.Mobility.entries.forEach { m ->
-                        ChoiceCard(m.label, m.description, a.mobility == m) { onAnswers { it.copy(mobility = m) } }
+                        ChoiceCard(t(m.label), t(m.description), a.mobility == m) { onAnswers { it.copy(mobility = m) } }
                     }
                 }
                 id == "diet" -> {
-                    QuestionTitle("Des préférences pour les repas et les soirées ?")
+                    QuestionTitle(t("Des préférences pour les repas et les soirées ?"))
                     Quiz.Diet.entries.forEach { d ->
-                        ChoiceCard(d.label, null, a.diet == d) { onAnswers { it.copy(diet = d) } }
+                        ChoiceCard(t(d.label), null, a.diet == d) { onAnswers { it.copy(diet = d) } }
                     }
                 }
                 id == "pace" -> {
-                    QuestionTitle("Quel rythme préférez-vous ?")
+                    QuestionTitle(t("Quel rythme préférez-vous ?"))
                     Quiz.Pace.entries.forEach { p ->
-                        ChoiceCard(p.label, p.description, a.pace == p) { onAnswers { it.copy(pace = p) } }
+                        ChoiceCard(t(p.label), t(p.description), a.pace == p) { onAnswers { it.copy(pace = p) } }
                     }
                 }
                 id == "budget" -> {
-                    QuestionTitle("Quel budget pour les repas et les sorties ?")
+                    QuestionTitle(t("Quel budget pour les repas et les sorties ?"))
                     Quiz.Budget.entries.forEach { b ->
-                        ChoiceCard(b.label, b.description, a.budget == b) { onAnswers { it.copy(budget = b) } }
+                        ChoiceCard(t(b.label), t(b.description), a.budget == b) { onAnswers { it.copy(budget = b) } }
                     }
                 }
             }
@@ -207,7 +210,7 @@ private fun Questionnaire(
                 .padding(16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (step > 0) OutlinedButton(onClick = { onStep(-1) }, modifier = Modifier.weight(1f)) { Text("Retour") }
+            if (step > 0) OutlinedButton(onClick = { onStep(-1) }, modifier = Modifier.weight(1f)) { Text(t("Retour")) }
             val last = step == steps.size - 1
             Button(
                 onClick = { if (last) onGenerate() else onStep(1) },
@@ -217,8 +220,8 @@ private fun Questionnaire(
                 if (last) {
                     Icon(AppIcons.Sparkle, null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Créer mon expérience")
-                } else Text("Suivant")
+                    Text(t("Créer mon expérience"))
+                } else Text(t("Suivant"))
             }
         }
     }
@@ -262,13 +265,13 @@ private fun ExperienceResult(state: ExperienceState, onRegenerate: () -> Unit, o
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(AppIcons.Sparkle, null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(8.dp))
-                        Text("Votre expérience", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                        Text(t("Votre expérience"), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                     }
                     Text(exp.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     Text(exp.subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 6.dp)) {
-                        Button(onClick = onRegenerate) { Text("Autre proposition") }
-                        OutlinedButton(onClick = onEdit) { Text("Modifier") }
+                        Button(onClick = onRegenerate) { Text(t("Autre proposition")) }
+                        OutlinedButton(onClick = onEdit) { Text(t("Modifier")) }
                     }
                 }
             }
@@ -279,7 +282,7 @@ private fun ExperienceResult(state: ExperienceState, onRegenerate: () -> Unit, o
         }
         item {
             Text(
-                "Lieux : Wikidata, Wikivoyage, OpenStreetMap" +
+                t("Lieux : Wikidata, Wikivoyage, OpenStreetMap") +
                     (if (exp.days.any { d -> d.steps.any { it.place.ratings.isNotEmpty() } }) ", notes Google / Tripadvisor / Foursquare" else "") + ".",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -293,7 +296,7 @@ private fun DayHeader(day: ExperienceDay, city: String) {
     val context = LocalContext.current
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
         Text(day.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-        TextButton(onClick = { openUrl(context, dayRouteUrl(day, city)) }) { Text("Parcours sur la carte ›") }
+        TextButton(onClick = { openUrl(context, dayRouteUrl(day, city)) }) { Text(t("Parcours sur la carte ›")) }
     }
 }
 
@@ -307,13 +310,13 @@ private fun StepCard(s: ExperienceStep, city: String) {
         }
         Card(Modifier.weight(1f), shape = RoundedCornerShape(16.dp)) {
             Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(s.moment.uppercase(), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(t(s.moment).uppercase(), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(s.place.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text(s.place.kind, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                Text(tk(s.place.kind), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                 Text(s.why, style = MaterialTheme.typography.bodySmall)
                 if (s.durationMin > 0) {
                     Text(
-                        "⏱ ${com.riad.voyage.data.ExperienceBuilder.formatDuration(s.durationMin)} sur place",
+                        "⏱ " + tf("{0} sur place", com.riad.voyage.data.ExperienceBuilder.formatDuration(s.durationMin)),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Medium,
                     )
@@ -322,9 +325,9 @@ private fun StepCard(s: ExperienceStep, city: String) {
                     val m = s.fromPreviousM
                     Text(
                         when {
-                            m == null -> "Trajet d'environ $t min depuis l'étape précédente"
-                            m < 1500 || t <= m / 80 + 1 -> "🚶 ${formatMeters(m)} · ~$t min à pied depuis l'étape précédente"
-                            else -> "🚇 ${formatMeters(m)} · ~$t min en transports depuis l'étape précédente"
+                            m == null -> tf("Trajet d'environ {0} min depuis l'étape précédente", t)
+                            m < 1500 || t <= m / 80 + 1 -> tf("🚶 {0} · ~{1} min à pied depuis l'étape précédente", formatMeters(m), t)
+                            else -> tf("🚇 {0} · ~{1} min en transports depuis l'étape précédente", formatMeters(m), t)
                         },
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -332,16 +335,16 @@ private fun StepCard(s: ExperienceStep, city: String) {
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     TextButton(onClick = { openUrl(context, ActivityLinks.directionsUrl(s.place, city)) }, contentPadding = PaddingValues(horizontal = 4.dp)) {
-                        Text("Itinéraire")
+                        Text(t("Itinéraire"))
                     }
                     val url = if (s.place.isVenue) ActivityLinks.restaurantUrl(s.place, city)
                     else ActivityLinks.ticketUrls(s.place, city).first().url
                     TextButton(onClick = { openUrl(context, url) }, contentPadding = PaddingValues(horizontal = 4.dp)) {
                         Text(
                             when {
-                                s.place.isFree -> "Infos"
-                                s.place.isVenue -> "Réserver / voir"
-                                else -> "Billets"
+                                s.place.isFree -> t("Infos")
+                                s.place.isVenue -> t("Réserver / voir")
+                                else -> t("Billets")
                             },
                         )
                     }
@@ -366,12 +369,12 @@ private fun dayRouteUrl(day: ExperienceDay, city: String): String {
 }
 
 private fun tasteQuestion(i: Quiz.Interest) = when (i) {
-    Quiz.Interest.ART -> "Quels musées vous attirent ?"
-    Quiz.Interest.HISTORY -> "Quel genre de patrimoine ?"
-    Quiz.Interest.NATURE -> "Quelle nature vous fait envie ?"
-    Quiz.Interest.FUN -> "Quelles activités de loisirs ?"
-    Quiz.Interest.FOOD -> "Quelle cuisine vous tente ?"
-    Quiz.Interest.NIGHT -> "Quelle ambiance pour vos soirées ?"
-    Quiz.Interest.SHOPPING -> "Quel shopping ?"
-    Quiz.Interest.BEACH -> "Quelles plages ?"
+    Quiz.Interest.ART -> t("Quels musées vous attirent ?")
+    Quiz.Interest.HISTORY -> t("Quel genre de patrimoine ?")
+    Quiz.Interest.NATURE -> t("Quelle nature vous fait envie ?")
+    Quiz.Interest.FUN -> t("Quelles activités de loisirs ?")
+    Quiz.Interest.FOOD -> t("Quelle cuisine vous tente ?")
+    Quiz.Interest.NIGHT -> t("Quelle ambiance pour vos soirées ?")
+    Quiz.Interest.SHOPPING -> t("Quel shopping ?")
+    Quiz.Interest.BEACH -> t("Quelles plages ?")
 }

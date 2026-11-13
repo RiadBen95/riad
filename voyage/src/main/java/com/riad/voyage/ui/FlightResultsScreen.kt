@@ -1,5 +1,7 @@
 package com.riad.voyage.ui
 
+import com.riad.voyage.tf
+import com.riad.voyage.t
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Spacer
@@ -69,7 +71,7 @@ fun FlightResultsScreen(
                 .padding(horizontal = 8.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TextButton(onClick = onBack) { Text("← Modifier") }
+            TextButton(onClick = onBack) { Text(t("← Modifier")) }
             Column(Modifier.weight(1f)) {
                 Text(
                     "${q.origin?.name} → ${q.destination?.name}",
@@ -79,7 +81,7 @@ fun FlightResultsScreen(
                 val dates = buildString {
                     append(formatDateOrMonth(q.departureParam))
                     q.returnParam?.let { append(" – ").append(formatDateOrMonth(it)) }
-                    append(" · ").append(q.adults).append(if (q.adults > 1) " passagers" else " passager")
+                    append(" · ").append(tf("{0} passager(s)", q.adults))
                 }
                 Text(dates, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -89,7 +91,7 @@ fun FlightResultsScreen(
             state.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator()
-                    Text("Recherche des meilleurs prix…", modifier = Modifier.padding(top = 12.dp))
+                    Text(t("Recherche des meilleurs prix…"), modifier = Modifier.padding(top = 12.dp))
                 }
             }
 
@@ -101,7 +103,7 @@ fun FlightResultsScreen(
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(state.error, textAlign = TextAlign.Center)
-                Button(onClick = onRetry, modifier = Modifier.padding(top = 12.dp)) { Text("Réessayer") }
+                Button(onClick = onRetry, modifier = Modifier.padding(top = 12.dp)) { Text(t("Réessayer")) }
             }
 
             else -> LazyColumn(
@@ -121,21 +123,20 @@ fun FlightResultsScreen(
                 }
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(onClick = onFollow, modifier = Modifier.weight(1f)) { Text("🔔 Suivre ce prix") }
-                        OutlinedButton(onClick = onActivities, modifier = Modifier.weight(1f)) { Text("🎟️ Que faire sur place") }
+                        OutlinedButton(onClick = onFollow, modifier = Modifier.weight(1f)) { Text(t("🔔 Suivre ce prix")) }
+                        OutlinedButton(onClick = onActivities, modifier = Modifier.weight(1f)) { Text(t("🎟️ Que faire sur place")) }
                     }
                 }
                 if (state.flights.isEmpty()) {
                     item {
                         Card(Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text("Aucun prix récent trouvé pour ces dates", fontWeight = FontWeight.Bold)
+                                Text(t("Aucun prix récent trouvé pour ces dates"), fontWeight = FontWeight.Bold)
                                 Text(
-                                    "Essayez « Dates flexibles », un autre jour du calendrier, ou lancez " +
-                                        "la recherche complète en direct sur Aviasales.",
+                                    t("Essayez « Dates flexibles », un autre jour du calendrier, ou lancez la recherche complète en direct sur Aviasales."),
                                     style = MaterialTheme.typography.bodyMedium,
                                 )
-                                Button(onClick = onOpenSite) { Text("Chercher en direct sur Aviasales") }
+                                Button(onClick = onOpenSite) { Text(t("Chercher en direct sur Aviasales")) }
                             }
                         }
                     }
@@ -143,7 +144,7 @@ fun FlightResultsScreen(
                     item {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                "${state.flights.size} offres",
+                                tf("{0} offres", state.flights.size),
                                 modifier = Modifier.weight(1f),
                                 style = MaterialTheme.typography.titleSmall,
                             )
@@ -151,7 +152,7 @@ fun FlightResultsScreen(
                                 FilterChip(
                                     selected = state.sort == s,
                                     onClick = { onSort(s) },
-                                    label = { Text(s.label) },
+                                    label = { Text(t(s.label)) },
                                     modifier = Modifier.padding(start = 6.dp),
                                 )
                             }
@@ -163,7 +164,7 @@ fun FlightResultsScreen(
                     }
                     item {
                         TextButton(onClick = onOpenSite, modifier = Modifier.fillMaxWidth()) {
-                            Text("Voir toutes les offres en direct sur Aviasales ›")
+                            Text(t("Voir toutes les offres en direct sur Aviasales ›"))
                         }
                     }
                 }
@@ -172,8 +173,8 @@ fun FlightResultsScreen(
     }
 }
 
-private val dowFmt = DateTimeFormatter.ofPattern("EEE", Locale.FRENCH)
-private val monFmt = DateTimeFormatter.ofPattern("MMM", Locale.FRENCH)
+private val dowFmt get() = DateTimeFormatter.ofPattern("EEE", com.riad.voyage.I18n.lang.locale)
+private val monFmt get() = DateTimeFormatter.ofPattern("MMM", com.riad.voyage.I18n.lang.locale)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -181,9 +182,9 @@ private fun PriceCalendar(days: List<DayPrice>, selected: LocalDate?, currency: 
     val min = days.minOf { it.price }
     val deal = dealColor()
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Prix aller le plus bas par jour", style = MaterialTheme.typography.titleSmall)
+        Text(t("Prix aller le plus bas par jour"), style = MaterialTheme.typography.titleSmall)
         Text(
-            "Touchez un jour pour le choisir. En vert : le moins cher du mois.",
+            t("Touchez un jour pour le choisir. En vert : le moins cher du mois."),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -230,7 +231,7 @@ private fun FlightCard(
     Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             if (cheapest) {
-                Text("★ Meilleur prix", color = deal, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                Text(t("★ Meilleur prix"), color = deal, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
             }
             Row(verticalAlignment = Alignment.Top) {
                 if (f.airline.isNotBlank()) {
@@ -264,7 +265,7 @@ private fun FlightCard(
                         color = if (cheapest) deal else MaterialTheme.colorScheme.primary,
                     )
                     Text(
-                        if (adults > 1) "${formatPrice(f.price, currency)} / pers." else "par personne",
+                        if (adults > 1) tf("{0} / pers.", formatPrice(f.price, currency)) else t("par personne"),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -273,7 +274,7 @@ private fun FlightCard(
             Leg("Aller", f.departureAt, f.durationTo, f.transfers)
             f.returnAt?.let { Leg("Retour", it, f.durationBack, f.returnTransfers) }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Button(onClick = onBook) { Text("Réserver") }
+                Button(onClick = onBook) { Text(t("Réserver")) }
             }
         }
     }
@@ -282,7 +283,7 @@ private fun FlightCard(
 @Composable
 private fun Leg(label: String, at: String, duration: Int, transfers: Int) {
     Row {
-        Text(label, modifier = Modifier.width(60.dp), style = MaterialTheme.typography.labelLarge)
+        Text(t(label), modifier = Modifier.width(60.dp), style = MaterialTheme.typography.labelLarge)
         Column {
             Text(formatDateTime(at), style = MaterialTheme.typography.bodyMedium)
             Text(

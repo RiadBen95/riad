@@ -117,7 +117,7 @@ object GoogleRatings {
     suspend fun search(key: String, query: String, center: GeoPoint): List<Candidate> {
         val body = JSONObject()
             .put("textQuery", query)
-            .put("languageCode", "fr")
+            .put("languageCode", com.riad.voyage.I18n.wikiLang)
             .put("pageSize", 20)
             .put(
                 "locationBias",

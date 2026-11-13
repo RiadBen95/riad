@@ -19,9 +19,15 @@ class TravelpayoutsApi(
     private val token: String,
     private val currency: String,
 ) {
+    private fun placesLocale() = when (com.riad.voyage.I18n.lang) {
+        com.riad.voyage.Lang.FR -> "fr"
+        com.riad.voyage.Lang.ES -> "es"
+        else -> "en"
+    }
+
     suspend fun searchPlaces(term: String): List<Place> {
         val url = "https://autocomplete.travelpayouts.com/places2?term=${enc(term)}" +
-            "&locale=fr&types%5B%5D=city&types%5B%5D=airport"
+            "&locale=${placesLocale()}&types%5B%5D=city&types%5B%5D=airport"
         return Parsers.places(get(url, auth = false))
     }
 
@@ -76,8 +82,8 @@ class TravelpayoutsApi(
                 val detail = conn.errorStream?.bufferedReader()?.use { it.readText() }.orEmpty()
                 throw ApiException(
                     when (code) {
-                        401, 403 -> "Clé API refusée. Vérifiez-la dans Réglages."
-                        429 -> "Trop de recherches en peu de temps. Réessayez dans une minute."
+                        401, 403 -> com.riad.voyage.t("Clé API refusée. Vérifiez-la dans Réglages.")
+                        429 -> com.riad.voyage.t("Trop de recherches en peu de temps. Réessayez dans une minute.")
                         else -> "Erreur du serveur ($code). ${detail.take(120)}"
                     },
                     code,
@@ -117,8 +123,8 @@ class TravelpayoutsApi(
         }
 
         fun userMessage(e: Throwable): String = when (e) {
-            is ApiException -> e.message ?: "Erreur inconnue"
-            is IOException -> "Pas de connexion internet (ou serveur injoignable)."
+            is ApiException -> e.message ?: com.riad.voyage.t("Erreur inconnue")
+            is IOException -> com.riad.voyage.t("Pas de connexion internet (ou serveur injoignable).")
             else -> "Erreur : ${e.message ?: e.javaClass.simpleName}"
         }
     }

@@ -1,5 +1,7 @@
 package com.riad.voyage.ui
 
+import com.riad.voyage.tf
+import com.riad.voyage.t
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -87,7 +89,7 @@ fun HomeScreen(
     wiki: suspend (String) -> WikiSummary?,
 ) {
     val hour = LocalTime.now().hour
-    val greeting = if (hour in 5..17) "Bonjour 👋" else "Bonsoir 👋"
+    val greeting = if (hour in 5..17) t("Bonjour 👋") else t("Bonsoir 👋")
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
         // En-tête en dégradé, avec la barre de recherche.
         item {
@@ -115,13 +117,13 @@ fun HomeScreen(
                             modifier = Modifier.weight(1f),
                         )
                         IconButton(onClick = onOpenSettings) {
-                            Icon(AppIcons.Settings, contentDescription = "Réglages", tint = Color.White)
+                            Icon(AppIcons.Settings, contentDescription = t("Réglages"), tint = Color.White)
                         }
                     }
                     Spacer(Modifier.height(18.dp))
                     Text(greeting, color = Color.White.copy(alpha = 0.8f))
                     Text(
-                        "Où partez-vous ?",
+                        t("Où partez-vous ?"),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -153,9 +155,9 @@ fun HomeScreen(
                     }
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f)) {
-                        Text("Rechercher un vol", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                        Text(t("Rechercher un vol"), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                         Text(
-                            "Depuis ${form.origin?.name ?: "…"} · ${form.adults} passager${if (form.adults > 1) "s" else ""}",
+                            tf("Depuis {0} · {1} passager(s)", form.origin?.name?.let { t(it) } ?: "…", form.adults),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -172,11 +174,11 @@ fun HomeScreen(
                     .offset(y = (-20).dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                QuickTile("Vols", AppIcons.Flight, onOpenFlights, Modifier.weight(1f))
-                QuickTile("Sorties", AppIcons.Ticket, onOpenActivities, Modifier.weight(1f))
-                QuickTile("Expérience", AppIcons.Sparkle, onOpenExperience, Modifier.weight(1f))
-                QuickTile("Blogue", AppIcons.Book, onOpenBlog, Modifier.weight(1f))
-                QuickTile("Alertes", AppIcons.Bell, onOpenAlerts, Modifier.weight(1f), badge = alerts.size.takeIf { it > 0 })
+                QuickTile(t("Vols"), AppIcons.Flight, onOpenFlights, Modifier.weight(1f))
+                QuickTile(t("Sorties"), AppIcons.Ticket, onOpenActivities, Modifier.weight(1f))
+                QuickTile(t("Expérience"), AppIcons.Sparkle, onOpenExperience, Modifier.weight(1f))
+                QuickTile(t("Blogue"), AppIcons.Book, onOpenBlog, Modifier.weight(1f))
+                QuickTile(t("Alertes"), AppIcons.Bell, onOpenAlerts, Modifier.weight(1f), badge = alerts.size.takeIf { it > 0 })
             }
         }
         if (demo) {
@@ -186,14 +188,14 @@ fun HomeScreen(
             }
         }
         if (recents.isNotEmpty()) {
-            item { SectionTitle("Reprendre une recherche", AppIcons.History) }
+            item { SectionTitle(t("Reprendre une recherche"), AppIcons.History) }
             item {
                 LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     items(recents) { r -> RecentCard(r) { onRecent(r) } }
                 }
             }
         }
-        item { SectionTitle("Destinations populaires", null) }
+        item { SectionTitle(t("Destinations populaires"), null) }
         item {
             val list = featured.filter { it.first != form.origin?.code }
             LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -205,7 +207,7 @@ fun HomeScreen(
         }
         item {
             Text(
-                "Prix des vols : Aviasales · Lieux : OpenStreetMap · Photos : Wikipédia",
+                t("Prix des vols : Aviasales · Lieux : OpenStreetMap · Photos : Wikipédia"),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
@@ -279,7 +281,7 @@ private fun RecentCard(r: RecentSearch, onClick: () -> Unit) {
             Text(dates, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             val past = runCatching { LocalDate.parse(r.departure).isBefore(LocalDate.now()) }.getOrDefault(false)
             Text(
-                if (past) "Relancer avec de nouvelles dates ›" else "Relancer la recherche ›",
+                if (past) t("Relancer avec de nouvelles dates ›") else t("Relancer la recherche ›"),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(top = 6.dp),
@@ -311,8 +313,8 @@ private fun DestinationCard(place: Place, wikiTag: String, wiki: suspend (String
                     .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)))),
             )
             Column(Modifier.align(Alignment.BottomStart).padding(12.dp)) {
-                Text(place.name, color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-                Text(place.country, color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.bodySmall)
+                Text(t(place.name), color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                Text(t(place.country), color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.bodySmall)
             }
         }
     }
