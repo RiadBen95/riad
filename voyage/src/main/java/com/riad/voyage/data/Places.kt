@@ -45,7 +45,7 @@ data class WikiSummary(val extract: String, val imageUrl: String?, val pageUrl: 
  * et résumés Wikipédia. Services gratuits et sans clé : on reste raisonnable sur le nombre d'appels.
  */
 object PlacesApi {
-    private const val UA = "VoyageMalin/1.0 (Android app; https://github.com/RiadBen95/riad)"
+    private const val UA = "Envolee/1.0 (Android app; https://github.com/RiadBen95/riad)"
     private val overpassServers = listOf(
         "https://overpass-api.de/api/interpreter",
         "https://overpass.kumi.systems/api/interpreter",

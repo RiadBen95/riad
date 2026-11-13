@@ -4,7 +4,7 @@ Deux applications Kotlin + Jetpack Compose, compilées automatiquement par GitHu
 
 | Application | Dossier | APK |
 |---|---|---|
-| ✈️ **Voyage Malin** : vols et hôtels au meilleur prix | `voyage/` | `voyage-malin.apk` |
+| ✈️ **Envolée** : vols, hôtels et sorties au meilleur prix | `voyage/` | `envolee.apk` |
 | 🎸 **Accordeur Guitare** | `app/` | `accordeur-guitare.apk` |
 
 Les APK sont publiés dans les [Releases](../../releases/latest) du dépôt.
@@ -12,7 +12,9 @@ Sur le téléphone, ouvrez le fichier téléchargé (autorisez les « sources in
 
 ---
 
-# ✈️ Voyage Malin
+# ✈️ Envolée
+
+<img src="docs/logo.svg" width="96" alt="Logo Envolée">
 
 Comparateur de vols et d'hôtels. L'app trouve les meilleurs prix, puis envoie vers le site du vendeur
 pour payer : aucune donnée bancaire ne passe par l'application.

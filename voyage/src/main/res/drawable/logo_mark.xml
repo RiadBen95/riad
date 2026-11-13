@@ -1,0 +1,29 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="86dp"
+    android:height="54dp"
+    android:viewportWidth="86"
+    android:viewportHeight="54">
+    <!-- Logo Envolée : un « e » dont le trait s'envole en avion en papier -->
+    <group
+        android:translateX="-17.5"
+        android:translateY="-27.5">
+        <path
+            android:pathData="M25,58 H63 C63,41 53,32 42,32 C29,32 22,43 22,55 C22,68 31,77 43,77 C55,77 63,70 70,60"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="8.5"
+            android:strokeLineCap="round" />
+        <group
+            android:translateX="70"
+            android:translateY="57"
+            android:rotation="-55"
+            android:scaleX="1.25"
+            android:scaleY="1.25">
+            <path
+                android:fillColor="#FFFF7A59"
+                android:pathData="M0,9 L24,0 L16.5,21 L11,12.5 Z" />
+            <path
+                android:fillColor="#FFD9502C"
+                android:pathData="M11,12.5 L24,0 L7,11 Z" />
+        </group>
+    </group>
+</vector>

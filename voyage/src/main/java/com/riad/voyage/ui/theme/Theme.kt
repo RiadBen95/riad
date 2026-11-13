@@ -7,16 +7,21 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
+/** Couleurs de la marque Envolée (logo). */
+val BrandNavy = Color(0xFF173F94)
+val BrandNight = Color(0xFF071A3D)
+val BrandCoral = Color(0xFFFF7A59)
+
 /** Couleur des « meilleurs prix ». */
 val Deal = Color(0xFF1B9E55)
 val DealDark = Color(0xFF4CD08A)
 
 private val Light = lightColorScheme(
-    primary = Color(0xFF1E6FD9),
+    primary = Color(0xFF1F55C7),
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFD7E6FF),
-    onPrimaryContainer = Color(0xFF001B3F),
-    secondary = Color(0xFFFF7A3D),
+    primaryContainer = Color(0xFFDCE6FF),
+    onPrimaryContainer = Color(0xFF071A3D),
+    secondary = BrandCoral,
     background = Color(0xFFF6F8FB),
     onBackground = Color(0xFF151A21),
     surface = Color(0xFFFFFFFF),
@@ -30,7 +35,7 @@ private val Dark = darkColorScheme(
     onPrimary = Color(0xFF002F66),
     primaryContainer = Color(0xFF16457F),
     onPrimaryContainer = Color(0xFFD7E6FF),
-    secondary = Color(0xFFFFA273),
+    secondary = Color(0xFFFF9474),
     background = Color(0xFF0F1419),
     onBackground = Color(0xFFE3E7ED),
     surface = Color(0xFF181E25),

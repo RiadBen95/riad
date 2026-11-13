@@ -46,7 +46,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.riad.voyage.R
+import com.riad.voyage.ui.theme.BrandNavy
+import com.riad.voyage.ui.theme.BrandNight
 import com.riad.voyage.FlightForm
 import com.riad.voyage.data.Place
 import com.riad.voyage.data.PopularPlaces
@@ -81,24 +87,38 @@ fun HomeScreen(
 ) {
     val hour = LocalTime.now().hour
     val greeting = if (hour in 5..17) "Bonjour 👋" else "Bonsoir 👋"
-    val primary = MaterialTheme.colorScheme.primary
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
         // En-tête en dégradé, avec la barre de recherche.
         item {
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .background(Brush.verticalGradient(listOf(primary, primary.copy(alpha = 0.75f))))
+                    .background(Brush.verticalGradient(listOf(BrandNavy, BrandNight)))
                     .statusBarsPadding()
                     .padding(start = 20.dp, end = 8.dp, top = 12.dp, bottom = 52.dp),
             ) {
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(greeting, color = Color.White.copy(alpha = 0.9f), modifier = Modifier.weight(1f))
+                        Image(
+                            painter = painterResource(R.drawable.logo_mark),
+                            contentDescription = null,
+                            modifier = Modifier.height(30.dp),
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            "envolée",
+                            color = Color.White,
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = (-0.5).sp,
+                            modifier = Modifier.weight(1f),
+                        )
                         IconButton(onClick = onOpenSettings) {
                             Icon(AppIcons.Settings, contentDescription = "Réglages", tint = Color.White)
                         }
                     }
+                    Spacer(Modifier.height(18.dp))
+                    Text(greeting, color = Color.White.copy(alpha = 0.8f))
                     Text(
                         "Où partez-vous ?",
                         style = MaterialTheme.typography.headlineMedium,

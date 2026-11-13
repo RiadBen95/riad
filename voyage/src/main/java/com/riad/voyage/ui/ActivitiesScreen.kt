@@ -67,7 +67,7 @@ internal object Images {
                     .addInterceptor { chain ->
                         chain.proceed(
                             chain.request().newBuilder()
-                                .header("User-Agent", "VoyageMalin/1.0 (Android app; https://github.com/RiadBen95/riad)")
+                                .header("User-Agent", "Envolee/1.0 (Android app; https://github.com/RiadBen95/riad)")
                                 .build(),
                         )
                     }
