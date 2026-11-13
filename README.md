@@ -40,6 +40,13 @@ pour payer : aucune donnée bancaire ne passe par l'application.
   (destination du vol, ville des sorties, expérience) avec un filtre « Pour vous » selon ses goûts ; sans recherche
   préalable, icônes des villes les plus emblématiques ; barre de recherche ville / monument / lieu ; lecture
   complète de l'article dans l'app.
+- **Météo** (Open-Meteo, gratuit) : prévisions jusqu'à 16 jours prises en compte dans l'Expérience (musées
+  s'il pleut, parcs et plages au soleil, point de vue au coucher du soleil), météo affichée par jour.
+- **Vol → séjour** : depuis les résultats, « Planifier mon séjour » ouvre l'Expérience avec la ville, les dates
+  et la durée du voyage ; Sorties et Blogue suivent la même destination.
+- **Mes voyages** : carnet par destination (vols gardés, programme Expérience, lieux favoris ♥, articles du
+  blogue), enregistré sur le téléphone et lisible hors connexion, partageable par messagerie ; prochain voyage
+  affiché sur l'accueil.
 - **Vol + sorties** : depuis les résultats, « Que faire sur place » ouvre les sorties de la destination.
 - **Alertes de prix** : suivez un trajet ; l'app vérifie toutes les ~12 h et envoie une notification si le prix baisse.
 - **Mode démo** avec des prix fictifs tant qu'aucune clé API n'est saisie.

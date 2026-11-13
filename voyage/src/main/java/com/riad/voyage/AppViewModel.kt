@@ -31,7 +31,7 @@ import java.time.temporal.ChronoUnit
 
 enum class Tab(val label: String, val inBottomBar: Boolean = true) {
     HOME("Accueil"), FLIGHTS("Vols"), ACTIVITIES("Sorties"), EXPERIENCE("Expérience"), BLOG("Blogue"),
-    ALERTS("Alertes", inBottomBar = false),
+    ALERTS("Alertes", inBottomBar = false), TRIPS("Mes voyages", inBottomBar = false),
     SETTINGS("Réglages", inBottomBar = false),
 }
 
@@ -122,6 +122,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val alertStore = AlertStore(app)
     private val recentStore = RecentStore(app)
     val quotas = com.riad.voyage.data.QuotaStore(app)
+    private val tripStore = com.riad.voyage.data.TripStore(app)
+
+    private val _trips = MutableStateFlow(tripStore.all())
+    val trips: StateFlow<List<com.riad.voyage.data.Trip>> = _trips.asStateFlow()
+
+    /** Voyage ouvert dans « Mes voyages » (null = la liste) ; article gardé en cours de lecture. */
+    private val _openTrip = MutableStateFlow<String?>(null)
+    val openTrip: StateFlow<String?> = _openTrip.asStateFlow()
+    private val _tripArticle = MutableStateFlow<com.riad.voyage.data.Article?>(null)
+    val tripArticle: StateFlow<com.riad.voyage.data.Article?> = _tripArticle.asStateFlow()
 
     private val _recents = MutableStateFlow(recentStore.all())
     val recents: StateFlow<List<RecentSearch>> = _recents.asStateFlow()
@@ -163,6 +173,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val _experience = MutableStateFlow(ExperienceState())
     val experience: StateFlow<ExperienceState> = _experience.asStateFlow()
     private var experiencePools: Map<ActivityLinks.Category, List<com.riad.voyage.data.PointOfInterest>> = emptyMap()
+    private var experienceWeather: Map<LocalDate, com.riad.voyage.data.DayWeather> = emptyMap()
 
     private val _blog = MutableStateFlow(BlogState())
     val blog: StateFlow<BlogState> = _blog.asStateFlow()
@@ -313,6 +324,101 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    // ---------- Mes voyages ----------
+
+    private fun refreshTrips() { _trips.value = tripStore.all() }
+
+    /** Voyage d'une ville (créé s'il n'existe pas). */
+    private fun tripFor(city: String, country: String = ""): com.riad.voyage.data.Trip =
+        _trips.value.firstOrNull { it.city.equals(city.trim(), ignoreCase = true) }
+            ?: com.riad.voyage.data.Trip(id = "trip-${System.currentTimeMillis()}", city = city.trim(), country = country)
+
+    private fun saveTrip(t: com.riad.voyage.data.Trip, message: String) {
+        tripStore.upsert(t)
+        refreshTrips()
+        _message.value = message
+    }
+
+    fun saveFlight(f: Flight) {
+        val q = _results.value.query ?: return
+        val dest = q.destination ?: return
+        val trip = tripFor(dest.name, dest.country)
+        val saved = com.riad.voyage.data.SavedFlight(
+            q.origin?.name ?: f.origin, dest.name, f.departureAt, f.returnAt, f.price * q.adults,
+            _results.value.currency, f.airline, bookingUrl(f),
+        )
+        if (trip.flights.any { it.url == saved.url }) { _message.value = t("Ce vol est déjà dans votre voyage."); return }
+        saveTrip(
+            trip.copy(
+                flights = trip.flights + saved,
+                startDate = trip.startDate ?: f.departureDate?.toString(),
+                endDate = trip.endDate ?: f.returnAt?.let { com.riad.voyage.data.parseDateTime(it)?.toLocalDate()?.toString() },
+            ),
+            tf("Vol ajouté à votre voyage : {0}", t(dest.name)),
+        )
+    }
+
+    fun saveExperience() {
+        val st = _experience.value
+        val exp = st.result ?: return
+        val trip = tripFor(exp.city, st.answers.place?.country.orEmpty())
+        val program = exp.days.map { d ->
+            com.riad.voyage.data.SavedDay(d.title, d.weather?.label, d.steps.map { s ->
+                com.riad.voyage.data.SavedStep(s.time, t(s.moment), s.category.emoji, s.why, s.durationMin,
+                    com.riad.voyage.data.SavedPlace.of(s.place))
+            })
+        }
+        val end = st.answers.startDate.plusDays((st.answers.duration.days - 1).toLong())
+        saveTrip(
+            trip.copy(programTitle = exp.title, program = program,
+                startDate = trip.startDate ?: st.answers.startDate.toString(), endDate = trip.endDate ?: end.toString()),
+            tf("Programme enregistré dans votre voyage : {0}", t(exp.city)),
+        )
+    }
+
+    fun isFavorite(name: String) = _trips.value.any { tr -> tr.places.any { it.name.equals(name, ignoreCase = true) } }
+
+    fun toggleFavorite(p: com.riad.voyage.data.PointOfInterest, city: String) {
+        val existing = _trips.value.firstOrNull { tr -> tr.places.any { it.name.equals(p.name, ignoreCase = true) } }
+        if (existing != null) {
+            tripStore.upsert(existing.copy(places = existing.places.filterNot { it.name.equals(p.name, ignoreCase = true) }))
+            refreshTrips()
+            return
+        }
+        val trip = tripFor(city)
+        saveTrip(trip.copy(places = trip.places + com.riad.voyage.data.SavedPlace.of(p)), tf("Ajouté à votre voyage : {0}", t(trip.city)))
+    }
+
+    fun saveArticle(a: com.riad.voyage.data.Article) {
+        val city = _blog.value.city?.name ?: _trips.value.firstOrNull()?.city ?: t("Mes lectures")
+        val trip = tripFor(city)
+        if (trip.articles.any { it.wiki == a.wiki }) { _message.value = t("Article déjà gardé."); return }
+        saveTrip(trip.copy(articles = trip.articles + com.riad.voyage.data.SavedArticle.of(a)),
+            tf("Article gardé pour la lecture hors connexion : {0}", t(trip.city)))
+    }
+
+    fun openTrip(id: String?) { _openTrip.value = id; _tripArticle.value = null; _tab.value = Tab.TRIPS }
+    fun readSavedArticle(a: com.riad.voyage.data.SavedArticle?) { _tripArticle.value = a?.toArticle() }
+
+    fun deleteTrip(id: String) {
+        tripStore.delete(id)
+        refreshTrips()
+        _openTrip.value = null
+    }
+
+    fun removeFromTrip(id: String, kind: String, index: Int) {
+        val trip = _trips.value.firstOrNull { it.id == id } ?: return
+        val updated = when (kind) {
+            "flight" -> trip.copy(flights = trip.flights.filterIndexed { i, _ -> i != index })
+            "place" -> trip.copy(places = trip.places.filterIndexed { i, _ -> i != index })
+            "article" -> trip.copy(articles = trip.articles.filterIndexed { i, _ -> i != index })
+            "program" -> trip.copy(program = emptyList(), programTitle = null)
+            else -> trip
+        }
+        tripStore.upsert(updated)
+        refreshTrips()
+    }
+
     // ---------- Blogue ----------
 
     /** Villes liées aux recherches de la personne : vol, sorties, expérience. */
@@ -444,6 +550,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 _experience.update { it.copy(loading = false, error = t("Ville introuvable : choisissez-la dans la liste proposée.")) }
                 return@launch
             }
+            // Météo des jours du séjour (prévisions jusqu'à 16 jours), chargée en parallèle des lieux.
+            val weatherJob = async {
+                val inRange = !a.startDate.isAfter(LocalDate.now().plusDays(com.riad.voyage.data.WeatherApi.FORECAST_DAYS - 1L))
+                if (!inRange) emptyMap() else kotlinx.coroutines.withTimeoutOrNull(10_000) {
+                    runCatching { com.riad.voyage.data.WeatherApi.forecast(geo.lat, geo.lon) }.getOrNull()
+                }.orEmpty().associateBy { it.date }
+            }
             val needed = com.riad.voyage.data.ExperienceBuilder.neededCategories(a)
             _experience.update { it.copy(stage = tf("Sélection des meilleurs lieux de {0}…", t(city))) }
             val pools = coroutineScope {
@@ -471,7 +584,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             }
             experiencePools = analysed
             _experience.update { it.copy(stage = t("Composition du programme…")) }
-            val exp = com.riad.voyage.data.ExperienceBuilder.build(a, city, analysed)
+            experienceWeather = weatherJob.await()
+            val exp = com.riad.voyage.data.ExperienceBuilder.build(a, city, analysed, weather = experienceWeather)
             _experience.update {
                 if (exp.days.isEmpty()) it.copy(loading = false, error = tf("Pas assez de lieux trouvés pour {0}. Essayez d'autres envies ou une grande ville proche.", t(city)))
                 else it.copy(loading = false, result = exp, previous = emptySet())
@@ -479,12 +593,37 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /**
+     * « Planifier mon séjour » depuis les résultats de vol : ville, dates et durée déjà remplies ;
+     * les Sorties et le Blogue suivent la même destination.
+     */
+    fun planStayFromFlight(flight: Flight?) {
+        val q = _results.value.query ?: _form.value
+        val dest = q.destination ?: return
+        val start = flight?.departureDate ?: q.departure
+        val end = flight?.returnAt?.let { com.riad.voyage.data.parseDateTime(it)?.toLocalDate() }
+            ?: if (q.roundTrip && !q.flexibleMonth) q.returnDate else null
+        val nights = end?.let { ChronoUnit.DAYS.between(start, it) } ?: 1
+        val duration = when {
+            nights <= 1 -> com.riad.voyage.data.Quiz.Duration.DAY
+            nights == 2L -> com.riad.voyage.data.Quiz.Duration.TWO
+            else -> com.riad.voyage.data.Quiz.Duration.THREE
+        }
+        updateAnswers { it.copy(city = dest.name, place = dest, startDate = start, duration = duration) }
+        val firstOpen = com.riad.voyage.data.Quiz.steps(_experience.value.answers).indexOf("company").coerceAtLeast(0)
+        _experience.update { it.copy(step = firstOpen, result = null, error = null) }
+        _activityCity.value = dest.name
+        _activityPlace.value = dest
+        _blog.update { BlogState() }
+        _tab.value = Tab.EXPERIENCE
+    }
+
     /** Autre proposition : mêmes réponses, en écartant les lieux de la proposition affichée (pas de hasard). */
     fun regenerateExperience() {
         val st = _experience.value
         if (experiencePools.isEmpty()) return generateExperience()
         val avoid = st.previous + (st.result?.placeIds ?: emptySet())
-        val exp = com.riad.voyage.data.ExperienceBuilder.build(st.answers, st.answers.city.trim(), experiencePools, avoid)
+        val exp = com.riad.voyage.data.ExperienceBuilder.build(st.answers, st.answers.city.trim(), experiencePools, avoid, experienceWeather)
         _experience.update { it.copy(result = exp, previous = avoid) }
     }
 

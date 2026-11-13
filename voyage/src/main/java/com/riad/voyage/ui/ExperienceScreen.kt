@@ -59,6 +59,7 @@ fun ExperienceScreen(
     onRegenerate: () -> Unit,
     onEdit: () -> Unit,
     suggestCities: suspend (String) -> List<Place>,
+    onSave: () -> Unit = {},
 ) {
     when {
         state.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -69,7 +70,7 @@ fun ExperienceScreen(
                 Text(state.stage, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
             }
         }
-        state.result != null -> ExperienceResult(state, onRegenerate, onEdit)
+        state.result != null -> ExperienceResult(state, onRegenerate, onEdit, onSave)
         else -> Questionnaire(state, onAnswers, onStep, onGenerate, suggestCities)
     }
 }
@@ -120,6 +121,15 @@ private fun Questionnaire(
                         onTextChange = { t -> onAnswers { it.copy(city = t, place = null) } },
                         initialText = a.city,
                         citiesOnly = true,
+                    )
+                }
+                id == "date" -> {
+                    QuestionTitle(t("Quand commence votre séjour ?"))
+                    DateButton(t("Premier jour"), a.startDate, java.time.LocalDate.now(), { d -> onAnswers { it.copy(startDate = d) } }, Modifier.fillMaxWidth())
+                    Text(
+                        t("La météo prévue est prise en compte jusqu'à 16 jours à l'avance : musées s'il pleut, parcs et plages au soleil, point de vue au coucher du soleil."),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 id == "duration" -> {
@@ -252,7 +262,7 @@ private fun ChoiceCard(title: String, description: String?, selected: Boolean, o
 }
 
 @Composable
-private fun ExperienceResult(state: ExperienceState, onRegenerate: () -> Unit, onEdit: () -> Unit) {
+private fun ExperienceResult(state: ExperienceState, onRegenerate: () -> Unit, onEdit: () -> Unit, onSave: () -> Unit) {
     val exp = state.result ?: return
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
@@ -273,6 +283,7 @@ private fun ExperienceResult(state: ExperienceState, onRegenerate: () -> Unit, o
                         Button(onClick = onRegenerate) { Text(t("Autre proposition")) }
                         OutlinedButton(onClick = onEdit) { Text(t("Modifier")) }
                     }
+                    Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) { Text(t("💾 Enregistrer dans mon voyage")) }
                 }
             }
         }
@@ -283,7 +294,8 @@ private fun ExperienceResult(state: ExperienceState, onRegenerate: () -> Unit, o
         item {
             Text(
                 t("Lieux : Wikidata, Wikivoyage, OpenStreetMap") +
-                    (if (exp.days.any { d -> d.steps.any { it.place.ratings.isNotEmpty() } }) ", notes Google / Tripadvisor / Foursquare" else "") + ".",
+                    (if (exp.days.any { d -> d.steps.any { it.place.ratings.isNotEmpty() } }) ", notes Google / Tripadvisor / Foursquare" else "") +
+                    (if (exp.days.any { it.weather != null }) ", " + t("météo Open-Meteo") else "") + ".",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -295,7 +307,19 @@ private fun ExperienceResult(state: ExperienceState, onRegenerate: () -> Unit, o
 private fun DayHeader(day: ExperienceDay, city: String) {
     val context = LocalContext.current
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
-        Text(day.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+        Column(Modifier.weight(1f)) {
+            Text(
+                day.title + (day.date?.let { " · " + formatDay(it) } ?: ""),
+                style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
+            )
+            day.weather?.let { w ->
+                Text(
+                    w.label + if (w.rainy) " · " + t("journée plutôt à l'abri") else "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
         TextButton(onClick = { openUrl(context, dayRouteUrl(day, city)) }) { Text(t("Parcours sur la carte ›")) }
     }
 }

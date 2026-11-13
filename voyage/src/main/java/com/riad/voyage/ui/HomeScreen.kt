@@ -82,6 +82,8 @@ fun HomeScreen(
     onOpenActivities: () -> Unit,
     onOpenExperience: () -> Unit,
     onOpenBlog: () -> Unit,
+    trips: List<com.riad.voyage.data.Trip> = emptyList(),
+    onOpenTrip: (String?) -> Unit = {},
     onOpenAlerts: () -> Unit,
     onOpenSettings: () -> Unit,
     onRecent: (RecentSearch) -> Unit,
@@ -178,7 +180,41 @@ fun HomeScreen(
                 QuickTile(t("Sorties"), AppIcons.Ticket, onOpenActivities, Modifier.weight(1f))
                 QuickTile(t("Expérience"), AppIcons.Sparkle, onOpenExperience, Modifier.weight(1f))
                 QuickTile(t("Blogue"), AppIcons.Book, onOpenBlog, Modifier.weight(1f))
-                QuickTile(t("Alertes"), AppIcons.Bell, onOpenAlerts, Modifier.weight(1f), badge = alerts.size.takeIf { it > 0 })
+                QuickTile(t("Voyages"), AppIcons.Luggage, { onOpenTrip(null) }, Modifier.weight(1f), badge = alerts.size.takeIf { it > 0 })
+            }
+        }
+        // Prochain voyage (ou le dernier modifié) : accès direct au carnet.
+        val next = trips.filter { !it.isEmpty }.sortedWith(
+            compareBy<com.riad.voyage.data.Trip> { tr ->
+                tr.startDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }?.takeIf { !it.isBefore(LocalDate.now()) } ?: LocalDate.MAX
+            }.thenByDescending { it.updated },
+        ).firstOrNull()
+        if (next != null) {
+            item {
+                Card(
+                    onClick = { onOpenTrip(next.id) },
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 12.dp),
+                ) {
+                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(AppIcons.Luggage, null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(tf("Mon voyage : {0}", t(next.city)), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                listOfNotNull(
+                                    next.startDate?.let { runCatching { formatDay(LocalDate.parse(it)) }.getOrNull() },
+                                    t("Programme").takeIf { next.program.isNotEmpty() },
+                                    tf("{0} vol(s)", next.flights.size).takeIf { next.flights.isNotEmpty() },
+                                    tf("{0} lieu(x)", next.places.size).takeIf { next.places.isNotEmpty() },
+                                ).joinToString(" · "),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                        Text("›", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
+                    }
+                }
             }
         }
         if (demo) {

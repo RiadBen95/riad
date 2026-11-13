@@ -141,11 +141,12 @@ object Quiz {
         val mobility: Mobility = Mobility.WALK,
         val diet: Diet = Diet.NONE,
         val budget: Budget = Budget.MEDIUM,
+        val startDate: java.time.LocalDate = java.time.LocalDate.now(),
     )
 
     /** Étapes du questionnaire : une question de suivi par envie qui en propose. */
     fun steps(a: Answers): List<String> = buildList {
-        add("city"); add("duration"); add("company"); add("interests")
+        add("city"); add("date"); add("duration"); add("company"); add("interests")
         Interest.entries.filter { it in a.interests && Taste.of(it).isNotEmpty() }.forEach { add("taste:${it.name}") }
         add("style"); add("pace"); add("depth"); add("start"); add("mobility"); add("diet"); add("budget")
     }
@@ -162,7 +163,12 @@ data class ExperienceStep(
     val travelMin: Int? = null,
 )
 
-data class ExperienceDay(val title: String, val steps: List<ExperienceStep>)
+data class ExperienceDay(
+    val title: String,
+    val steps: List<ExperienceStep>,
+    val date: java.time.LocalDate? = null,
+    val weather: DayWeather? = null,
+)
 
 data class Experience(val city: String, val title: String, val subtitle: String, val days: List<ExperienceDay>) {
     val placeIds get() = days.flatMap { d -> d.steps.map { it.place.id } }.toSet()
@@ -343,7 +349,22 @@ object ExperienceBuilder {
         city: String,
         pools: Map<ActivityLinks.Category, List<PointOfInterest>>,
         avoid: Set<String> = emptySet(),
+        weather: Map<java.time.LocalDate, DayWeather> = emptyMap(),
     ): Experience {
+        /** Lieux en plein air : à éviter sous la pluie, à privilégier au soleil. */
+        fun outdoor(p: PointOfInterest, c: ActivityLinks.Category): Boolean {
+            if (c == ActivityLinks.Category.PARKS || c == ActivityLinks.Category.BEACHES) return true
+            val k = normalize(p.kind)
+            return listOf("point de vue", "belvedere", "observation", "place", "pont", "fontaine", "jardin", "parc",
+                "plage", "archeolog", "ruines", "monument", "arc ", "memorial", "porte", "marche", "zoo").any { it in k }
+        }
+        fun indoor(p: PointOfInterest, c: ActivityLinks.Category): Boolean {
+            if (c == ActivityLinks.Category.MUSEUMS) return true
+            val k = normalize(p.kind)
+            return listOf("musee", "galerie", "chateau", "palais", "aquarium", "opera", "theatre", "salle", "centre commercial",
+                "grand magasin", "cathedrale", "basilique", "eglise", "mosquee", "synagogue", "halle").any { it in k }
+        }
+        var today: DayWeather? = null
         val used = mutableSetOf<String>()
         val activities = activityCategories(a).filter { !pools[it].isNullOrEmpty() }.ifEmpty {
             defaultActivities.filter { !pools[it].isNullOrEmpty() }
@@ -395,6 +416,19 @@ object ExperienceBuilder {
             if (("tour" in k || "belvedere" in k || "observation" in k || "point de vue" in k) && startMin >= 16 * 60) s += 1.5 // la vue en fin de journée
             if ("plage" in k && startMin >= 14 * 60) s += 1.0
             if (p.id in avoid) s -= 6.0
+            today?.let { w ->
+                val out = outdoor(p, category)
+                val ins = indoor(p, category)
+                if (w.rainy) { if (out) s -= 3.5; if (ins) s += 1.2 }
+                if (w.sunny && out) s += 0.8
+                if (w.hot && "plage" in k) s += 1.5
+                if (w.cold && out) s -= 1.0
+                // Le point de vue juste avant le coucher du soleil.
+                val sunset = w.sunsetMin
+                if (sunset != null && ("tour" in k || "belvedere" in k || "observation" in k || "point de vue" in k) &&
+                    startMin in (sunset - 120)..(sunset - 15)
+                ) s += 2.0
+            }
             return s
         }
 
@@ -409,10 +443,18 @@ object ExperienceBuilder {
                 category == ActivityLinks.Category.PARKS || category == ActivityLinks.Category.BEACHES -> t("Pour souffler au grand air")
                 else -> t("Parmi les lieux les plus réputés de la ville")
             }
-            return if (taste != null) tf("Pour votre envie « {0} » · {1}", t(taste.label).lowercase(), base) else base
+            val withTaste = if (taste != null) tf("Pour votre envie « {0} » · {1}", t(taste.label).lowercase(), base) else base
+            val w = today
+            return when {
+                w != null && w.rainy && indoor(p, category) -> t("Idéal par temps de pluie") + " · " + withTaste
+                w != null && w.sunny && outdoor(p, category) -> t("Parfait sous le soleil prévu") + " · " + withTaste
+                else -> withTaste
+            }
         }
 
         val days = (1..a.duration.days).map { dayIndex ->
+            val date = a.startDate.plusDays((dayIndex - 1).toLong())
+            today = weather[date]
             val steps = mutableListOf<ExperienceStep>()
             var last: PointOfInterest? = null
             var lastCategory: ActivityLinks.Category? = null
@@ -489,7 +531,7 @@ object ExperienceBuilder {
                     }?.let { place(ActivityLinks.Category.NIGHTLIFE, it, "Pour finir la nuit", 120) }
                 }
             }
-            ExperienceDay(if (a.duration.days > 1) tf("Jour {0}", dayIndex) else t(a.duration.label), steps)
+            ExperienceDay(if (a.duration.days > 1) tf("Jour {0}", dayIndex) else t(a.duration.label), steps, date, today)
         }.filter { it.steps.isNotEmpty() }
 
         val themes = a.interests.map { i ->

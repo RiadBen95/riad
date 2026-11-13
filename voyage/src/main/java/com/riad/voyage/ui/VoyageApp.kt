@@ -41,6 +41,9 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
     val activityPlace by vm.activityPlace.collectAsStateWithLifecycle()
     val experience by vm.experience.collectAsStateWithLifecycle()
     val blog by vm.blog.collectAsStateWithLifecycle()
+    val trips by vm.trips.collectAsStateWithLifecycle()
+    val openTrip by vm.openTrip.collectAsStateWithLifecycle()
+    val tripArticle by vm.tripArticle.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(message) {
@@ -86,6 +89,8 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                     onOpenActivities = { vm.selectTab(Tab.ACTIVITIES) },
                     onOpenExperience = { vm.selectTab(Tab.EXPERIENCE) },
                     onOpenBlog = { vm.selectTab(Tab.BLOG) },
+                    trips = trips,
+                    onOpenTrip = vm::openTrip,
                     onOpenAlerts = { vm.selectTab(Tab.ALERTS) },
                     onOpenSettings = configure,
                     onRecent = vm::applyRecent,
@@ -103,6 +108,8 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         onPickDay = vm::pickCalendarDay,
                         onBook = { f -> openUrl(context, vm.bookingUrl(f)) },
                         onActivities = vm::activitiesAtDestination,
+                        onPlanStay = { vm.planStayFromFlight(null) },
+                        onSaveFlight = vm::saveFlight,
                         onFollow = {
                             onFollowRequested()
                             vm.followCurrentSearch()
@@ -138,6 +145,8 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         onCategory = vm::setActivityCategory,
                         onSearch = { vm.searchActivities(force = true) },
                         wiki = vm::wikiSummary,
+                        isFavorite = { name -> trips.any { tr -> tr.places.any { it.name.equals(name, ignoreCase = true) } } },
+                        onFavorite = { p -> vm.toggleFavorite(p, activityCity.ifBlank { places.city }) },
                     )
                 }
 
@@ -157,6 +166,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         onRegenerate = vm::regenerateExperience,
                         onEdit = vm::editExperience,
                         suggestCities = vm::suggestCities,
+                        onSave = vm::saveExperience,
                     )
                 }
 
@@ -182,6 +192,28 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         wiki = vm::wikiSummary,
                         hasPersonalFilter = experience.answers.interests.isNotEmpty() ||
                             com.riad.voyage.data.NotablePlaces.supports(activityCategory),
+                        onSaveArticle = vm::saveArticle,
+                    )
+                }
+
+                Tab.TRIPS -> {
+                    BackHandler {
+                        when {
+                            tripArticle != null -> vm.readSavedArticle(null)
+                            openTrip != null -> vm.openTrip(null)
+                            else -> vm.selectTab(Tab.HOME)
+                        }
+                    }
+                    TripsScreen(
+                        trips = trips,
+                        openId = openTrip,
+                        article = tripArticle,
+                        onOpen = vm::openTrip,
+                        onDelete = vm::deleteTrip,
+                        onRemove = vm::removeFromTrip,
+                        onReadArticle = vm::readSavedArticle,
+                        onAlerts = { vm.selectTab(Tab.ALERTS) },
+                        alertCount = alerts.size,
                     )
                 }
 
@@ -205,6 +237,7 @@ private fun tabIcon(t: Tab) = when (t) {
     Tab.ACTIVITIES -> AppIcons.Ticket
     Tab.EXPERIENCE -> AppIcons.Sparkle
     Tab.BLOG -> AppIcons.Book
+    Tab.TRIPS -> AppIcons.Luggage
     Tab.ALERTS -> AppIcons.Bell
     Tab.SETTINGS -> AppIcons.Settings
 }

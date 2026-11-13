@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -78,9 +79,10 @@ fun BlogScreen(
     searchArticles: suspend (String) -> List<Pair<String, String>>,
     wiki: suspend (String) -> WikiSummary?,
     hasPersonalFilter: Boolean,
+    onSaveArticle: (Article) -> Unit = {},
 ) {
     when {
-        state.article != null -> ArticleReader(state.article, onCloseArticle)
+        state.article != null -> ArticleReader(state.article, onCloseArticle, onSave = { onSaveArticle(state.article) })
         state.articleLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
         else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item {
@@ -304,7 +306,7 @@ private fun ArticleCardView(card: ArticleCard, wiki: suspend (String) -> WikiSum
 }
 
 @Composable
-private fun ArticleReader(article: Article, onClose: () -> Unit) {
+internal fun ArticleReader(article: Article, onClose: () -> Unit, onSave: (() -> Unit)? = null) {
     val context = LocalContext.current
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
         item {
@@ -333,6 +335,7 @@ private fun ArticleReader(article: Article, onClose: () -> Unit) {
         }
         item {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                onSave?.let { save -> Button(onClick = save) { Text(t("♡ Garder l'article (lecture hors connexion)")) } }
                 OutlinedButton(onClick = { openUrl(context, article.url) }) { Text(t("Lire sur Wikipédia")) }
                 Text(
                     tf("Texte issu de l'article Wikipédia « {0} », licence CC BY-SA 4.0.", article.title),

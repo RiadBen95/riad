@@ -99,6 +99,8 @@ fun ActivitiesScreen(
     onCategory: (ActivityLinks.Category) -> Unit,
     onSearch: () -> Unit,
     wiki: suspend (String) -> WikiSummary?,
+    isFavorite: (String) -> Boolean = { false },
+    onFavorite: (PointOfInterest) -> Unit = {},
 ) {
     val context = LocalContext.current
     val focus = LocalFocusManager.current
@@ -207,7 +209,7 @@ fun ActivitiesScreen(
                         }
                     }
                 }
-                itemsIndexed(places.items, key = { _, it -> it.id }) { i, p -> PlaceCard(i + 1, p, places.city, wiki) }
+                itemsIndexed(places.items, key = { _, it -> it.id }) { i, p -> PlaceCard(i + 1, p, places.city, wiki, isFavorite(p.name)) { onFavorite(p) } }
                 item {
                     Text(
                         t("Données © les contributeurs d'OpenStreetMap, Wikipédia, Wikidata et Wikivoyage."),
@@ -221,7 +223,7 @@ fun ActivitiesScreen(
 }
 
 @Composable
-private fun PlaceCard(rank: Int, p: PointOfInterest, city: String, wiki: suspend (String) -> WikiSummary?) {
+private fun PlaceCard(rank: Int, p: PointOfInterest, city: String, wiki: suspend (String) -> WikiSummary?, favorite: Boolean = false, onFavorite: () -> Unit = {}) {
     val context = LocalContext.current
     var summary by remember(p.id) { mutableStateOf<WikiSummary?>(null) }
     LaunchedEffect(p.id) {
@@ -242,7 +244,13 @@ private fun PlaceCard(rank: Int, p: PointOfInterest, city: String, wiki: suspend
                 )
             }
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("$rank. ${p.name}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("$rank. ${p.name}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    TextButton(onClick = onFavorite) {
+                        Text(if (favorite) "♥" else "♡", style = MaterialTheme.typography.titleLarge,
+                            color = if (favorite) com.riad.voyage.ui.theme.BrandCoral else MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
                 val badges = listOfNotNull(
                     "★ Incontournable".takeIf { p.isMustSee },
                     "📘 Recommandé par le guide".takeIf { p.inGuide },

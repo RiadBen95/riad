@@ -59,6 +59,8 @@ fun FlightResultsScreen(
     onPickDay: (LocalDate) -> Unit,
     onBook: (Flight) -> Unit,
     onActivities: () -> Unit,
+    onPlanStay: () -> Unit = {},
+    onSaveFlight: (Flight) -> Unit = {},
     onFollow: () -> Unit,
     onOpenSite: () -> Unit,
     onConfigure: () -> Unit,
@@ -122,6 +124,12 @@ fun FlightResultsScreen(
                     }
                 }
                 item {
+                    // Enchaînement vers le séjour : programme personnalisé avec la ville et les dates du vol.
+                    Button(onClick = onPlanStay, modifier = Modifier.fillMaxWidth()) {
+                        Text(tf("✨ Planifier mon séjour à {0}", t(q.destination?.name ?: "")))
+                    }
+                }
+                item {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(onClick = onFollow, modifier = Modifier.weight(1f)) { Text(t("🔔 Suivre ce prix")) }
                         OutlinedButton(onClick = onActivities, modifier = Modifier.weight(1f)) { Text(t("🎟️ Que faire sur place")) }
@@ -160,7 +168,7 @@ fun FlightResultsScreen(
                     }
                     val cheapest = state.flights.minOf { it.price }
                     items(state.sortedFlights) { f ->
-                        FlightCard(f, q.adults, state.currency, f.price == cheapest, { onBook(f) })
+                        FlightCard(f, q.adults, state.currency, f.price == cheapest, { onBook(f) }, { onSaveFlight(f) })
                     }
                     item {
                         TextButton(onClick = onOpenSite, modifier = Modifier.fillMaxWidth()) {
@@ -226,6 +234,7 @@ private fun FlightCard(
     currency: String,
     cheapest: Boolean,
     onBook: () -> Unit,
+    onSave: () -> Unit,
 ) {
     val deal = dealColor()
     Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp)) {
@@ -275,6 +284,7 @@ private fun FlightCard(
             f.returnAt?.let { Leg("Retour", it, f.durationBack, f.returnTransfers) }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Button(onClick = onBook) { Text(t("Réserver")) }
+                TextButton(onClick = onSave) { Text(t("♡ Garder ce vol")) }
             }
         }
     }

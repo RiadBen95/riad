@@ -91,10 +91,28 @@ class ExperienceTest {
     fun questionnaireHasFineQuestions() {
         val a = Quiz.Answers(interests = setOf(Quiz.Interest.FOOD, Quiz.Interest.BEACH, Quiz.Interest.ART))
         assertEquals(
-            listOf("city", "duration", "company", "interests", "taste:ART", "taste:FOOD",
+            listOf("city", "date", "duration", "company", "interests", "taste:ART", "taste:FOOD",
                 "style", "pace", "depth", "start", "mobility", "diet", "budget"),
             Quiz.steps(a),
         )
         assertEquals("restaurants halal", ExperienceBuilder.searchHint(a.copy(diet = Quiz.Diet.HALAL), Category.RESTAURANTS))
+    }
+
+    @Test
+    fun rainyDayPrefersIndoorVisits() {
+        val day = java.time.LocalDate.of(2026, 12, 1)
+        val rain = com.riad.voyage.data.DayWeather(day, 63, 12.0, 7.0, 90, 17 * 60)
+        val parks = (0 until 6).map { poi(Category.PARKS, it, "Parc", fame = 80) }
+        val museums = (0 until 6).map { poi(Category.MUSEUMS, it + 10, "Musée", fame = 15) }
+        val a = Quiz.Answers(city = "Paris", interests = setOf(Quiz.Interest.NATURE, Quiz.Interest.ART), startDate = day)
+        val pools = mapOf(Category.PARKS to parks, Category.MUSEUMS to museums, Category.RESTAURANTS to this.pools.getValue(Category.RESTAURANTS),
+            Category.BARS to this.pools.getValue(Category.BARS))
+        val wet = ExperienceBuilder.build(a, "Paris", pools, weather = mapOf(day to rain)).days.single()
+        assertEquals(rain, wet.weather)
+        assertEquals(Category.MUSEUMS, wet.steps.first().category)
+        assertTrue(wet.steps.first().why.startsWith("Idéal par temps de pluie"))
+        // Sans météo, les parcs très célèbres passent devant.
+        val dry = ExperienceBuilder.build(a, "Paris", pools).days.single()
+        assertEquals(Category.PARKS, dry.steps.first().category)
     }
 }
