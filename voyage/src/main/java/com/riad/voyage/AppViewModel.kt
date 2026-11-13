@@ -31,7 +31,7 @@ import java.time.temporal.ChronoUnit
 
 enum class Tab(val label: String, val inBottomBar: Boolean = true) {
     HOME("Accueil"), FLIGHTS("Vols"), HOTELS("Hôtels"), ACTIVITIES("Sorties"), EXPERIENCE("Expérience"), BLOG("Blogue"),
-    ALERTS("Alertes", inBottomBar = false), TRIPS("Mes voyages", inBottomBar = false),
+    ALERTS("Alertes", inBottomBar = false), TRIPS("Mes voyages", inBottomBar = false), BUDGET("Budget", inBottomBar = false),
     SETTINGS("Réglages", inBottomBar = false),
 }
 
@@ -148,6 +148,18 @@ data class HotelDetailState(
     val confirmed: com.riad.voyage.data.HotelBookingResult? = null,
 )
 
+/** Calculateur de budget du séjour. */
+data class BudgetState(
+    val input: com.riad.voyage.data.BudgetInput,
+    val overrides: Map<com.riad.voyage.data.BudgetItem, Double> = emptyMap(),
+    val targetEur: Double? = null,
+    val rates: Map<String, Double> = emptyMap(),
+    val from: Tab = Tab.HOME,
+) {
+    val lines get() = com.riad.voyage.data.BudgetCalculator.compute(input, overrides)
+    val totalEur get() = lines.sumOf { it.amountEur }
+}
+
 data class BlogState(
     val city: com.riad.voyage.data.BlogCity? = null,
     val filter: com.riad.voyage.data.BlogFilter = com.riad.voyage.data.BlogFilter.ALL,
@@ -229,6 +241,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _hotels = MutableStateFlow(HotelState())
     val hotels: StateFlow<HotelState> = _hotels.asStateFlow()
+
+    private val _budget = MutableStateFlow<BudgetState?>(null)
+    val budget: StateFlow<BudgetState?> = _budget.asStateFlow()
 
     private val _blog = MutableStateFlow(BlogState())
     val blog: StateFlow<BlogState> = _blog.asStateFlow()
@@ -382,6 +397,95 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 guideFound = guidePicks.isNotEmpty(), source = SOURCE_MAP))
         }
     }
+
+    // ---------- Budget du séjour ----------
+
+    private fun travellersFor(c: com.riad.voyage.data.Quiz.Company) = when (c) {
+        com.riad.voyage.data.Quiz.Company.SOLO -> 1
+        com.riad.voyage.data.Quiz.Company.COUPLE -> 2
+        com.riad.voyage.data.Quiz.Company.FRIENDS -> 3
+        com.riad.voyage.data.Quiz.Company.FAMILY -> 4
+    }
+
+    /** Prix moyen par nuit des hôtels trouvés pour cette ville (si une recherche a été faite). */
+    private fun hotelNightFor(city: String): Double? {
+        val h = _hotels.value
+        if (!h.city.equals(city, ignoreCase = true)) return null
+        val prices = h.offers.mapNotNull { it.totalPrice?.let { p -> com.riad.voyage.data.Fx.toEur(p, it.currency, _budget.value?.rates.orEmpty()) / h.nights } }
+            .sorted()
+        return prices.getOrNull(prices.size / 2)
+    }
+
+    private fun countryOf(city: String, fallback: String = ""): String =
+        fallback.ifBlank {
+            com.riad.voyage.data.Blog.city(city)?.country ?: PopularPlaces.all.firstOrNull { it.name.equals(city, true) }?.country.orEmpty()
+        }
+
+    private fun openBudget(input: com.riad.voyage.data.BudgetInput) {
+        val from = _tab.value
+        _budget.value = BudgetState(input = input, from = from)
+        _tab.value = Tab.BUDGET
+        viewModelScope.launch {
+            val rates = kotlinx.coroutines.withTimeoutOrNull(8_000) { runCatching { com.riad.voyage.data.Fx.rates() }.getOrNull() }.orEmpty()
+            _budget.update { it?.copy(rates = rates) }
+        }
+    }
+
+    /** Budget d'un voyage enregistré : vols gardés, hôtel réservé, programme. */
+    fun openBudgetForTrip(trip: com.riad.voyage.data.Trip) {
+        val rates = _budget.value?.rates.orEmpty()
+        val nights = runCatching {
+            ChronoUnit.DAYS.between(LocalDate.parse(trip.startDate!!), LocalDate.parse(trip.endDate!!)).toInt()
+        }.getOrNull()?.coerceAtLeast(0) ?: 3
+        val flights = trip.flights.takeIf { it.isNotEmpty() }?.sumOf { com.riad.voyage.data.Fx.toEur(it.price.toDouble(), it.currency, rates) }
+        val booked = trip.places.firstOrNull { it.kind.startsWith("Hôtel réservé") }?.kind
+            ?.let { Regex("([0-9][0-9  ., ]*)").findAll(it).lastOrNull()?.value?.replace(Regex("[^0-9]"), "")?.toDoubleOrNull() }
+        val acts = trip.program.flatMap { d -> d.steps }.mapNotNull { s ->
+            categoryOfEmoji(s.emoji)?.let { com.riad.voyage.data.PlannedActivity(it, s.place.kind) }
+        }.takeIf { trip.program.isNotEmpty() }
+        val answers = _experience.value.answers
+        openBudget(
+            com.riad.voyage.data.BudgetInput(
+                city = trip.city, country = countryOf(trip.city, trip.country),
+                travellers = if (answers.city.equals(trip.city, true)) travellersFor(answers.company) else 2,
+                nights = nights, level = answers.budget, mobility = answers.mobility,
+                flightTotalEur = flights, hotelTotalEur = booked, hotelNightEur = hotelNightFor(trip.city), activities = acts,
+            ),
+        )
+    }
+
+    /** Budget du programme Expérience affiché. */
+    fun openBudgetForExperience() {
+        val st = _experience.value
+        val a = st.answers
+        val city = st.result?.city ?: a.city
+        val trip = _trips.value.firstOrNull { it.city.equals(city, true) }
+        val rates = _budget.value?.rates.orEmpty()
+        val acts = st.result?.days?.flatMap { d -> d.steps.map { com.riad.voyage.data.PlannedActivity(it.category, it.place.kind) } }
+        openBudget(
+            com.riad.voyage.data.BudgetInput(
+                city = city, country = countryOf(city, a.place?.country.orEmpty()),
+                travellers = travellersFor(a.company),
+                nights = if (a.duration.halfDay) 0 else (a.duration.days - 1).coerceAtLeast(0),
+                level = a.budget, mobility = a.mobility,
+                flightTotalEur = trip?.flights?.takeIf { it.isNotEmpty() }?.sumOf { com.riad.voyage.data.Fx.toEur(it.price.toDouble(), it.currency, rates) },
+                hotelNightEur = hotelNightFor(city), activities = acts,
+            ),
+        )
+    }
+
+    private fun categoryOfEmoji(e: String) = ActivityLinks.Category.entries.firstOrNull { it.emoji == e }
+
+    fun updateBudgetInput(transform: (com.riad.voyage.data.BudgetInput) -> com.riad.voyage.data.BudgetInput) =
+        _budget.update { it?.copy(input = transform(it.input)) }
+
+    fun setBudgetOverride(item: com.riad.voyage.data.BudgetItem, eur: Double?) = _budget.update { b ->
+        b?.copy(overrides = if (eur == null) b.overrides - item else b.overrides + (item to eur))
+    }
+
+    fun setBudgetTarget(eur: Double?) = _budget.update { it?.copy(targetEur = eur) }
+
+    fun closeBudget() { val from = _budget.value?.from ?: Tab.HOME; _tab.value = from }
 
     // ---------- Hôtels ----------
 

@@ -45,6 +45,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
     val openTrip by vm.openTrip.collectAsStateWithLifecycle()
     val tripArticle by vm.tripArticle.collectAsStateWithLifecycle()
     val hotels by vm.hotels.collectAsStateWithLifecycle()
+    val budget by vm.budget.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(message) {
@@ -181,6 +182,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                             vm.openHotels(a.city, a.place, a.startDate, a.startDate.plusDays(a.duration.days.toLong()))
                         },
                         onReplace = vm::replaceExperienceStep,
+                        onBudget = vm::openBudgetForExperience,
                         wiki = vm::wikiSummary,
                         isFavorite = { name -> trips.any { tr -> tr.places.any { it.name.equals(name, ignoreCase = true) } } },
                         onFavorite = { p -> vm.toggleFavorite(p, experience.result?.city ?: experience.answers.city) },
@@ -261,12 +263,27 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         onAlerts = { vm.selectTab(Tab.ALERTS) },
                         wiki = vm::wikiSummary,
                         onReadArticle2 = vm::readPlaceArticle,
+                        onBudget = vm::openBudgetForTrip,
                         onHotels = { tr ->
                             vm.openHotels(tr.city, null, tr.startDate?.let { runCatching { java.time.LocalDate.parse(it) }.getOrNull() },
                                 tr.endDate?.let { runCatching { java.time.LocalDate.parse(it) }.getOrNull() })
                         },
                         alertCount = alerts.size,
                     )
+                }
+
+                Tab.BUDGET -> {
+                    BackHandler { vm.closeBudget() }
+                    budget?.let { b ->
+                        BudgetScreen(
+                            state = b,
+                            currency = settings.currency,
+                            onBack = vm::closeBudget,
+                            onInput = vm::updateBudgetInput,
+                            onOverride = vm::setBudgetOverride,
+                            onTarget = vm::setBudgetTarget,
+                        )
+                    } ?: LaunchedEffect(Unit) { vm.selectTab(Tab.HOME) }
                 }
 
                 Tab.ALERTS -> {
@@ -292,5 +309,6 @@ private fun tabIcon(t: Tab) = when (t) {
     Tab.TRIPS -> AppIcons.Luggage
     Tab.HOTELS -> AppIcons.Hotel
     Tab.ALERTS -> AppIcons.Bell
+    Tab.BUDGET -> AppIcons.Luggage
     Tab.SETTINGS -> AppIcons.Settings
 }

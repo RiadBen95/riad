@@ -1,0 +1,145 @@
+package com.riad.voyage.data
+
+import org.json.JSONObject
+import java.text.Normalizer
+import kotlin.math.ceil
+
+/**
+ * Niveau de prix d'un pays par rapport à la France (1,0), pour estimer repas, hôtels,
+ * transports et billets. Ordres de grandeur, à ajuster par la personne si besoin.
+ */
+object CostIndex {
+    private val byCountry = mapOf(
+        "france" to 1.0, "espagne" to 0.8, "spain" to 0.8, "portugal" to 0.75, "italie" to 0.9, "italy" to 0.9,
+        "allemagne" to 0.95, "germany" to 0.95, "royaume-uni" to 1.15, "united kingdom" to 1.15, "angleterre" to 1.15,
+        "pays-bas" to 1.05, "netherlands" to 1.05, "belgique" to 1.0, "belgium" to 1.0, "suisse" to 1.6, "switzerland" to 1.6,
+        "autriche" to 1.0, "austria" to 1.0, "grece" to 0.75, "greece" to 0.75, "tchequie" to 0.65, "czechia" to 0.65,
+        "republique tcheque" to 0.65, "pologne" to 0.6, "poland" to 0.6, "hongrie" to 0.6, "hungary" to 0.6,
+        "irlande" to 1.15, "ireland" to 1.15, "suede" to 1.15, "sweden" to 1.15, "norvege" to 1.4, "norway" to 1.4,
+        "danemark" to 1.3, "denmark" to 1.3, "croatie" to 0.7, "croatia" to 0.7, "turquie" to 0.5, "turkey" to 0.5,
+        "maroc" to 0.45, "morocco" to 0.45, "algerie" to 0.4, "algeria" to 0.4, "tunisie" to 0.4, "tunisia" to 0.4,
+        "egypte" to 0.35, "egypt" to 0.35, "emirats arabes unis" to 1.1, "united arab emirates" to 1.1,
+        "arabie saoudite" to 0.9, "saudi arabia" to 0.9, "qatar" to 1.1, "japon" to 0.95, "japan" to 0.95,
+        "chine" to 0.6, "china" to 0.6, "thailande" to 0.45, "thailand" to 0.45, "inde" to 0.3, "india" to 0.3,
+        "indonesie" to 0.4, "indonesia" to 0.4, "vietnam" to 0.35, "coree du sud" to 0.85, "south korea" to 0.85,
+        "etats-unis" to 1.25, "united states" to 1.25, "canada" to 1.05, "mexique" to 0.55, "mexico" to 0.55,
+        "bresil" to 0.55, "brazil" to 0.55, "argentine" to 0.45, "argentina" to 0.45, "australie" to 1.15, "australia" to 1.15,
+        "senegal" to 0.5, "afrique du sud" to 0.55, "south africa" to 0.55,
+    )
+
+    private fun norm(s: String) = Normalizer.normalize(s.trim().lowercase(), Normalizer.Form.NFD).replace(Regex("\\p{Mn}+"), "")
+
+    fun of(country: String): Double = byCountry[norm(country)] ?: 0.9
+}
+
+enum class BudgetItem(val label: String, val emoji: String) {
+    FLIGHT("Vols", "✈️"),
+    HOTEL("Hébergement", "🏨"),
+    MEALS("Repas", "🍽️"),
+    ACTIVITIES("Visites et sorties", "🎟️"),
+    TRANSPORT("Transports sur place", "🚇"),
+    EXTRAS("Imprévus et souvenirs", "🛍️"),
+}
+
+/** Une activité payante prévue (étape d'un programme). */
+data class PlannedActivity(val category: ActivityLinks.Category, val kind: String)
+
+data class BudgetInput(
+    val city: String,
+    val country: String,
+    val travellers: Int = 2,
+    val nights: Int = 3,
+    val level: Quiz.Budget = Quiz.Budget.MEDIUM,
+    val mobility: Quiz.Mobility = Quiz.Mobility.TRANSIT,
+    val flightTotalEur: Double? = null,     // vols gardés (total pour le groupe)
+    val hotelTotalEur: Double? = null,      // hôtel réservé (total du séjour)
+    val hotelNightEur: Double? = null,      // prix par nuit trouvé dans la recherche d'hôtels
+    val activities: List<PlannedActivity>? = null,
+)
+
+/** Une ligne du budget. [source] explique d'où vient le montant. */
+data class BudgetLine(val item: BudgetItem, val amountEur: Double, val source: String, val fromData: Boolean)
+
+object BudgetCalculator {
+    private fun norm(s: String) = Normalizer.normalize(s.lowercase(), Normalizer.Form.NFD).replace(Regex("\\p{Mn}+"), "")
+
+    fun days(nights: Int) = (nights + 1).coerceAtLeast(1)
+
+    /** Prix d'un billet par personne (en France), selon le type de lieu. */
+    fun ticketPrice(a: PlannedActivity): Double {
+        val k = norm(a.kind)
+        return when {
+            "eglise" in k || "cathedrale" in k || "basilique" in k || "mosquee" in k || "synagogue" in k || "temple" in k -> 0.0
+            "parc d'attractions" in k || "disney" in k -> 60.0
+            "zoo" in k || "aquarium" in k -> 25.0
+            "tour" in k || "observation" in k -> 15.0
+            else -> when (a.category) {
+                ActivityLinks.Category.MUSEUMS -> 15.0
+                ActivityLinks.Category.MONUMENTS -> 10.0
+                ActivityLinks.Category.ATTRACTIONS -> 20.0
+                ActivityLinks.Category.CAFES -> 8.0
+                ActivityLinks.Category.BARS -> 15.0
+                ActivityLinks.Category.NIGHTLIFE -> 25.0
+                else -> 0.0   // parcs, plages, shopping, restaurants (comptés dans les repas)
+            }
+        }
+    }
+
+    /**
+     * Budget estimé, poste par poste, en euros. Les montants saisis par la personne ([overrides])
+     * remplacent les estimations ; les imprévus (10 %) suivent les autres postes hors vols.
+     */
+    fun compute(i: BudgetInput, overrides: Map<BudgetItem, Double> = emptyMap()): List<BudgetLine> {
+        val index = CostIndex.of(i.country)
+        val people = i.travellers.coerceAtLeast(1)
+        val rooms = ceil(people / 2.0)
+        val days = days(i.nights)
+        val levelMeals = when (i.level) { Quiz.Budget.SMALL -> 30.0; Quiz.Budget.MEDIUM -> 55.0; Quiz.Budget.COMFORT -> 100.0 }
+        val levelHotel = when (i.level) { Quiz.Budget.SMALL -> 70.0; Quiz.Budget.MEDIUM -> 130.0; Quiz.Budget.COMFORT -> 250.0 }
+        val transportDay = if (i.mobility == Quiz.Mobility.WALK) 2.0 else 7.0
+
+        val flight = i.flightTotalEur?.let { BudgetLine(BudgetItem.FLIGHT, it, "Vols gardés dans votre voyage", true) }
+            ?: BudgetLine(BudgetItem.FLIGHT, 0.0, "Aucun vol gardé : saisissez le montant", false)
+        val hotel = when {
+            i.nights <= 0 -> BudgetLine(BudgetItem.HOTEL, 0.0, "Pas de nuit sur place", true)
+            i.hotelTotalEur != null -> BudgetLine(BudgetItem.HOTEL, i.hotelTotalEur, "Hôtel réservé", true)
+            i.hotelNightEur != null -> BudgetLine(BudgetItem.HOTEL, i.hotelNightEur * i.nights, "D'après les hôtels trouvés pour vos dates", true)
+            else -> BudgetLine(BudgetItem.HOTEL, levelHotel * index * rooms * i.nights, "Estimation selon le pays et votre niveau de budget", false)
+        }
+        val meals = BudgetLine(BudgetItem.MEALS, levelMeals * index * people * days, "Estimation : 3 repas par jour et par personne", false)
+        val activities = i.activities?.let { list ->
+            BudgetLine(BudgetItem.ACTIVITIES, list.sumOf { ticketPrice(it) } * index * people, "D'après votre programme", true)
+        } ?: BudgetLine(BudgetItem.ACTIVITIES, 1.5 * 13.0 * index * people * days, "Estimation : environ 1 à 2 visites payantes par jour", false)
+        val transport = BudgetLine(BudgetItem.TRANSPORT, transportDay * index * people * days,
+            if (i.mobility == Quiz.Mobility.WALK) "Estimation : surtout à pied" else "Estimation : métro, bus, taxis occasionnels", false)
+
+        val base = listOf(flight, hotel, meals, activities, transport).map { line ->
+            overrides[line.item]?.let { line.copy(amountEur = it, source = "Montant saisi", fromData = true) } ?: line
+        }
+        val extrasBase = base.filter { it.item != BudgetItem.FLIGHT }.sumOf { it.amountEur }
+        val extras = overrides[BudgetItem.EXTRAS]?.let { BudgetLine(BudgetItem.EXTRAS, it, "Montant saisi", true) }
+            ?: BudgetLine(BudgetItem.EXTRAS, extrasBase * 0.10, "10 % des dépenses sur place", false)
+        return base + extras
+    }
+}
+
+/** Taux de change (open.er-api.com, gratuit, sans clé), base euro. */
+object Fx {
+    @Volatile private var cache: Map<String, Double>? = null
+
+    suspend fun rates(): Map<String, Double> {
+        cache?.let { return it }
+        val r = parse(PlacesApi.get("https://open.er-api.com/v6/latest/EUR"))
+        if (r.isNotEmpty()) cache = r
+        return r
+    }
+
+    fun parse(json: String): Map<String, Double> {
+        val o = JSONObject(json).optJSONObject("rates") ?: return emptyMap()
+        return o.keys().asSequence().associateWith { o.optDouble(it) }.filterValues { !it.isNaN() && it > 0 }
+    }
+
+    /** Convertit un montant d'une devise vers l'euro (inchangé si le taux est inconnu). */
+    fun toEur(amount: Double, currency: String, rates: Map<String, Double>): Double =
+        if (currency.equals("EUR", true)) amount else rates[currency.uppercase()]?.let { amount / it } ?: amount
+}

@@ -68,6 +68,7 @@ fun ExperienceScreen(
     alternatives: (Int, Int) -> List<Pair<ActivityLinks.Category, com.riad.voyage.data.PointOfInterest>> = { _, _ -> emptyList() },
     onReplace: (Int, Int, Pair<ActivityLinks.Category, com.riad.voyage.data.PointOfInterest>?) -> Unit = { _, _, _ -> },
     onHotels: () -> Unit = {},
+    onBudget: () -> Unit = {},
     wiki: suspend (String) -> com.riad.voyage.data.WikiSummary? = { null },
     isFavorite: (String) -> Boolean = { false },
     onFavorite: (com.riad.voyage.data.PointOfInterest) -> Unit = {},
@@ -82,7 +83,7 @@ fun ExperienceScreen(
                 Text(state.stage, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
             }
         }
-        state.result != null -> ExperienceResult(state, onRegenerate, onEdit, onSave, alternatives, onReplace, onHotels,
+        state.result != null -> ExperienceResult(state, onRegenerate, onEdit, onSave, alternatives, onReplace, onHotels, onBudget,
             wiki, isFavorite, onFavorite, onReadArticle)
         else -> Questionnaire(state, onAnswers, onStep, onGenerate, suggestCities)
     }
@@ -293,6 +294,7 @@ private fun ExperienceResult(
     alternatives: (Int, Int) -> List<Pair<ActivityLinks.Category, com.riad.voyage.data.PointOfInterest>>,
     onReplace: (Int, Int, Pair<ActivityLinks.Category, com.riad.voyage.data.PointOfInterest>?) -> Unit,
     onHotels: () -> Unit,
+    onBudget: () -> Unit,
     wiki: suspend (String) -> com.riad.voyage.data.WikiSummary?,
     isFavorite: (String) -> Boolean,
     onFavorite: (com.riad.voyage.data.PointOfInterest) -> Unit,
@@ -340,6 +342,7 @@ private fun ExperienceResult(
                     }
                     Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) { Text(t("💾 Enregistrer dans mon voyage")) }
                     OutlinedButton(onClick = onHotels, modifier = Modifier.fillMaxWidth()) { Text(t("🏨 Où dormir ?")) }
+                    OutlinedButton(onClick = onBudget, modifier = Modifier.fillMaxWidth()) { Text(t("💰 Budget du séjour")) }
                 }
             }
         }

@@ -55,13 +55,14 @@ fun TripsScreen(
     onAlerts: () -> Unit,
     alertCount: Int,
     onHotels: (Trip) -> Unit = {},
+    onBudget: (Trip) -> Unit = {},
     wiki: suspend (String) -> com.riad.voyage.data.WikiSummary? = { null },
     onReadArticle2: (String) -> Unit = {},
 ) {
     val trip = trips.firstOrNull { it.id == openId }
     when {
         article != null -> ArticleReader(article, onClose = { onReadArticle(null) })
-        trip != null -> TripDetail(trip, onBack = { onOpen(null) }, onDelete, onRemove, onReadArticle, onHotels, wiki, onReadArticle2)
+        trip != null -> TripDetail(trip, onBack = { onOpen(null) }, onDelete, onRemove, onReadArticle, onHotels, onBudget, wiki, onReadArticle2)
         else -> TripList(trips, onOpen, onAlerts, alertCount)
     }
 }
@@ -128,6 +129,7 @@ private fun TripDetail(
     onRemove: (String, String, Int) -> Unit,
     onReadArticle: (SavedArticle?) -> Unit,
     onHotels: (Trip) -> Unit,
+    onBudget: (Trip) -> Unit,
     wiki: suspend (String) -> com.riad.voyage.data.WikiSummary?,
     onPlaceArticle: (String) -> Unit,
 ) {
@@ -157,6 +159,9 @@ private fun TripDetail(
             }
             OutlinedButton(onClick = { onHotels(trip) }, modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
                 Text(t("🏨 Trouver un hôtel"))
+            }
+            OutlinedButton(onClick = { onBudget(trip) }, modifier = Modifier.fillMaxWidth()) {
+                Text(t("💰 Budget du séjour"))
             }
         }
 
