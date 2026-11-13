@@ -62,7 +62,7 @@ object NotablePlaces {
             .map { e ->
                 PointOfInterest(
                     id = "wd/${e.lat},${e.lon},${e.name.hashCode()}",
-                    name = e.name,
+                    name = e.name.replaceFirstChar { it.uppercase() },
                     kind = e.kind,
                     lat = e.lat,
                     lon = e.lon,
