@@ -387,7 +387,7 @@ object RatingsAggregator {
                 ratings = ratings,
                 openNow = pick { it.openNow },
                 mapsUrl = pick { it.mapsUrl },
-                score = score,
+                ratingScore = score,
             )
         }
     }
