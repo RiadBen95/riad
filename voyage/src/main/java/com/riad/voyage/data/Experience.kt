@@ -229,14 +229,16 @@ object ExperienceBuilder {
             val affordable = pool.filter { budgetOk(it) }.ifEmpty { pool }
             if (affordable.isEmpty()) return null
             val top = affordable.take(10)
+            val matching = if (tastes.isEmpty()) 0 else top.count { matchingTaste(it, tastes) != null }
             val choice = if (near == null || !near.hasCoordinates) {
-                // Un peu de variété quand on régénère : un des trois premiers.
-                top[random.nextInt(minOf(3, top.size))]
+                // Un peu de variété quand on régénère : un des trois premiers (parmi ceux qui collent aux goûts).
+                top[random.nextInt(minOf(3, if (matching > 0) matching else top.size))]
             } else {
                 top.withIndex().minByOrNull { (i, p) ->
                     val km = if (p.hasCoordinates) PlacesParser.distanceMeters(near.lat, near.lon, p.lat, p.lon) / 1000 else 3.0
                     val comfortBonus = if (a.budget == Quiz.Budget.COMFORT && (priceLevel(p) ?: 0) >= 3) -0.5 else 0.0
-                    i * 0.6 + km + comfortBonus + random.nextDouble() * 0.3
+                    val tastePenalty = if (matching > 0 && matchingTaste(p, tastes) == null) 3.0 else 0.0
+                    i * 0.6 + km + comfortBonus + tastePenalty + random.nextDouble() * 0.3
                 }!!.value
             }
             used += choice.id
