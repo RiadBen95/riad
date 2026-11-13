@@ -59,6 +59,9 @@ data class BudgetInput(
     val hotelBooked: Boolean = false,
     val activities: List<PlannedActivity> = emptyList(),
     val includeDaily: Boolean = true,               // ajouter repas, transports et imprévus estimés
+    val flightEstimateEur: Double? = null,          // estimation par personne (aller-retour) si aucun vol choisi
+    val flightEstimateFromSearch: Boolean = false,  // estimation tirée d'une recherche de vols
+    val hotelNightEstimateEur: Double? = null,      // prix par nuit des hôtels trouvés, si aucun hôtel choisi
 )
 
 /**
@@ -78,6 +81,9 @@ object BudgetCalculator {
     private fun norm(s: String) = Normalizer.normalize(s.lowercase(), Normalizer.Form.NFD).replace(Regex("\\p{Mn}+"), "")
 
     fun days(nights: Int) = (nights + 1).coerceAtLeast(1)
+
+    /** Ordre de grandeur d'un aller-retour en avion par personne, selon la distance (km). */
+    fun flightEstimate(km: Double): Double = if (km < 150) 0.0 else 60.0 + 0.16 * km
 
     /** Catégorie devinée d'après le type de lieu (pour les lieux ajoutés depuis Sorties). */
     fun categoryOfKind(kind: String): ActivityLinks.Category? {
@@ -122,21 +128,33 @@ object BudgetCalculator {
         val index = CostIndex.of(i.country)
         val people = i.travellers.coerceAtLeast(1)
         val days = days(i.nights)
+        val levelHotel = when (i.level) { Quiz.Budget.SMALL -> 70.0; Quiz.Budget.MEDIUM -> 130.0; Quiz.Budget.COMFORT -> 250.0 }
         val levelMeals = when (i.level) { Quiz.Budget.SMALL -> 30.0; Quiz.Budget.MEDIUM -> 55.0; Quiz.Budget.COMFORT -> 100.0 }
         val transportDay = if (i.mobility == Quiz.Mobility.WALK) 2.0 else 7.0
 
-        val flight = if (i.flights.isEmpty()) BudgetLine(BudgetItem.FLIGHT, 0.0, "Aucun vol choisi", false, missing = true)
-        else BudgetLine(BudgetItem.FLIGHT, i.flights.sumOf { it.amountEur }, "Vols gardés dans votre voyage", true, i.flights)
+        val flight = if (i.flights.isEmpty()) {
+            when {
+                i.flightEstimateEur == null -> BudgetLine(BudgetItem.FLIGHT, 0.0, "Aucun vol choisi", false, missing = true)
+                i.flightEstimateFromSearch -> BudgetLine(BudgetItem.FLIGHT, i.flightEstimateEur * people,
+                    "Estimation : vol le moins cher de votre recherche", false, missing = true)
+                else -> BudgetLine(BudgetItem.FLIGHT, i.flightEstimateEur * people,
+                    "Estimation selon la distance depuis votre ville de départ", false, missing = true)
+            }
+        } else BudgetLine(BudgetItem.FLIGHT, i.flights.sumOf { it.amountEur }, "Vols gardés dans votre voyage", true, i.flights)
 
         val hotel = when {
             i.hotel != null -> BudgetLine(BudgetItem.HOTEL, i.hotel.amountEur,
                 if (i.hotelBooked) "Hôtel réservé" else "Hôtel choisi", true, listOf(i.hotel))
             i.nights <= 0 -> BudgetLine(BudgetItem.HOTEL, 0.0, "Pas de nuit sur place", true)
-            else -> BudgetLine(BudgetItem.HOTEL, 0.0, "Aucun hôtel choisi", false, missing = true)
+            i.hotelNightEstimateEur != null -> BudgetLine(BudgetItem.HOTEL, i.hotelNightEstimateEur * i.nights,
+                "Estimation : prix moyen des hôtels trouvés pour vos dates", false, missing = true)
+            else -> BudgetLine(BudgetItem.HOTEL, levelHotel * index * ceil(people / 2.0) * i.nights,
+                "Estimation selon le pays et votre niveau de budget", false, missing = true)
         }
 
         val acts = i.activities.distinctBy { norm(it.name) }
-        val activities = if (acts.isEmpty()) BudgetLine(BudgetItem.ACTIVITIES, 0.0, "Aucune activité choisie", false, missing = true)
+        val activities = if (acts.isEmpty()) BudgetLine(BudgetItem.ACTIVITIES, 1.5 * 13.0 * index * people * days,
+            "Estimation : environ 1 à 2 visites payantes par jour", false, missing = true)
         else {
             val details = acts.map { Chosen(it.name, ticketPrice(it) * index * people) }
             BudgetLine(BudgetItem.ACTIVITIES, details.sumOf { it.amountEur }, "Prix d'entrée habituels pour vos activités", true, details)

@@ -144,7 +144,7 @@ fun BudgetScreen(
 
         item {
             Text(
-                t("Le budget additionne ce que vous avez choisi : vols gardés, hôtel réservé ou mis en favori, activités de votre programme ou ajoutées au voyage. Touchez un poste pour saisir votre propre montant."),
+                t("Le budget additionne ce que vous avez choisi ; sans choix, une estimation est affichée. Touchez un poste pour saisir votre propre montant."),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

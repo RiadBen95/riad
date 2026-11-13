@@ -106,6 +106,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                     onOpenAlerts = { vm.selectTab(Tab.ALERTS) },
                     onOpenSettings = configure,
                     onRecent = vm::applyRecent,
+                    onClearRecents = vm::clearRecents,
                     onDestination = vm::pickDestination,
                     wiki = vm::wikiSummary,
                 )

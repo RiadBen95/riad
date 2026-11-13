@@ -132,6 +132,8 @@ class RecentStore(context: Context) {
         prefs.edit().putString("list", arr.toString()).apply()
     }
 
+    fun clear() = prefs.edit().remove("list").apply()
+
     private fun json(p: Place) = JSONObject().put("code", p.code).put("name", p.name).put("country", p.country)
         .put("type", p.type).put("cityName", p.cityName ?: JSONObject.NULL)
 

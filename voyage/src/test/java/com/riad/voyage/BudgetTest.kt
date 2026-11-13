@@ -39,12 +39,18 @@ class BudgetTest {
         assertEquals(l.sumOf { it.amountEur }, 300.0 + 250.0 + 45.0, 0.01)
     }
 
-    @Test fun nothingChosenIsFlaggedNotEstimated() {
-        val l = BudgetCalculator.compute(BudgetInput("Paris", "France", includeDaily = false))
-        listOf(BudgetItem.FLIGHT, BudgetItem.HOTEL, BudgetItem.ACTIVITIES).forEach {
-            assertEquals(0.0, line(l, it).amountEur, 0.0)
-            assertTrue(line(l, it).missing)
-        }
+    @Test fun nothingChosenFallsBackToEstimates() {
+        val l = BudgetCalculator.compute(BudgetInput("Paris", "France", travellers = 2, nights = 3, includeDaily = false))
+        assertEquals(0.0, line(l, BudgetItem.FLIGHT).amountEur, 0.0)        // pas de ville de départ connue
+        assertEquals(130.0 * 3, line(l, BudgetItem.HOTEL).amountEur, 0.01)  // 1 chambre, 3 nuits, budget moyen
+        assertTrue(line(l, BudgetItem.ACTIVITIES).amountEur > 0)
+        l.forEach { assertTrue(it.missing) }
+        val withEst = BudgetCalculator.compute(BudgetInput("Rome", "Italie", travellers = 2, nights = 2, includeDaily = false,
+            flightEstimateEur = 200.0, hotelNightEstimateEur = 90.0))
+        assertEquals(400.0, line(withEst, BudgetItem.FLIGHT).amountEur, 0.0)
+        assertEquals(180.0, line(withEst, BudgetItem.HOTEL).amountEur, 0.0)
+        assertEquals(0.0, BudgetCalculator.flightEstimate(50.0), 0.0)
+        assertTrue(BudgetCalculator.flightEstimate(1100.0) in 150.0..350.0)
     }
 
     @Test fun dailyEstimatesAndOverrides() {

@@ -88,6 +88,7 @@ fun HomeScreen(
     onOpenAlerts: () -> Unit,
     onOpenSettings: () -> Unit,
     onRecent: (RecentSearch) -> Unit,
+    onClearRecents: () -> Unit = {},
     onDestination: (Place) -> Unit,
     wiki: suspend (String) -> WikiSummary?,
 ) {
@@ -240,6 +241,15 @@ fun HomeScreen(
             item {
                 LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     items(recents) { r -> RecentCard(r) { onRecent(r) } }
+                }
+            }
+            // Discret : petit lien gris sous l'historique.
+            item {
+                Box(Modifier.fillMaxWidth().padding(horizontal = 8.dp), contentAlignment = Alignment.CenterEnd) {
+                    androidx.compose.material3.TextButton(onClick = onClearRecents) {
+                        Text(t("Effacer l'historique"), style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
+                    }
                 }
             }
         }
