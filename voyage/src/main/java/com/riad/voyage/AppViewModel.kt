@@ -77,6 +77,22 @@ data class ResultsState(
         }
 }
 
+data class PlacesState(
+    val loading: Boolean = false,
+    val error: String? = null,
+    val items: List<com.riad.voyage.data.PointOfInterest> = emptyList(),
+    val city: String = "",
+    val category: ActivityLinks.Category? = null,
+    val guideFound: Boolean = false,
+) {
+    /** Sélection « les meilleurs » : cités par le guide ou très connus ; sinon les premiers du classement. */
+    val best: List<com.riad.voyage.data.PointOfInterest>
+        get() {
+            val top = items.filter { it.inGuide || it.sitelinks >= 8 }
+            return if (top.size >= 5) top.take(25) else items.take(15)
+        }
+    val bestIsCurated get() = items.count { it.inGuide || it.sitelinks >= 8 } >= 5
+}
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val settingsStore = SettingsStore(app)
