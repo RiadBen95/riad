@@ -128,7 +128,13 @@ object GoogleRatings {
             )
         val json = Http.call(
             "https://places.googleapis.com/v1/places:searchText",
-            mapOf("X-Goog-Api-Key" to key, "X-Goog-FieldMask" to FIELDS),
+            mapOf(
+                "X-Goog-Api-Key" to key,
+                "X-Goog-FieldMask" to FIELDS,
+                // Permet de restreindre la clé à l'application Envolée dans Google Cloud.
+                "X-Android-Package" to "com.riad.voyage",
+                "X-Android-Cert" to "603C871E7D07E6B88530DD6E78D3DCC6C9F6A46F",
+            ),
             body.toString(),
         )
         return parse(json)
