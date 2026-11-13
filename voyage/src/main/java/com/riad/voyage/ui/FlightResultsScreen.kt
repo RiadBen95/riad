@@ -56,7 +56,7 @@ fun FlightResultsScreen(
     onSort: (Sort) -> Unit,
     onPickDay: (LocalDate) -> Unit,
     onBook: (Flight) -> Unit,
-    onHotels: (Flight?) -> Unit,
+    onActivities: () -> Unit,
     onFollow: () -> Unit,
     onOpenSite: () -> Unit,
     onConfigure: () -> Unit,
@@ -122,7 +122,7 @@ fun FlightResultsScreen(
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(onClick = onFollow, modifier = Modifier.weight(1f)) { Text("🔔 Suivre ce prix") }
-                        OutlinedButton(onClick = { onHotels(null) }, modifier = Modifier.weight(1f)) { Text("🏨 Hôtels") }
+                        OutlinedButton(onClick = onActivities, modifier = Modifier.weight(1f)) { Text("🎟️ Que faire sur place") }
                     }
                 }
                 if (state.flights.isEmpty()) {
@@ -159,7 +159,7 @@ fun FlightResultsScreen(
                     }
                     val cheapest = state.flights.minOf { it.price }
                     items(state.sortedFlights) { f ->
-                        FlightCard(f, q.adults, state.currency, f.price == cheapest, { onBook(f) }, { onHotels(f) })
+                        FlightCard(f, q.adults, state.currency, f.price == cheapest, { onBook(f) })
                     }
                     item {
                         TextButton(onClick = onOpenSite, modifier = Modifier.fillMaxWidth()) {
@@ -225,7 +225,6 @@ private fun FlightCard(
     currency: String,
     cheapest: Boolean,
     onBook: () -> Unit,
-    onHotels: () -> Unit,
 ) {
     val deal = dealColor()
     Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp)) {
@@ -275,7 +274,6 @@ private fun FlightCard(
             f.returnAt?.let { Leg("Retour", it, f.durationBack, f.returnTransfers) }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Button(onClick = onBook) { Text("Réserver") }
-                TextButton(onClick = onHotels) { Text("Hôtels sur place") }
             }
         }
     }

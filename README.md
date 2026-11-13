@@ -4,7 +4,7 @@ Deux applications Kotlin + Jetpack Compose, compilées automatiquement par GitHu
 
 | Application | Dossier | APK |
 |---|---|---|
-| ✈️ **Envolée** : vols, hôtels et sorties au meilleur prix | `voyage/` | `envolee.apk` |
+| ✈️ **Envolée** : vols et sorties au meilleur prix | `voyage/` | `envolee.apk` |
 | 🎸 **Accordeur Guitare** | `app/` | `accordeur-guitare.apk` |
 
 Les APK sont publiés dans les [Releases](../../releases/latest) du dépôt.
@@ -16,12 +16,12 @@ Sur le téléphone, ouvrez le fichier téléchargé (autorisez les « sources in
 
 <img src="docs/logo.svg" width="96" alt="Logo Envolée">
 
-Comparateur de vols et d'hôtels. L'app trouve les meilleurs prix, puis envoie vers le site du vendeur
+Comparateur de vols et guide des sorties. L'app trouve les meilleurs prix, puis envoie vers le site du vendeur
 pour payer : aucune donnée bancaire ne passe par l'application.
 
 ## Fonctionnalités
 
-- **Accueil** : recherche rapide, raccourcis Vols / Hôtels / Sorties / Alertes, recherches récentes à relancer
+- **Accueil** : recherche rapide, raccourcis Vols / Sorties / Alertes, recherches récentes à relancer
   d'un geste, destinations populaires en photo.
 - **Vols** : aller-retour ou aller simple, autocomplétion des villes et aéroports, passagers, vols directs.
 - **Recherche rapide** : le dernier départ est mémorisé, aller et retour se choisissent dans un seul calendrier,
@@ -29,13 +29,11 @@ pour payer : aucune donnée bancaire ne passe par l'application.
 - **Dates flexibles** : cherche le meilleur prix sur tout le mois.
 - **Calendrier des prix** : le tarif aller le plus bas jour par jour ; touchez un jour pour relancer la recherche.
 - **Tri** par prix, durée ou nombre d'escales ; le meilleur prix est mis en évidence.
-- **Hôtels** : saisissez le séjour une fois, comparez Booking.com, Hotels.com, Expedia, Agoda et Google Hôtels
-  (liens de recherche pré-remplis).
 - **Sorties** : filtre par type (musées, monuments, attractions, parcs, plages, restaurants, cafés, bars,
   boîtes de nuit, shopping, visites). Les lieux de la ville s'affichent dans l'app (photo, description,
   adresse, horaires, distance) grâce à OpenStreetMap et Wikipédia. « Réserver des billets » ouvre GetYourGuide ou
   Tiqets pour ce lieu ; « Itinéraire » ouvre Google Maps. Les visites guidées renvoient vers GetYourGuide, Viator, Klook.
-- **Vol + hôtel** : depuis un vol, « Hôtels sur place » pré-remplit la destination et les dates.
+- **Vol + sorties** : depuis les résultats, « Que faire sur place » ouvre les sorties de la destination.
 - **Alertes de prix** : suivez un trajet ; l'app vérifie toutes les ~12 h et envoie une notification si le prix baisse.
 - **Mode démo** avec des prix fictifs tant qu'aucune clé API n'est saisie.
 
@@ -56,14 +54,13 @@ La clé reste enregistrée sur le téléphone ; elle n'est jamais dans le code d
 |---|---|
 | `data/TravelpayoutsApi.kt` | Appels HTTP (prix par dates, calendrier, autocomplétion) et liens Aviasales |
 | `data/Parsers.kt` | Lecture des réponses JSON |
-| `data/HotelLinks.kt` | Liens de recherche d'hôtels pré-remplis |
 | `data/ActivityLinks.kt` | Liens de réservation pour musées, attractions, visites et restaurants |
 | `data/Places.kt` | Lieux OpenStreetMap (Nominatim + Overpass) et résumés Wikipédia |
 | `data/DemoData.kt` | Prix fictifs du mode démo |
 | `data/Storage.kt` | Réglages et alertes enregistrés sur le téléphone |
 | `alerts/` | Vérification des prix en tâche de fond (WorkManager) et notifications |
 | `AppViewModel.kt` | État de l'app et logique des écrans |
-| `ui/` | Écrans : recherche de vols, résultats, hôtels, alertes, réglages |
+| `ui/` | Écrans : recherche de vols, résultats, sorties, alertes, réglages |
 
 ```bash
 ./gradlew :voyage:assembleDebug        # APK dans voyage/build/outputs/apk/debug/

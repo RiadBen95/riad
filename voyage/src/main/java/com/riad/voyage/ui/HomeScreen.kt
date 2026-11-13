@@ -77,7 +77,6 @@ fun HomeScreen(
     alerts: List<PriceAlert>,
     demo: Boolean,
     onOpenFlights: () -> Unit,
-    onOpenHotels: () -> Unit,
     onOpenActivities: () -> Unit,
     onOpenAlerts: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -172,7 +171,6 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 QuickTile("Vols", AppIcons.Flight, onOpenFlights, Modifier.weight(1f))
-                QuickTile("Hôtels", AppIcons.Hotel, onOpenHotels, Modifier.weight(1f))
                 QuickTile("Sorties", AppIcons.Ticket, onOpenActivities, Modifier.weight(1f))
                 QuickTile("Alertes", AppIcons.Bell, onOpenAlerts, Modifier.weight(1f), badge = alerts.size.takeIf { it > 0 })
             }

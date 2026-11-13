@@ -30,7 +30,6 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     val form by vm.form.collectAsStateWithLifecycle()
     val results by vm.results.collectAsStateWithLifecycle()
-    val hotel by vm.hotel.collectAsStateWithLifecycle()
     val alerts by vm.alerts.collectAsStateWithLifecycle()
     val checking by vm.checking.collectAsStateWithLifecycle()
     val message by vm.message.collectAsStateWithLifecycle()
@@ -81,7 +80,6 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                     alerts = alerts,
                     demo = settings.isDemo,
                     onOpenFlights = { vm.selectTab(Tab.FLIGHTS) },
-                    onOpenHotels = { vm.selectTab(Tab.HOTELS) },
                     onOpenActivities = { vm.selectTab(Tab.ACTIVITIES) },
                     onOpenAlerts = { vm.selectTab(Tab.ALERTS) },
                     onOpenSettings = configure,
@@ -99,7 +97,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         onSort = vm::setSort,
                         onPickDay = vm::pickCalendarDay,
                         onBook = { f -> openUrl(context, vm.bookingUrl(f)) },
-                        onHotels = vm::hotelsFor,
+                        onActivities = vm::activitiesAtDestination,
                         onFollow = {
                             onFollowRequested()
                             vm.followCurrentSearch()
@@ -120,14 +118,6 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         recents = recents,
                         onRecent = vm::applyRecent,
                     )
-                }
-
-                Tab.HOTELS -> {
-                    BackHandler { vm.selectTab(Tab.HOME) }
-                    HotelScreen(hotel, vm::updateHotel) {
-                        vm.setActivityCity(hotel.city)
-                        vm.selectTab(Tab.ACTIVITIES)
-                    }
                 }
 
                 Tab.ACTIVITIES -> {
@@ -160,7 +150,6 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
 private fun tabIcon(t: Tab) = when (t) {
     Tab.HOME -> AppIcons.Home
     Tab.FLIGHTS -> AppIcons.Flight
-    Tab.HOTELS -> AppIcons.Hotel
     Tab.ACTIVITIES -> AppIcons.Ticket
     Tab.ALERTS -> AppIcons.Bell
     Tab.SETTINGS -> AppIcons.Settings

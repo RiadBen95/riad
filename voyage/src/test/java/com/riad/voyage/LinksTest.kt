@@ -1,6 +1,5 @@
 package com.riad.voyage
 
-import com.riad.voyage.data.HotelLinks
 import com.riad.voyage.data.PopularPlaces
 import com.riad.voyage.data.TravelpayoutsApi
 import com.riad.voyage.ui.formatDuration
@@ -29,15 +28,6 @@ class LinksTest {
             TravelpayoutsApi.bookingUrl("/search/X?t=1", "42"),
         )
         assertEquals("https://www.aviasales.com/search/X", TravelpayoutsApi.bookingUrl("/search/X", ""))
-    }
-
-    @Test
-    fun hotelLinks() {
-        val p = HotelLinks.partners("Saint-Denis Réunion", LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 4), 2, 1)
-        val booking = p.first { it.name == "Booking.com" }.url
-        assertTrue(booking.contains("ss=Saint-Denis%20R%C3%A9union"))
-        assertTrue(booking.contains("checkin=2026-12-01&checkout=2026-12-04"))
-        assertTrue(booking.contains("group_adults=2"))
     }
 
     @Test

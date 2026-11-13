@@ -30,7 +30,7 @@ import java.time.YearMonth
 import java.time.temporal.ChronoUnit
 
 enum class Tab(val label: String, val inBottomBar: Boolean = true) {
-    HOME("Accueil"), FLIGHTS("Vols"), HOTELS("Hôtels"), ACTIVITIES("Sorties"), ALERTS("Alertes"),
+    HOME("Accueil"), FLIGHTS("Vols"), ACTIVITIES("Sorties"), ALERTS("Alertes"),
     SETTINGS("Réglages", inBottomBar = false),
 }
 
@@ -77,30 +77,6 @@ data class ResultsState(
         }
 }
 
-data class HotelForm(
-    val city: String = "",
-    val checkIn: LocalDate = LocalDate.now().plusDays(14),
-    val checkOut: LocalDate = LocalDate.now().plusDays(17),
-    val adults: Int = 2,
-    val rooms: Int = 1,
-)
-
-data class PlacesState(
-    val loading: Boolean = false,
-    val error: String? = null,
-    val items: List<com.riad.voyage.data.PointOfInterest> = emptyList(),
-    val city: String = "",
-    val category: ActivityLinks.Category? = null,
-    val guideFound: Boolean = false,
-) {
-    /** Sélection « les meilleurs » : cités par le guide ou très connus ; sinon les premiers du classement. */
-    val best: List<com.riad.voyage.data.PointOfInterest>
-        get() {
-            val top = items.filter { it.inGuide || it.sitelinks >= 8 }
-            return if (top.size >= 5) top.take(25) else items.take(15)
-        }
-    val bestIsCurated get() = items.count { it.inGuide || it.sitelinks >= 8 } >= 5
-}
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val settingsStore = SettingsStore(app)
@@ -125,8 +101,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val _results = MutableStateFlow(ResultsState())
     val results: StateFlow<ResultsState> = _results.asStateFlow()
 
-    private val _hotel = MutableStateFlow(HotelForm())
-    val hotel: StateFlow<HotelForm> = _hotel.asStateFlow()
 
     private val _activityCity = MutableStateFlow("")
     val activityCity: StateFlow<String> = _activityCity.asStateFlow()
@@ -156,9 +130,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private fun api() = _settings.value.let { TravelpayoutsApi(it.token, it.currency) }
 
     fun selectTab(t: Tab) {
-        // Les sorties reprennent la ville de l'hôtel ou de la destination si rien n'est saisi.
+        // Les sorties reprennent la destination du vol si rien n'est saisi.
         if (t == Tab.ACTIVITIES && _activityCity.value.isBlank()) {
-            _activityCity.value = _hotel.value.city.ifBlank { _form.value.destination?.name.orEmpty() }
+            _activityCity.value = _form.value.destination?.name.orEmpty()
         }
         _tab.value = t
         if (t == Tab.ACTIVITIES) searchActivities()
@@ -358,30 +332,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
-    // ---------- Vol + hôtel ----------
+    // ---------- Vol + sorties ----------
 
-    fun hotelsFor(flight: Flight?) {
+    /** Ouvre les sorties de la ville de destination. */
+    fun activitiesAtDestination() {
         val q = _results.value.query ?: _form.value
-        val checkIn = flight?.departureDate ?: q.departure
-        val checkOut = flight?.returnAt?.let { com.riad.voyage.data.parseDateTime(it)?.toLocalDate() }
-            ?: if (q.roundTrip && !q.flexibleMonth) q.returnDate else checkIn.plusDays(3)
-        _hotel.update {
-            it.copy(
-                city = q.destination?.name ?: it.city,
-                checkIn = checkIn,
-                checkOut = if (checkOut.isAfter(checkIn)) checkOut else checkIn.plusDays(1),
-                adults = q.adults.coerceAtLeast(1),
-            )
-        }
         q.destination?.name?.let { _activityCity.value = it }
-        _tab.value = Tab.HOTELS
-    }
-
-    fun updateHotel(transform: (HotelForm) -> HotelForm) {
-        _hotel.update { h ->
-            val n = transform(h)
-            if (!n.checkOut.isAfter(n.checkIn)) n.copy(checkOut = n.checkIn.plusDays(1)) else n
-        }
+        selectTab(Tab.ACTIVITIES)
     }
 
     // ---------- Alertes ----------

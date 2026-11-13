@@ -42,7 +42,7 @@ jobs:
           name: Applications Android (build ${{ github.run_number }})
           body: |
             Compilé depuis ${{ github.sha }}.
-            - `envolee.apk` : Envolée, vols, hôtels et sorties au meilleur prix
+            - `envolee.apk` : Envolée, vols et sorties au meilleur prix
             - `accordeur-guitare.apk` : accordeur de guitare
             Téléchargez l'APK voulu et ouvrez-le sur votre téléphone Android (8.0 minimum).
           files: |
