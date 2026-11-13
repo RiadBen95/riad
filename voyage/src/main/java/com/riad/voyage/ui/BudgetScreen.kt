@@ -22,6 +22,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -55,6 +56,7 @@ fun BudgetScreen(
     onInput: ((BudgetInput) -> BudgetInput) -> Unit,
     onOverride: (BudgetItem, Double?) -> Unit,
     onTarget: (Double?) -> Unit,
+    onChoose: (BudgetItem) -> Unit = {},
 ) {
     // Conversion euro → devise affichée (euro si le taux n'est pas encore connu).
     val rate = if (currency.equals("EUR", true)) 1.0 else state.rates[currency.uppercase()]
@@ -116,26 +118,33 @@ fun BudgetScreen(
         item {
             Stepper(t("Voyageurs"), input.travellers, 1..10, { n -> onInput { it.copy(travellers = n) } })
             Stepper(t("Nuits"), input.nights, 0..30, { n -> onInput { it.copy(nights = n) } })
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
-                Quiz.Budget.entries.forEach { b ->
-                    FilterChip(selected = input.level == b, onClick = { onInput { it.copy(level = b) } }, label = { Text(t(b.label)) })
-                }
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                Text(t("Ajouter repas, transports et imprévus (estimation)"), modifier = Modifier.weight(1f))
+                Switch(checked = input.includeDaily, onCheckedChange = { v -> onInput { it.copy(includeDaily = v) } })
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Quiz.Mobility.entries.forEach { m ->
-                    FilterChip(selected = input.mobility == m, onClick = { onInput { it.copy(mobility = m) } }, label = { Text(t(m.label)) })
+            if (input.includeDaily) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
+                    Quiz.Budget.entries.forEach { b ->
+                        FilterChip(selected = input.level == b, onClick = { onInput { it.copy(level = b) } }, label = { Text(t(b.label)) })
+                    }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Quiz.Mobility.entries.forEach { m ->
+                        FilterChip(selected = input.mobility == m, onClick = { onInput { it.copy(mobility = m) } }, label = { Text(t(m.label)) })
+                    }
                 }
             }
         }
 
         item { Text(t("Détail par poste"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
         items(lines, key = { it.item.name }) { line ->
-            BudgetRow(line, money(line.amountEur), if (total > 0) (line.amountEur / total).toFloat() else 0f) { editing = line }
+            BudgetRow(line, money(line.amountEur), if (total > 0) (line.amountEur / total).toFloat() else 0f, ::money,
+                onChoose = { onChoose(line.item) }) { editing = line }
         }
 
         item {
             Text(
-                t("Les montants marqués « Estimation » sont des ordres de grandeur selon le pays et votre niveau de budget. Touchez un poste pour saisir votre propre montant."),
+                t("Le budget additionne ce que vous avez choisi : vols gardés, hôtel réservé ou mis en favori, activités de votre programme ou ajoutées au voyage. Touchez un poste pour saisir votre propre montant."),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -167,7 +176,7 @@ fun BudgetScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun BudgetRow(line: BudgetLine, amount: String, share: Float, onClick: () -> Unit) {
+private fun BudgetRow(line: BudgetLine, amount: String, share: Float, money: (Double) -> String, onChoose: () -> Unit, onClick: () -> Unit) {
     Card(onClick = onClick, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -178,6 +187,24 @@ private fun BudgetRow(line: BudgetLine, amount: String, share: Float, onClick: (
                         color = if (line.fromData) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Text(amount, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            }
+            line.details.take(12).forEach { d ->
+                Row(Modifier.padding(start = 34.dp)) {
+                    Text("• " + d.name, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f), maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    Text(if (d.amountEur > 0) money(d.amountEur) else t("Gratuit"), style = MaterialTheme.typography.bodySmall)
+                }
+            }
+            if (line.details.size > 12) Text(tf("+ {0} autres", line.details.size - 12), style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(start = 34.dp))
+            if (line.missing) {
+                androidx.compose.material3.OutlinedButton(onClick = onChoose, modifier = Modifier.padding(start = 34.dp)) {
+                    Text(when (line.item) {
+                        BudgetItem.FLIGHT -> t("Choisir un vol ›")
+                        BudgetItem.HOTEL -> t("Choisir un hôtel ›")
+                        else -> t("Choisir des activités ›")
+                    })
+                }
             }
             Box(Modifier.fillMaxWidth().height(6.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(3.dp))) {
                 Box(Modifier.fillMaxWidth(share.coerceIn(0f, 1f)).height(6.dp)

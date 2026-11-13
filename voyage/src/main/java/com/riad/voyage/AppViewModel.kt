@@ -245,6 +245,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val _budget = MutableStateFlow<BudgetState?>(null)
     val budget: StateFlow<BudgetState?> = _budget.asStateFlow()
 
+    /** Vrai quand la personne est partie choisir un vol / hôtel / activité depuis le budget. */
+    private val _budgetReturn = MutableStateFlow(false)
+    val budgetReturn: StateFlow<Boolean> = _budgetReturn.asStateFlow()
+
     private val _blog = MutableStateFlow(BlogState())
     val blog: StateFlow<BlogState> = _blog.asStateFlow()
     private var blogJob: kotlinx.coroutines.Job? = null
@@ -407,71 +411,122 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         com.riad.voyage.data.Quiz.Company.FAMILY -> 4
     }
 
-    /** Prix moyen par nuit des hôtels trouvés pour cette ville (si une recherche a été faite). */
-    private fun hotelNightFor(city: String): Double? {
-        val h = _hotels.value
-        if (!h.city.equals(city, ignoreCase = true)) return null
-        val prices = h.offers.mapNotNull { it.totalPrice?.let { p -> com.riad.voyage.data.Fx.toEur(p, it.currency, _budget.value?.rates.orEmpty()) / h.nights } }
-            .sorted()
-        return prices.getOrNull(prices.size / 2)
-    }
-
     private fun countryOf(city: String, fallback: String = ""): String =
         fallback.ifBlank {
             com.riad.voyage.data.Blog.city(city)?.country ?: PopularPlaces.all.firstOrNull { it.name.equals(city, true) }?.country.orEmpty()
         }
 
-    private fun openBudget(input: com.riad.voyage.data.BudgetInput) {
-        val from = _tab.value
-        _budget.value = BudgetState(input = input, from = from)
+    /** Reconstruit le budget à partir des choix actuels (taux de change en paramètre). */
+    private var budgetBuilder: ((Map<String, Double>) -> com.riad.voyage.data.BudgetInput)? = null
+
+    private fun openBudget(build: (Map<String, Double>) -> com.riad.voyage.data.BudgetInput) {
+        val from = if (_tab.value == Tab.BUDGET) _budget.value?.from ?: Tab.HOME else _tab.value
+        budgetBuilder = build
+        val rates = _budget.value?.rates.orEmpty()
+        _budget.value = BudgetState(input = build(rates), rates = rates, from = from)
         _tab.value = Tab.BUDGET
         viewModelScope.launch {
-            val rates = kotlinx.coroutines.withTimeoutOrNull(8_000) { runCatching { com.riad.voyage.data.Fx.rates() }.getOrNull() }.orEmpty()
-            _budget.update { it?.copy(rates = rates) }
+            val fresh = kotlinx.coroutines.withTimeoutOrNull(8_000) { runCatching { com.riad.voyage.data.Fx.rates() }.getOrNull() }.orEmpty()
+            if (fresh.isNotEmpty()) { _budget.update { it?.copy(rates = fresh) }; refreshBudget() }
         }
     }
 
-    /** Budget d'un voyage enregistré : vols gardés, hôtel réservé, programme. */
-    fun openBudgetForTrip(trip: com.riad.voyage.data.Trip) {
-        val rates = _budget.value?.rates.orEmpty()
+    /** Recalcule les postes « choisis » (vols, hôtel, activités) en gardant les réglages de la personne. */
+    private fun refreshBudget() {
+        val build = budgetBuilder ?: return
+        _budget.update { b ->
+            b?.let {
+                val n = build(it.rates)
+                it.copy(input = n.copy(travellers = it.input.travellers, nights = it.input.nights, level = it.input.level,
+                    mobility = it.input.mobility, includeDaily = it.input.includeDaily))
+            }
+        }
+    }
+
+    /** Prix d'un libellé « … · 540 € » (dernier segment), converti en euros. */
+    private fun priceOfLabel(label: String, rates: Map<String, Double>): Double? =
+        com.riad.voyage.data.PriceText.parse(label.substringAfterLast(" · "))
+            ?.let { (amount, cur) -> com.riad.voyage.data.Fx.toEur(amount, cur, rates) }
+
+    /** Ce qui a été choisi dans un voyage : vols gardés, hôtel (réservé sinon favori), activités. */
+    private fun choicesOf(trip: com.riad.voyage.data.Trip?, rates: Map<String, Double>): Triple<List<com.riad.voyage.data.Chosen>, Pair<com.riad.voyage.data.Chosen, Boolean>?, List<com.riad.voyage.data.PlannedActivity>> {
+        if (trip == null) return Triple(emptyList(), null, emptyList())
+        val flights = trip.flights.map { f ->
+            com.riad.voyage.data.Chosen("${f.origin} → ${f.destination}", com.riad.voyage.data.Fx.toEur(f.price.toDouble(), f.currency, rates))
+        }
+        val hotels = trip.places.filter { it.kind.startsWith("Hôtel") }
+        val hotelPlace = hotels.firstOrNull { it.kind.startsWith("Hôtel réservé") } ?: hotels.lastOrNull { priceOfLabel(it.kind, rates) != null }
+        val hotel = hotelPlace?.let { h ->
+            priceOfLabel(h.kind, rates)?.let { com.riad.voyage.data.Chosen(h.name, it) to h.kind.startsWith("Hôtel réservé") }
+        }
+        val acts = trip.program.flatMap { d -> d.steps }.map { st ->
+            com.riad.voyage.data.PlannedActivity(st.place.name, st.place.kind, categoryOfEmoji(st.emoji))
+        } + trip.places.filterNot { it.kind.startsWith("Hôtel") }.map { com.riad.voyage.data.PlannedActivity(it.name, it.kind) }
+        return Triple(flights, hotel, acts)
+    }
+
+    /** Budget d'un voyage enregistré, à partir de ce qui y a été choisi. */
+    fun openBudgetForTrip(trip0: com.riad.voyage.data.Trip) = openBudget { rates ->
+        val trip = _trips.value.firstOrNull { it.id == trip0.id } ?: trip0
         val nights = runCatching {
             ChronoUnit.DAYS.between(LocalDate.parse(trip.startDate!!), LocalDate.parse(trip.endDate!!)).toInt()
         }.getOrNull()?.coerceAtLeast(0) ?: 3
-        val flights = trip.flights.takeIf { it.isNotEmpty() }?.sumOf { com.riad.voyage.data.Fx.toEur(it.price.toDouble(), it.currency, rates) }
-        val booked = trip.places.firstOrNull { it.kind.startsWith("Hôtel réservé") }?.kind
-            ?.let { Regex("([0-9][0-9  ., ]*)").findAll(it).lastOrNull()?.value?.replace(Regex("[^0-9]"), "")?.toDoubleOrNull() }
-        val acts = trip.program.flatMap { d -> d.steps }.mapNotNull { s ->
-            categoryOfEmoji(s.emoji)?.let { com.riad.voyage.data.PlannedActivity(it, s.place.kind) }
-        }.takeIf { trip.program.isNotEmpty() }
+        val (flights, hotel, acts) = choicesOf(trip, rates)
         val answers = _experience.value.answers
-        openBudget(
             com.riad.voyage.data.BudgetInput(
                 city = trip.city, country = countryOf(trip.city, trip.country),
                 travellers = if (answers.city.equals(trip.city, true)) travellersFor(answers.company) else 2,
                 nights = nights, level = answers.budget, mobility = answers.mobility,
-                flightTotalEur = flights, hotelTotalEur = booked, hotelNightEur = hotelNightFor(trip.city), activities = acts,
-            ),
-        )
+                flights = flights, hotel = hotel?.first, hotelBooked = hotel?.second == true, activities = acts,
+            )
     }
 
-    /** Budget du programme Expérience affiché. */
-    fun openBudgetForExperience() {
+    /** Budget du programme Expérience affiché (+ vols et hôtel choisis pour la même ville). */
+    fun openBudgetForExperience() = openBudget { rates ->
         val st = _experience.value
         val a = st.answers
         val city = st.result?.city ?: a.city
         val trip = _trips.value.firstOrNull { it.city.equals(city, true) }
-        val rates = _budget.value?.rates.orEmpty()
-        val acts = st.result?.days?.flatMap { d -> d.steps.map { com.riad.voyage.data.PlannedActivity(it.category, it.place.kind) } }
-        openBudget(
+        val (flights, hotel, saved) = choicesOf(trip, rates)
+        val program = st.result?.days.orEmpty().flatMap { d ->
+            d.steps.map { com.riad.voyage.data.PlannedActivity(it.place.name, it.place.kind, it.category) }
+        }
             com.riad.voyage.data.BudgetInput(
                 city = city, country = countryOf(city, a.place?.country.orEmpty()),
                 travellers = travellersFor(a.company),
                 nights = if (a.duration.halfDay) 0 else (a.duration.days - 1).coerceAtLeast(0),
                 level = a.budget, mobility = a.mobility,
-                flightTotalEur = trip?.flights?.takeIf { it.isNotEmpty() }?.sumOf { com.riad.voyage.data.Fx.toEur(it.price.toDouble(), it.currency, rates) },
-                hotelNightEur = hotelNightFor(city), activities = acts,
-            ),
-        )
+                flights = flights, hotel = hotel?.first, hotelBooked = hotel?.second == true,
+                activities = program + saved,
+            )
+    }
+
+    /** Depuis le budget, aller choisir ce qui manque (vol, hôtel, activités) pour la même ville. */
+    fun chooseForBudget(item: com.riad.voyage.data.BudgetItem) {
+        val b = _budget.value ?: return
+        val city = b.input.city
+        when (item) {
+            com.riad.voyage.data.BudgetItem.HOTEL -> {
+                val trip = _trips.value.firstOrNull { it.city.equals(city, true) }
+                openHotels(city, null, trip?.startDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() },
+                    trip?.endDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }, b.input.travellers)
+            }
+            com.riad.voyage.data.BudgetItem.ACTIVITIES -> {
+                _activityCity.value = city
+                _activityPlace.value = PopularPlaces.all.firstOrNull { it.name.equals(city, true) }
+                selectTab(Tab.ACTIVITIES)
+            }
+            else -> selectTab(Tab.FLIGHTS)
+        }
+        _budgetReturn.value = true
+    }
+
+    /** Revenir au budget (recalculé avec les nouveaux choix). */
+    fun backToBudget() {
+        _budgetReturn.value = false
+        if (_budget.value == null) return
+        refreshBudget()
+        _tab.value = Tab.BUDGET
     }
 
     private fun categoryOfEmoji(e: String) = ActivityLinks.Category.entries.firstOrNull { it.emoji == e }
@@ -485,7 +540,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setBudgetTarget(eur: Double?) = _budget.update { it?.copy(targetEur = eur) }
 
-    fun closeBudget() { val from = _budget.value?.from ?: Tab.HOME; _tab.value = from }
+    fun closeBudget() { _budgetReturn.value = false; val from = _budget.value?.from ?: Tab.HOME; _tab.value = from }
 
     // ---------- Hôtels ----------
 
@@ -639,7 +694,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     // ---------- Mes voyages ----------
 
-    private fun refreshTrips() { _trips.value = tripStore.all() }
+    private fun refreshTrips() { _trips.value = tripStore.all(); refreshBudget() }
 
     /** Voyage d'une ville (créé s'il n'existe pas). */
     private fun tripFor(city: String, country: String = ""): com.riad.voyage.data.Trip =

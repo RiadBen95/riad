@@ -4,6 +4,8 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -46,6 +48,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
     val tripArticle by vm.tripArticle.collectAsStateWithLifecycle()
     val hotels by vm.hotels.collectAsStateWithLifecycle()
     val budget by vm.budget.collectAsStateWithLifecycle()
+    val budgetReturn by vm.budgetReturn.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(message) {
@@ -61,7 +64,13 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
-        bottomBar = {
+        bottomBar = { androidx.compose.foundation.layout.Column {
+            if (budgetReturn && tab != Tab.BUDGET && budget != null) {
+                androidx.compose.material3.Button(
+                    onClick = vm::backToBudget,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+                ) { Text(com.riad.voyage.t("💰 Retour au budget")) }
+            }
             NavigationBar {
                 Tab.entries.filter { it.inBottomBar }.forEach { t ->
                     NavigationBarItem(
@@ -72,7 +81,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                     )
                 }
             }
-        },
+        } },
     ) { padding ->
         // L'accueil dessine son en-tête sous la barre d'état ; les autres écrans restent dessous.
         val contentPadding = if (tab == Tab.HOME) PaddingValues(bottom = padding.calculateBottomPadding()) else padding
@@ -276,6 +285,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                     BackHandler { vm.closeBudget() }
                     budget?.let { b ->
                         BudgetScreen(
+                            onChoose = vm::chooseForBudget,
                             state = b,
                             currency = settings.currency,
                             onBack = vm::closeBudget,
