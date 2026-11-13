@@ -1,6 +1,8 @@
 package com.riad.voyage.data
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -47,8 +49,11 @@ data class WikiSummary(val extract: String, val imageUrl: String?, val pageUrl: 
  */
 object PlacesApi {
     private const val UA = "Envolee/1.0 (Android app; https://github.com/RiadBen95/riad)"
+    // Plusieurs serveurs publics Overpass, interrogés en même temps : le plus rapide gagne.
     private val overpassServers = listOf(
         "https://overpass-api.de/api/interpreter",
+        "https://overpass.private.coffee/api/interpreter",
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
         "https://overpass.kumi.systems/api/interpreter",
     )
 
@@ -58,16 +63,26 @@ object PlacesApi {
     }
 
     suspend fun search(center: GeoPoint, category: ActivityLinks.Category): List<PointOfInterest> {
-        val query = overpassQuery(category, center.lat, center.lon)
-        var last: Exception? = null
-        for (server in overpassServers) {
-            try {
-                return PlacesParser.pois(post(server, "data=${enc(query)}"), center)
-            } catch (e: Exception) {
-                last = e
+        val form = "data=${enc(overpassQuery(category, center.lat, center.lon))}"
+        // Course entre les serveurs, lancée hors de la coroutine appelante : la première réponse
+        // valide est rendue tout de suite, sans attendre les serveurs plus lents (abandonnés).
+        val result = kotlinx.coroutines.CompletableDeferred<List<PointOfInterest>>()
+        val scope = kotlinx.coroutines.CoroutineScope(Dispatchers.IO + kotlinx.coroutines.SupervisorJob())
+        val failures = java.util.concurrent.atomic.AtomicInteger(0)
+        overpassServers.forEach { server ->
+            scope.launch {
+                try {
+                    result.complete(PlacesParser.pois(post(server, form), center))
+                } catch (e: Exception) {
+                    if (failures.incrementAndGet() == overpassServers.size) result.completeExceptionally(e)
+                }
             }
         }
-        throw last ?: IOException("Serveur de lieux injoignable")
+        return try {
+            result.await()
+        } finally {
+            scope.cancel()
+        }
     }
 
     /** Nombre de Wikipédias par lieu (Wikidata), par lots de 50. */
@@ -139,9 +154,9 @@ object PlacesApi {
                    nwr["leisure"~"^(park|garden)$"]["name"]${around(3000)};"""
             }
             ActivityLinks.Category.BEACHES -> """nwr["natural"="beach"]["name"]${around(25000)};"""
-            ActivityLinks.Category.RESTAURANTS -> """nwr["amenity"="restaurant"]["name"]${around(1000)};"""
-            ActivityLinks.Category.CAFES -> """nwr["amenity"="cafe"]["name"]${around(1000)};"""
-            ActivityLinks.Category.BARS -> """nwr["amenity"~"^(bar|pub|biergarten)$"]["name"]${around(1000)};"""
+            ActivityLinks.Category.RESTAURANTS -> """nwr["amenity"="restaurant"]["name"]${around(800)};"""
+            ActivityLinks.Category.CAFES -> """nwr["amenity"="cafe"]["name"]${around(800)};"""
+            ActivityLinks.Category.BARS -> """nwr["amenity"~"^(bar|pub|biergarten)$"]["name"]${around(800)};"""
             ActivityLinks.Category.NIGHTLIFE -> """nwr["amenity"="nightclub"]["name"]${around(4000)};"""
             ActivityLinks.Category.SHOPPING -> {
                 val a = around(5000)
@@ -150,7 +165,7 @@ object PlacesApi {
             }
             ActivityLinks.Category.TOURS -> ""
         }
-        return "[out:json][timeout:15];($body);out center tags 150;"
+        return "[out:json][timeout:10];($body);out center tags 100;"
     }
 
     private suspend fun get(url: String): String = request(url, null)
@@ -160,7 +175,7 @@ object PlacesApi {
         val conn = URL(url).openConnection() as HttpURLConnection
         try {
             conn.connectTimeout = 8_000
-            conn.readTimeout = 18_000
+            conn.readTimeout = 15_000
             conn.setRequestProperty("User-Agent", UA)
             conn.setRequestProperty("Accept", "application/json")
             if (form != null) {

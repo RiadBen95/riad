@@ -214,14 +214,20 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
             // 2) Sinon (restaurants, bars… ou petite ville) : recherche en ligne, affichée dès qu'elle arrive.
             _places.value = _places.value.copy(stage = "Recherche des lieux…")
-            val live = kotlinx.coroutines.withTimeoutOrNull(25_000) {
-                runCatching { com.riad.voyage.data.PlacesApi.search(geo, category) }.getOrNull()
+            var liveError: String? = null
+            val live = kotlinx.coroutines.withTimeoutOrNull(20_000) {
+                runCatching { com.riad.voyage.data.PlacesApi.search(geo, category) }
+                    .onFailure { liveError = TravelpayoutsApi.userMessage(it) }
+                    .getOrNull()
             }
             val merged = (notable + (live ?: emptyList())).distinctBy { it.name.lowercase() }
             if (merged.isEmpty()) {
                 _places.value = PlacesState(
-                    error = if (live == null) "Le service des lieux ne répond pas. Réessayez dans un instant."
-                    else "Aucun lieu trouvé pour cette ville.",
+                    error = when {
+                        live != null -> "Aucun lieu trouvé autour du centre de cette ville."
+                        liveError != null -> "Recherche impossible : $liveError"
+                        else -> "Les serveurs de carte ne répondent pas (plus de 20 s). Réessayez dans un instant."
+                    },
                     city = city, category = category,
                 )
                 return@launch
