@@ -30,7 +30,8 @@ import java.time.YearMonth
 import java.time.temporal.ChronoUnit
 
 enum class Tab(val label: String, val inBottomBar: Boolean = true) {
-    HOME("Accueil"), FLIGHTS("Vols"), ACTIVITIES("Sorties"), EXPERIENCE("Expérience"), ALERTS("Alertes"),
+    HOME("Accueil"), FLIGHTS("Vols"), ACTIVITIES("Sorties"), EXPERIENCE("Expérience"), BLOG("Blogue"),
+    ALERTS("Alertes", inBottomBar = false),
     SETTINGS("Réglages", inBottomBar = false),
 }
 
@@ -95,6 +96,17 @@ const val SOURCE_GUIDE = "guide"
 const val SOURCE_MAP = "map"
 const val SOURCE_RATINGS = "ratings"
 
+data class BlogState(
+    val city: com.riad.voyage.data.BlogCity? = null,
+    val filter: com.riad.voyage.data.BlogFilter = com.riad.voyage.data.BlogFilter.ALL,
+    val cards: List<com.riad.voyage.data.ArticleCard> = emptyList(),
+    val loading: Boolean = false,
+    val error: String? = null,
+    val article: com.riad.voyage.data.Article? = null,
+    val articleLoading: Boolean = false,
+    val reason: String? = null,       // « D'après votre vol », « D'après vos sorties »…
+)
+
 data class ExperienceState(
     val answers: com.riad.voyage.data.Quiz.Answers = com.riad.voyage.data.Quiz.Answers(),
     val step: Int = 0,
@@ -152,6 +164,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val experience: StateFlow<ExperienceState> = _experience.asStateFlow()
     private var experiencePools: Map<ActivityLinks.Category, List<com.riad.voyage.data.PointOfInterest>> = emptyMap()
 
+    private val _blog = MutableStateFlow(BlogState())
+    val blog: StateFlow<BlogState> = _blog.asStateFlow()
+    private var blogJob: kotlinx.coroutines.Job? = null
+
     private val _alerts = MutableStateFlow(alertStore.all())
     val alerts: StateFlow<List<PriceAlert>> = _alerts.asStateFlow()
 
@@ -178,6 +194,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
         _tab.value = t
         if (t == Tab.ACTIVITIES) searchActivities()
+        if (t == Tab.BLOG && _blog.value.city == null) blogContext().firstOrNull()?.let { (c, why) -> openBlogCity(c, why) }
     }
 
     fun setActivityCity(city: String) { _activityCity.value = city }
@@ -295,6 +312,113 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 guideFound = guidePicks.isNotEmpty(), source = SOURCE_MAP))
         }
     }
+
+    // ---------- Blogue ----------
+
+    /** Villes liées aux recherches de la personne : vol, sorties, expérience. */
+    fun blogContext(): List<Pair<com.riad.voyage.data.BlogCity, String>> {
+        val out = mutableListOf<Pair<com.riad.voyage.data.BlogCity, String>>()
+        fun add(p: Place?, name: String?, why: String) {
+            val n = (p?.name ?: name)?.trim().orEmpty()
+            if (n.isBlank() || out.any { it.first.name.equals(n, ignoreCase = true) }) return
+            val known = com.riad.voyage.data.Blog.city(n)
+            val c = known ?: p?.takeIf { it.lat != null && it.lon != null }
+                ?.let { com.riad.voyage.data.BlogCity(it.name, it.country, "fr:${it.name}", it.lat!!, it.lon!!) }
+                ?: PopularPlaces.all.firstOrNull { it.name.equals(n, ignoreCase = true) && it.lat != null }
+                    ?.let { com.riad.voyage.data.BlogCity(it.name, it.country, "fr:${it.name}", it.lat!!, it.lon!!) }
+                ?: return
+            out += c to why
+        }
+        add(_experience.value.answers.place, _experience.value.answers.city, "D'après votre expérience")
+        add(_results.value.query?.destination, null, "D'après votre vol")
+        add(_form.value.destination, null, "D'après votre vol")
+        add(_activityPlace.value, _activityCity.value, "D'après vos sorties")
+        return out
+    }
+
+    fun openBlogCity(c: com.riad.voyage.data.BlogCity, reason: String? = null) {
+        val personal = blogInterestCategories().isNotEmpty()
+        _blog.update {
+            it.copy(city = c, reason = reason, article = null,
+                filter = if (personal) com.riad.voyage.data.BlogFilter.FOR_YOU else com.riad.voyage.data.BlogFilter.ALL)
+        }
+        loadBlogCards()
+    }
+
+    /** Ville ou lieu choisi dans la barre de recherche du blogue. */
+    fun openBlogPlace(p: Place) {
+        viewModelScope.launch {
+            val geo = resolveCity(p.name, p) ?: run {
+                _blog.update { it.copy(error = "Lieu introuvable.") }
+                return@launch
+            }
+            openBlogCity(com.riad.voyage.data.Blog.city(p.name) ?: com.riad.voyage.data.BlogCity(p.name, p.country, "fr:${p.name}", geo.lat, geo.lon))
+        }
+    }
+
+    fun clearBlogCity() = _blog.update { BlogState() }
+
+    fun setBlogFilter(f: com.riad.voyage.data.BlogFilter) {
+        _blog.update { it.copy(filter = f) }
+        loadBlogCards()
+    }
+
+    /** Catégories qui intéressent la personne : envies de l'expérience, dernière catégorie de sorties. */
+    private fun blogInterestCategories(): List<ActivityLinks.Category> {
+        val fromExperience = _experience.value.answers.interests.mapNotNull { it.category }
+        val fromActivities = listOf(_activityCategory.value).filter { com.riad.voyage.data.NotablePlaces.supports(it) }
+        return (fromExperience + fromActivities).filter { com.riad.voyage.data.NotablePlaces.supports(it) }.distinct()
+    }
+
+    private fun loadBlogCards() {
+        val st = _blog.value
+        val city = st.city ?: return
+        blogJob?.cancel()
+        _blog.update { it.copy(loading = true, error = null, cards = emptyList()) }
+        blogJob = viewModelScope.launch {
+            val answers = _experience.value.answers
+            val categories = if (st.filter == com.riad.voyage.data.BlogFilter.FOR_YOU) blogInterestCategories()
+                .ifEmpty { com.riad.voyage.data.BlogFilter.ALL.categories } else st.filter.categories
+            val cards = kotlinx.coroutines.withTimeoutOrNull(15_000) {
+                categories.flatMap { c ->
+                    val tastes = com.riad.voyage.data.ExperienceBuilder.tastesFor(answers, c)
+                    runCatching { com.riad.voyage.data.NotablePlaces.search(city.geo, c, limit = 20) }.getOrNull().orEmpty()
+                        .filter { it.wikipedia != null }
+                        .map { p ->
+                            com.riad.voyage.data.ArticleCard(
+                                wiki = p.wikipedia!!, title = p.name, kind = p.kind, category = c, imageUrl = p.imageUrl,
+                                fame = p.sitelinks, tasteMatch = com.riad.voyage.data.ExperienceBuilder.tasteScore(p, tastes) > 0,
+                            )
+                        }
+                }.distinctBy { it.wiki }
+                    .sortedWith(compareByDescending<com.riad.voyage.data.ArticleCard> { it.tasteMatch }.thenByDescending { it.fame })
+                    .take(40)
+            }
+            val cityCard = com.riad.voyage.data.ArticleCard(city.wiki, "Découvrir ${city.name}", "Ville · ${city.country}", null, null, 10_000)
+            _blog.update {
+                if (cards == null) it.copy(loading = false, error = "Les articles ne se chargent pas. Vérifiez la connexion.", cards = listOf(cityCard))
+                else it.copy(loading = false, cards = listOf(cityCard) + cards)
+            }
+        }
+    }
+
+    fun openArticle(tag: String) {
+        _blog.update { it.copy(articleLoading = true, article = null, error = null) }
+        viewModelScope.launch {
+            val article = kotlinx.coroutines.withTimeoutOrNull(15_000) {
+                runCatching { com.riad.voyage.data.WikiArticles.article(tag) }.getOrNull()
+            }
+            _blog.update {
+                if (article == null) it.copy(articleLoading = false, error = "Article indisponible pour le moment.")
+                else it.copy(articleLoading = false, article = article)
+            }
+        }
+    }
+
+    fun closeArticle() = _blog.update { it.copy(article = null, articleLoading = false) }
+
+    suspend fun searchArticles(q: String): List<Pair<String, String>> =
+        runCatching { com.riad.voyage.data.WikiArticles.search(q) }.getOrNull().orEmpty()
 
     // ---------- Expérience ----------
 

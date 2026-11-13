@@ -36,6 +36,10 @@ pour payer : aucune donnée bancaire ne passe par l'application.
 - **Expérience** : un questionnaire de 6 questions (ville, durée, avec qui, envies, rythme, budget) puis un
   programme heure par heure qui enchaîne visites, balades, restaurants, cafés et bars proches les uns des autres,
   avec parcours à pied dans Google Maps et « Autre proposition » en un geste.
+- **Blogue** : articles sur les lieux emblématiques (textes Wikipédia), adaptés aux recherches de la personne
+  (destination du vol, ville des sorties, expérience) avec un filtre « Pour vous » selon ses goûts ; sans recherche
+  préalable, icônes des villes les plus emblématiques ; barre de recherche ville / monument / lieu ; lecture
+  complète de l'article dans l'app.
 - **Vol + sorties** : depuis les résultats, « Que faire sur place » ouvre les sorties de la destination.
 - **Alertes de prix** : suivez un trajet ; l'app vérifie toutes les ~12 h et envoie une notification si le prix baisse.
 - **Mode démo** avec des prix fictifs tant qu'aucune clé API n'est saisie.

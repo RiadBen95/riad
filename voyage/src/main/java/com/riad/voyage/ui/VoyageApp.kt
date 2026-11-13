@@ -40,6 +40,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
     val recents by vm.recents.collectAsStateWithLifecycle()
     val activityPlace by vm.activityPlace.collectAsStateWithLifecycle()
     val experience by vm.experience.collectAsStateWithLifecycle()
+    val blog by vm.blog.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(message) {
@@ -84,6 +85,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                     onOpenFlights = { vm.selectTab(Tab.FLIGHTS) },
                     onOpenActivities = { vm.selectTab(Tab.ACTIVITIES) },
                     onOpenExperience = { vm.selectTab(Tab.EXPERIENCE) },
+                    onOpenBlog = { vm.selectTab(Tab.BLOG) },
                     onOpenAlerts = { vm.selectTab(Tab.ALERTS) },
                     onOpenSettings = configure,
                     onRecent = vm::applyRecent,
@@ -158,6 +160,31 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                     )
                 }
 
+                Tab.BLOG -> {
+                    BackHandler {
+                        when {
+                            blog.article != null || blog.articleLoading -> vm.closeArticle()
+                            blog.city != null -> vm.clearBlogCity()
+                            else -> vm.selectTab(Tab.HOME)
+                        }
+                    }
+                    BlogScreen(
+                        state = blog,
+                        context = vm.blogContext(),
+                        onCity = vm::openBlogCity,
+                        onPlace = vm::openBlogPlace,
+                        onClearCity = vm::clearBlogCity,
+                        onFilter = vm::setBlogFilter,
+                        onArticle = vm::openArticle,
+                        onCloseArticle = vm::closeArticle,
+                        suggestCities = vm::suggestCities,
+                        searchArticles = vm::searchArticles,
+                        wiki = vm::wikiSummary,
+                        hasPersonalFilter = experience.answers.interests.isNotEmpty() ||
+                            com.riad.voyage.data.NotablePlaces.supports(activityCategory),
+                    )
+                }
+
                 Tab.ALERTS -> {
                     BackHandler { vm.selectTab(Tab.HOME) }
                     AlertsScreen(alerts, settings.isDemo, checking, vm::checkAlertsNow, vm::removeAlert, configure)
@@ -177,6 +204,7 @@ private fun tabIcon(t: Tab) = when (t) {
     Tab.FLIGHTS -> AppIcons.Flight
     Tab.ACTIVITIES -> AppIcons.Ticket
     Tab.EXPERIENCE -> AppIcons.Sparkle
+    Tab.BLOG -> AppIcons.Book
     Tab.ALERTS -> AppIcons.Bell
     Tab.SETTINGS -> AppIcons.Settings
 }
