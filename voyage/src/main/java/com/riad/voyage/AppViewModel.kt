@@ -233,7 +233,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 if (outcome != null && outcome.skipped.isNotEmpty()) {
                     quotaNotice = "Limite gratuite atteinte pour " + outcome.skipped.joinToString(", ") { it.label } +
-                        " : source mise en pause jusqu'au mois prochain."
+                        (if (outcome.usedSources.isNotEmpty()) " : relais pris par " + outcome.usedSources.joinToString { it.label } + "." else ".")
                 }
                 if (outcome != null && outcome.places.size >= 3) {
                     publish(key, PlacesState(items = outcome.places, city = city, category = category,

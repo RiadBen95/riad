@@ -248,7 +248,7 @@ object FoursquareRatings {
     }
 }
 
-/** Interroge les trois sources (dans la limite de leur quota) et fusionne en un classement unique. */
+/** Interroge une source à la fois (Google, puis Tripadvisor, puis Foursquare) selon les quotas gratuits. */
 object RatingsAggregator {
     data class Outcome(val places: List<PointOfInterest>, val usedSources: Set<RatingSource>, val skipped: Set<RatingSource>)
 
@@ -289,35 +289,40 @@ object RatingsAggregator {
                 }
             } ?: emptyList()
 
-        val lists = coroutineScope {
-            val google = async {
-                if (!ready(RatingSource.GOOGLE, settings.googleKey, 1)) emptyList()
-                else guarded(RatingSource.GOOGLE) {
-                    quotas.spend(RatingSource.GOOGLE)
-                    GoogleRatings.search(settings.googleKey, "meilleurs $plural à $city", center)
-                }
-            }
-            val tripadvisor = async {
-                // Au moins 1 recherche + 3 détails ; jusqu'à 10 détails si le quota le permet.
-                if (!ready(RatingSource.TRIPADVISOR, settings.tripadvisorKey, 4)) emptyList()
-                else guarded(RatingSource.TRIPADVISOR) {
-                    val details = (quotas.remaining(RatingSource.TRIPADVISOR) - 1).coerceIn(3, 10)
-                    TripadvisorRatings.search(settings.tripadvisorKey, "$plural $city", taCategory, center, details) {
-                        quotas.spend(RatingSource.TRIPADVISOR)
+        // Une seule source à la fois, dans l'ordre : Google tant que sa limite gratuite n'est pas
+        // atteinte, puis Tripadvisor, puis Foursquare. On passe à la suivante si la source est
+        // épuisée, en erreur, ou ne trouve presque rien.
+        val order = listOf(
+            Triple(RatingSource.GOOGLE, settings.googleKey, 1),
+            Triple(RatingSource.TRIPADVISOR, settings.tripadvisorKey, 4),
+            Triple(RatingSource.FOURSQUARE, settings.foursquareKey, 1),
+        )
+        for ((source, key, cost) in order) {
+            if (!ready(source, key, cost)) continue
+            val found: List<Candidate> = guarded(source) {
+                when (source) {
+                    RatingSource.GOOGLE -> {
+                        quotas.spend(RatingSource.GOOGLE)
+                        GoogleRatings.search(key, "meilleurs $plural à $city", center)
+                    }
+                    RatingSource.TRIPADVISOR -> {
+                        // 1 recherche + 3 à 10 fiches détaillées selon le quota restant.
+                        val details = (quotas.remaining(RatingSource.TRIPADVISOR) - 1).coerceIn(3, 10)
+                        TripadvisorRatings.search(key, "$plural $city", taCategory, center, details) {
+                            quotas.spend(RatingSource.TRIPADVISOR)
+                        }
+                    }
+                    RatingSource.FOURSQUARE -> {
+                        quotas.spend(RatingSource.FOURSQUARE)
+                        FoursquareRatings.search(key, singular, center)
                     }
                 }
             }
-            val foursquare = async {
-                if (!ready(RatingSource.FOURSQUARE, settings.foursquareKey, 1)) emptyList()
-                else guarded(RatingSource.FOURSQUARE) {
-                    quotas.spend(RatingSource.FOURSQUARE)
-                    FoursquareRatings.search(settings.foursquareKey, singular, center)
-                }
+            if (found.size >= 3) {
+                return Outcome(merge(found, guide, center, category), setOf(source), skipped - source)
             }
-            listOf(google.await(), tripadvisor.await(), foursquare.await())
         }
-        val used = lists.flatten().map { it.source }.toSet()
-        return Outcome(merge(lists.flatten(), guide, center, category), used, skipped - used)
+        return Outcome(emptyList(), emptySet(), skipped)
     }
 
     private class Group(val items: MutableList<Candidate>, var guide: PointOfInterest? = null)

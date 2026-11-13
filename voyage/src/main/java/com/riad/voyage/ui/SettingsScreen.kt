@@ -102,8 +102,8 @@ fun SettingsScreen(
         )
         Text("Notes des restaurants, cafés et bars (facultatif)", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
         Text(
-            "Ajoutez une ou plusieurs clés : l'app combine les notes Google et Tripadvisor et la popularité Foursquare. " +
-                "Chaque source s'arrête d'elle-même à sa limite mensuelle gratuite, puis l'app revient aux sources gratuites.",
+            "L'app utilise Google tant que sa limite gratuite du mois n'est pas atteinte, puis Tripadvisor, " +
+                "puis Foursquare. Quand toutes sont épuisées, elle revient au guide Wikivoyage et à la carte.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

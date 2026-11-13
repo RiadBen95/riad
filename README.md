@@ -50,7 +50,8 @@ La clé reste enregistrée sur le téléphone ; elle n'est jamais dans le code d
 
 ## Notes des restaurants, cafés et bars (facultatif)
 
-Dans **Réglages**, ajoutez une ou plusieurs clés ; l'app combine :
+Dans **Réglages**, ajoutez une ou plusieurs clés. L'app utilise **une source à la fois, dans cet ordre** :
+Google tant que sa limite du mois n'est pas atteinte, puis Tripadvisor, puis Foursquare.
 
 | Source | Apporte | Coût par recherche | Limite par défaut |
 |---|---|---|---|

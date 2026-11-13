@@ -190,7 +190,7 @@ fun ActivitiesScreen(
                             when (places.source) {
                                 com.riad.voyage.SOURCE_FAME -> "Classés par notoriété : nombre de langues dans lesquelles Wikipédia consacre un article au lieu."
                                 com.riad.voyage.SOURCE_GUIDE -> "Les adresses sélectionnées par le guide de voyage Wikivoyage, dans l'ordre du guide."
-                                com.riad.voyage.SOURCE_RATINGS -> "Classés en combinant les notes et avis de " +
+                                com.riad.voyage.SOURCE_RATINGS -> "Classés selon les notes et avis " +
                                     places.ratingSources.joinToString(", ") +
                                     (if (places.guideFound) " et les recommandations du guide Wikivoyage." else ".")
                                 else -> if (places.guideFound) "Adresses du guide Wikivoyage, complétées par la carte OpenStreetMap."
