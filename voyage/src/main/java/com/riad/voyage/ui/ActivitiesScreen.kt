@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
@@ -97,7 +98,6 @@ fun ActivitiesScreen(
 ) {
     val context = LocalContext.current
     val focus = LocalFocusManager.current
-    var bestOnly by remember { mutableStateOf(true) }
     val search = {
         focus.clearFocus()
         onSearch()
@@ -184,23 +184,25 @@ fun ActivitiesScreen(
 
             else -> {
                 item {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilterChip(selected = bestOnly, onClick = { bestOnly = true }, label = { Text("⭐ Les meilleurs") })
-                        FilterChip(selected = !bestOnly, onClick = { bestOnly = false }, label = { Text("Tout voir (${places.items.size})") })
+                    Column {
+                        Text(
+                            "Top ${places.items.size} · ${category.label} à ${places.city}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            when (places.source) {
+                                com.riad.voyage.SOURCE_FAME -> "Classés par notoriété : nombre de langues dans lesquelles Wikipédia consacre un article au lieu."
+                                com.riad.voyage.SOURCE_GUIDE -> "Les adresses sélectionnées par le guide de voyage Wikivoyage, dans l'ordre du guide."
+                                else -> if (places.guideFound) "Adresses du guide Wikivoyage, complétées par la carte OpenStreetMap."
+                                else "Le guide ne couvre pas assez cette ville : adresses trouvées sur la carte OpenStreetMap."
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
-                item {
-                    Text(
-                        when {
-                            !bestOnly -> "Tous les lieux trouvés à ${places.city}, les plus réputés en premier."
-                            places.bestIsCurated -> "Sélection des lieux recommandés par le guide Wikivoyage et les plus réputés de ${places.city}."
-                            else -> "Peu de recommandations trouvées pour cette ville : voici les premiers du classement."
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                items(if (bestOnly) places.best else places.items, key = { it.id }) { p -> PlaceCard(p, places.city, wiki) }
+                itemsIndexed(places.items, key = { _, it -> it.id }) { i, p -> PlaceCard(i + 1, p, places.city, wiki) }
                 item {
                     Text(
                         "Données © les contributeurs d'OpenStreetMap, Wikipédia, Wikidata et Wikivoyage.",
@@ -214,7 +216,7 @@ fun ActivitiesScreen(
 }
 
 @Composable
-private fun PlaceCard(p: PointOfInterest, city: String, wiki: suspend (String) -> WikiSummary?) {
+private fun PlaceCard(rank: Int, p: PointOfInterest, city: String, wiki: suspend (String) -> WikiSummary?) {
     val context = LocalContext.current
     var summary by remember(p.id) { mutableStateOf<WikiSummary?>(null) }
     LaunchedEffect(p.id) {
@@ -235,7 +237,7 @@ private fun PlaceCard(p: PointOfInterest, city: String, wiki: suspend (String) -
                 )
             }
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(p.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("$rank. ${p.name}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 val badges = listOfNotNull(
                     "★ Incontournable".takeIf { p.isMustSee },
                     "📘 Recommandé par le guide".takeIf { p.inGuide },
@@ -249,12 +251,12 @@ private fun PlaceCard(p: PointOfInterest, city: String, wiki: suspend (String) -
                     )
                 }
                 Text(
-                    "${p.kind} · ${formatDistance(p.distanceM)} du centre",
+                    if (p.distanceM >= 0) "${p.kind} · ${formatDistance(p.distanceM)} du centre" else p.kind,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                 )
-                summary?.let {
-                    Text(it.extract, style = MaterialTheme.typography.bodyMedium, maxLines = 4, overflow = TextOverflow.Ellipsis)
+                (summary?.extract ?: p.description)?.let {
+                    Text(it, style = MaterialTheme.typography.bodyMedium, maxLines = 4, overflow = TextOverflow.Ellipsis)
                 }
                 p.address?.let { Text("📍 $it", style = MaterialTheme.typography.bodySmall) }
                 p.openingHours?.let {
@@ -281,7 +283,7 @@ private fun PlaceCard(p: PointOfInterest, city: String, wiki: suspend (String) -
                         )
                         else -> TicketButton(p, city)
                     }
-                    TextButton(onClick = { openUrl(context, ActivityLinks.directionsUrl(p)) }) { Text("Itinéraire") }
+                    TextButton(onClick = { openUrl(context, ActivityLinks.directionsUrl(p, city)) }) { Text("Itinéraire") }
                 }
                 val more = p.wikipedia?.let { PlacesApi.wikiPageUrl(it) } ?: p.website.takeIf { !p.isVenue }
                 more?.let { url ->

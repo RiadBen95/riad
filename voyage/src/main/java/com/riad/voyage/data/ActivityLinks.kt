@@ -64,8 +64,9 @@ object ActivityLinks {
     fun restaurantUrl(place: PointOfInterest, city: String): String =
         place.website ?: "https://www.google.com/maps/search/?api=1&query=${enc("${place.name} ${city.trim()}")}"
 
-    fun directionsUrl(place: PointOfInterest): String =
-        "https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lon}"
+    fun directionsUrl(place: PointOfInterest, city: String = ""): String =
+        if (place.hasCoordinates) "https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lon}"
+        else "https://www.google.com/maps/dir/?api=1&destination=${enc("${place.name} ${city.trim()}")}"
 
     private fun enc(s: String) = URLEncoder.encode(s, "UTF-8").replace("+", "%20")
 }

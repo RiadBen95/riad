@@ -37,18 +37,19 @@ object NotablePlaces {
 
     fun supports(category: ActivityLinks.Category) = category in radiusKm
 
+    // Zone couverte : toute la ville et ses environs proches. Le classement fait le tri (top 30).
     private val radiusKm = mapOf(
-        ActivityLinks.Category.MUSEUMS to 15.0,
-        ActivityLinks.Category.MONUMENTS to 15.0,
-        ActivityLinks.Category.ATTRACTIONS to 20.0,
-        ActivityLinks.Category.PARKS to 15.0,
-        ActivityLinks.Category.BEACHES to 40.0,
+        ActivityLinks.Category.MUSEUMS to 30.0,
+        ActivityLinks.Category.MONUMENTS to 30.0,
+        ActivityLinks.Category.ATTRACTIONS to 30.0,
+        ActivityLinks.Category.PARKS to 30.0,
+        ActivityLinks.Category.BEACHES to 50.0,
     )
 
     fun tileKey(lat: Double, lon: Double) = "${floor(lat / 2).toInt()}_${floor(lon / 2).toInt()}"
 
-    /** Lieux de la catégorie autour du centre, les plus connus en premier. */
-    suspend fun search(center: GeoPoint, category: ActivityLinks.Category, limit: Int = 60): List<PointOfInterest> {
+    /** Top des lieux de la catégorie dans la ville, classés par notoriété (nombre de Wikipédias). */
+    suspend fun search(center: GeoPoint, category: ActivityLinks.Category, limit: Int = 30): List<PointOfInterest> {
         val radius = radiusKm[category] ?: return emptyList()
         val dLat = radius / 111.0
         val dLon = radius / (111.0 * cos(Math.toRadians(center.lat)).coerceAtLeast(0.01))

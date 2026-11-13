@@ -35,7 +35,9 @@ data class PointOfInterest(
     val wikidata: String? = null,
     val sitelinks: Int = 0,        // nombre de Wikipédias (langues) qui ont un article sur ce lieu
     val inGuide: Boolean = false,  // cité par le guide Wikivoyage de la ville
-    val imageUrl: String? = null,  // photo connue d'avance (base embarquée)
+    val imageUrl: String? = null,  // photo connue d'avance (base des lieux)
+    val description: String? = null, // texte du guide
+    val hasCoordinates: Boolean = true,
 ) {
     val isMustSee get() = sitelinks >= 20
     val score get() = sitelinks + (if (inGuide) 30 else 0)
@@ -168,7 +170,7 @@ object PlacesApi {
         return "[out:json][timeout:10];($body);out center tags 100;"
     }
 
-    private suspend fun get(url: String): String = request(url, null)
+    internal suspend fun get(url: String): String = request(url, null)
     private suspend fun post(url: String, form: String): String = request(url, form)
 
     private suspend fun request(url: String, form: String?): String = withContext(Dispatchers.IO) {

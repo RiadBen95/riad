@@ -85,15 +85,12 @@ data class PlacesState(
     val category: ActivityLinks.Category? = null,
     val guideFound: Boolean = false,
     val stage: String = "",
-) {
-    /** Sélection « les meilleurs » : cités par le guide ou très connus ; sinon les premiers du classement. */
-    val best: List<com.riad.voyage.data.PointOfInterest>
-        get() {
-            val top = items.filter { it.inGuide || it.sitelinks >= 8 }
-            return if (top.size >= 5) top.take(25) else items.take(15)
-        }
-    val bestIsCurated get() = items.count { it.inGuide || it.sitelinks >= 8 } >= 5
-}
+    val source: String = "",
+)
+
+const val SOURCE_FAME = "fame"
+const val SOURCE_GUIDE = "guide"
+const val SOURCE_MAP = "map"
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val settingsStore = SettingsStore(app)
@@ -198,33 +195,50 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 return@launch
             }
 
-            // 1) Lieux remarquables : zone de la ville téléchargée en ligne (CDN), quasi instantané.
-            val notable = if (com.riad.voyage.data.NotablePlaces.supports(category)) {
-                _places.value = _places.value.copy(stage = "Recherche des lieux…")
-                kotlinx.coroutines.withTimeoutOrNull(12_000) {
-                    runCatching { com.riad.voyage.data.NotablePlaces.search(geo, category) }.getOrNull()
+            _places.value = _places.value.copy(stage = "Recherche des meilleurs lieux…")
+            val db = com.riad.voyage.data.NotablePlaces
+
+            // 1) Musées, monuments, attractions, parcs, plages : top 30 de la ville par notoriété.
+            if (db.supports(category)) {
+                val top = kotlinx.coroutines.withTimeoutOrNull(12_000) {
+                    runCatching { db.search(geo, category) }.getOrNull()
                 } ?: emptyList()
+                if (top.size >= 3) {
+                    publish(key, PlacesState(items = top, city = city, category = category, source = SOURCE_FAME))
+                    return@launch
+                }
+            }
+
+            // 2) Restaurants, cafés, bars, sorties, shopping : sélection du guide Wikivoyage de la ville.
+            val guidePicks = if (!db.supports(category)) {
+                val listings = kotlinx.coroutines.withTimeoutOrNull(15_000) {
+                    runCatching { com.riad.voyage.data.WikivoyageGuide.listings(city, geo.wikidata) }.getOrNull()
+                } ?: emptyList()
+                com.riad.voyage.data.GuideParser.select(listings, category).take(30)
+                    .map { com.riad.voyage.data.GuideParser.toPoi(it, category, geo) }
             } else emptyList()
-            if (notable.size >= 5) {
-                val state = PlacesState(items = notable, city = city, category = category)
-                placesCache[key] = state
-                _places.value = state
+            if (guidePicks.size >= 5) {
+                publish(key, PlacesState(items = guidePicks, city = city, category = category, guideFound = true, source = SOURCE_GUIDE))
                 return@launch
             }
 
-            // 2) Sinon (restaurants, bars… ou petite ville) : recherche en ligne, affichée dès qu'elle arrive.
-            _places.value = _places.value.copy(stage = "Recherche des lieux…")
+            // 3) Secours : carte OpenStreetMap en direct (petite ville ou guide trop pauvre).
+            _places.value = _places.value.copy(stage = "Recherche sur la carte…")
             var liveError: String? = null
             val live = kotlinx.coroutines.withTimeoutOrNull(20_000) {
                 runCatching { com.riad.voyage.data.PlacesApi.search(geo, category) }
                     .onFailure { liveError = TravelpayoutsApi.userMessage(it) }
                     .getOrNull()
             }
-            val merged = (notable + (live ?: emptyList())).distinctBy { it.name.lowercase() }
+            val merged = (guidePicks + (live ?: emptyList()).sortedWith(
+                compareByDescending<com.riad.voyage.data.PointOfInterest> { it.notable }
+                    .thenByDescending { it.website != null }
+                    .thenBy { it.distanceM },
+            )).distinctBy { it.name.lowercase() }.take(30)
             if (merged.isEmpty()) {
                 _places.value = PlacesState(
                     error = when {
-                        live != null -> "Aucun lieu trouvé autour du centre de cette ville."
+                        live != null -> "Aucun lieu trouvé pour cette ville."
                         liveError != null -> "Recherche impossible : $liveError"
                         else -> "Les serveurs de carte ne répondent pas (plus de 20 s). Réessayez dans un instant."
                     },
@@ -232,16 +246,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 )
                 return@launch
             }
-            val first = PlacesState(items = merged, city = city, category = category)
-            _places.value = first
-            placesCache[key] = first
+            publish(key, PlacesState(items = merged, city = city, category = category,
+                guideFound = guidePicks.isNotEmpty(), source = SOURCE_MAP))
+        }
+    }
 
-            // 3) En arrière-plan : classement avec le guide Wikivoyage (la liste est déjà affichée).
-            val guide = kotlinx.coroutines.withTimeoutOrNull(10_000) { cityGuide(geo, city) } ?: emptySet()
-            val ranked = kotlinx.coroutines.withTimeoutOrNull(10_000) { rank(merged, guide) } ?: return@launch
-            val better = first.copy(items = ranked, guideFound = guide.isNotEmpty())
-            placesCache[key] = better
-            if (_places.value.city == city && _places.value.category == category) _places.value = better
+    private fun publish(key: String, state: PlacesState) {
+        placesCache[key] = state
+        if (_places.value.city.equals(state.city, ignoreCase = true) && _places.value.category == state.category) {
+            _places.value = state
         }
     }
 

@@ -33,8 +33,8 @@ class NotablePlacesTest {
             "https://commons.wikimedia.org/wiki/Special:FilePath/Louvre_Museum_Wikimedia_Commons.jpg?width=480",
             museums[0].imageUrl,
         )
-        // Versailles est à ~20 km : hors du rayon de 15 km des monuments.
-        assertTrue(NotablePlaces.search(paris, ActivityLinks.Category.MONUMENTS).isEmpty())
+        // Toute la ville et ses environs : Versailles (~17 km) fait partie du top des monuments.
+        assertEquals(listOf("Château de Versailles"), NotablePlaces.search(paris, ActivityLinks.Category.MONUMENTS).map { it.name })
         val marseille = GeoPoint(43.2965, 5.3698, "Marseille")
         val beaches = NotablePlaces.search(marseille, ActivityLinks.Category.BEACHES)
         assertEquals("Plage", beaches.single().kind)
