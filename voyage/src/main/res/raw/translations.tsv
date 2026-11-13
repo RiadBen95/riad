@@ -590,3 +590,37 @@ Temps de visite conseillé : {0}	Suggested visit time: {0}	مدة الزيارة
 Prévu à {0}	Planned at {0}	مقرر في {0}	Previsto a las {0}	计划于 {0}	{0} の予定	{0} बजे तय
 Identifiant partenaire Tiqets (facultatif)	Tiqets partner ID (optional)	معرّف شريك Tiqets (اختياري)	ID de socio de Tiqets (opcional)	Tiqets 合作伙伴 ID（可选）	Tiqets パートナーID（任意）	Tiqets पार्टनर आईडी (वैकल्पिक)
 Ajouté aux liens de billets Tiqets pour toucher une commission.	Added to Tiqets ticket links so you earn a commission.	يُضاف إلى روابط تذاكر Tiqets لتحصل على عمولة.	Se añade a los enlaces de entradas de Tiqets para ganar comisión.	添加到 Tiqets 门票链接中以获得佣金。	Tiqets のチケットリンクに追加され、手数料を得られます。	कमीशन पाने के लिए Tiqets टिकट लिंक में जोड़ा जाता है।
+Chambres disponibles	Available rooms	الغرف المتاحة	Habitaciones disponibles	可订房型	空室	उपलब्ध कमरे
+Aucune chambre disponible pour ces dates.	No rooms available for these dates.	لا توجد غرف متاحة لهذه التواريخ.	No hay habitaciones disponibles para estas fechas.	这些日期没有可订房间。	この日程の空室はありません。	इन तारीखों के लिए कोई कमरा उपलब्ध नहीं।
+Chambre	Room	غرفة	Habitación	客房	客室	कमरा
+Non remboursable	Non-refundable	غير قابل للاسترداد	No reembolsable	不可退款	返金不可	वापसी योग्य नहीं
+Annulation gratuite jusqu'au {0}	Free cancellation until {0}	إلغاء مجاني حتى {0}	Cancelación gratuita hasta el {0}	{0} 前可免费取消	{0} まで無料キャンセル	{0} तक मुफ़्त रद्दीकरण
+L'hôtel	The hotel	الفندق	El hotel	酒店介绍	ホテルについて	होटल
+Lire la suite	Read more	اقرأ المزيد	Leer más	展开	続きを読む	और पढ़ें
+Voir moins	Show less	عرض أقل	Ver menos	收起	閉じる	कम दिखाएँ
+Équipements	Amenities	المرافق	Servicios	设施	設備	सुविधाएँ
+Avis des clients	Guest reviews	آراء النزلاء	Opiniones de clientes	住客评价	宿泊者の口コミ	मेहमानों की समीक्षाएँ
+À savoir	Good to know	معلومات مهمة	A tener en cuenta	须知	ご注意	जानने योग्य
+Données hôtels, avis et prix : LiteAPI.	Hotel data, reviews and prices: LiteAPI.	بيانات الفنادق والآراء والأسعار: LiteAPI.	Datos de hoteles, opiniones y precios: LiteAPI.	酒店数据、评价和价格：LiteAPI。	ホテル情報・口コミ・料金：LiteAPI。	होटल डेटा, समीक्षाएँ और दाम: LiteAPI।
+Arrivée dès {0}	Check-in from {0}	الوصول من {0}	Entrada desde las {0}	{0} 起入住	チェックイン {0}〜	{0} से चेक-इन
+Départ avant {0}	Check-out by {0}	المغادرة قبل {0}	Salida antes de las {0}	{0} 前退房	チェックアウト 〜{0}	{0} तक चेक-आउट
+{0} voyageur(s)	{0} traveller(s)	{0} مسافر	{0} viajero(s)	{0} 位旅客	{0}名	{0} यात्री
+Note 8+	Rating 8+	تقييم 8+	Nota 8+	评分 8+	評価8以上	रेटिंग 8+
+Petit-déjeuner	Breakfast	فطور	Desayuno	含早餐	朝食付き	नाश्ता
+Réserver dans l'app (mode test)	Book in the app (test mode)	احجز في التطبيق (وضع تجريبي)	Reservar en la app (modo prueba)	在应用内预订（测试模式）	アプリで予約（テストモード）	ऐप में बुक करें (टेस्ट मोड)
+Réserver cette chambre	Book this room	احجز هذه الغرفة	Reservar esta habitación	预订此房间	この部屋を予約	यह कमरा बुक करें
+Réservation confirmée ✓	Booking confirmed ✓	تم تأكيد الحجز ✓	Reserva confirmada ✓	预订已确认 ✓	予約が確定しました ✓	बुकिंग पक्की ✓
+Vérification de la disponibilité…	Checking availability…	جارٍ التحقق من التوفر…	Comprobando disponibilidad…	正在确认空房…	空室を確認中…	उपलब्धता जाँच रहे हैं…
+Prix confirmé : {0}	Confirmed price: {0}	السعر المؤكد: {0}	Precio confirmado: {0}	确认价格：{0}	確定料金：{0}	पक्का दाम: {0}
+Prénom	First name	الاسم الأول	Nombre	名	名	पहला नाम
+Nom	Last name	اسم العائلة	Apellido	姓	姓	उपनाम
+E-mail	Email	البريد الإلكتروني	Correo electrónico	电子邮箱	メールアドレス	ईमेल
+Confirmer la réservation	Confirm booking	تأكيد الحجز	Confirmar la reserva	确认预订	予約を確定	बुकिंग पक्की करें
+Fermer	Close	إغلاق	Cerrar	关闭	閉じる	बंद करें
+Mode test : aucune vraie réservation n'est faite et rien n'est payé.	Test mode: no real booking is made and nothing is charged.	وضع تجريبي: لا يتم إجراء حجز حقيقي ولا يُدفع أي مبلغ.	Modo prueba: no se hace ninguna reserva real ni se cobra nada.	测试模式：不会真正预订，也不会扣款。	テストモード：実際の予約や支払いは行われません。	टेस्ट मोड: कोई असली बुकिंग नहीं होती और कोई भुगतान नहीं होता।
+Numéro de réservation : {0}	Booking number: {0}	رقم الحجز: {0}	Número de reserva: {0}	预订号：{0}	予約番号：{0}	बुकिंग नंबर: {0}
+Statut : {0}	Status: {0}	الحالة: {0}	Estado: {0}	状态：{0}	ステータス：{0}	स्थिति: {0}
+La réservation a été ajoutée à « Mes voyages ».	The booking has been added to "My trips".	تمت إضافة الحجز إلى «رحلاتي».	La reserva se ha añadido a «Mis viajes».	预订已加入“我的行程”。	予約を「マイトリップ」に追加しました。	बुकिंग "मेरी यात्राएँ" में जोड़ दी गई।
+Réservation ajoutée à votre voyage : {0}	Booking added to your trip: {0}	تمت إضافة الحجز إلى رحلتك: {0}	Reserva añadida a tu viaje: {0}	预订已加入行程：{0}	予約を旅行に追加：{0}	बुकिंग आपकी यात्रा में जोड़ी गई: {0}
+Cette offre n'est plus disponible. Choisissez-en une autre.	This offer is no longer available. Choose another one.	هذا العرض لم يعد متاحًا. اختر عرضًا آخر.	Esta oferta ya no está disponible. Elige otra.	该报价已不可用，请另选。	このプランは予約できなくなりました。別のプランを選んでください。	यह ऑफ़र अब उपलब्ध नहीं है। कोई और चुनें।
+La réservation n'a pas abouti.	The booking didn't go through.	لم يكتمل الحجز.	La reserva no se ha completado.	预订未成功。	予約できませんでした。	बुकिंग पूरी नहीं हुई।

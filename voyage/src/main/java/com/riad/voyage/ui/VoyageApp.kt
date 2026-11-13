@@ -67,7 +67,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         selected = tab == t,
                         onClick = { vm.selectTab(t) },
                         icon = { Icon(tabIcon(t), contentDescription = com.riad.voyage.t(t.label)) },
-                        label = { Text(com.riad.voyage.t(t.label), maxLines = 1, fontSize = 11.sp) },
+                        label = { Text(com.riad.voyage.t(t.label), maxLines = 1, fontSize = 10.sp, softWrap = false) },
                     )
                 }
             }
@@ -215,17 +215,31 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                 }
 
                 Tab.HOTELS -> {
-                    BackHandler { vm.selectTab(Tab.HOME) }
-                    HotelsScreen(
-                        state = hotels,
-                        hasKey = settings.liteApiKey.isNotBlank(),
-                        onUpdate = vm::updateHotels,
-                        onSearch = vm::searchHotels,
-                        onSave = vm::saveHotel,
-                        isFavorite = { name -> trips.any { tr -> tr.places.any { it.name.equals(name, ignoreCase = true) } } },
-                        suggestCities = vm::suggestCities,
-                        onConfigure = configure,
-                    )
+                    val detail = hotels.detail
+                    BackHandler { if (detail != null) vm.closeHotelDetail() else vm.selectTab(Tab.HOME) }
+                    if (detail != null) {
+                        HotelDetailScreen(
+                            state = hotels,
+                            d = detail,
+                            sandbox = settings.liteApiKey.startsWith("sandbox"),
+                            onBack = vm::closeHotelDetail,
+                            onBook = vm::startHotelBooking,
+                            onConfirm = vm::confirmHotelBooking,
+                            onCancelBooking = vm::cancelHotelBooking,
+                        )
+                    } else {
+                        HotelsScreen(
+                            state = hotels,
+                            hasKey = settings.liteApiKey.isNotBlank(),
+                            onUpdate = vm::updateHotels,
+                            onSearch = vm::searchHotels,
+                            onSave = vm::saveHotel,
+                            isFavorite = { name -> trips.any { tr -> tr.places.any { it.name.equals(name, ignoreCase = true) } } },
+                            suggestCities = vm::suggestCities,
+                            onConfigure = configure,
+                            onOpen = vm::openHotelDetail,
+                        )
+                    }
                 }
 
                 Tab.TRIPS -> {

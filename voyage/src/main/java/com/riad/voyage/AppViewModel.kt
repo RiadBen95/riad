@@ -30,8 +30,8 @@ import java.time.YearMonth
 import java.time.temporal.ChronoUnit
 
 enum class Tab(val label: String, val inBottomBar: Boolean = true) {
-    HOME("Accueil"), FLIGHTS("Vols"), ACTIVITIES("Sorties"), EXPERIENCE("Expérience"), BLOG("Blogue"),
-    ALERTS("Alertes", inBottomBar = false), TRIPS("Mes voyages", inBottomBar = false), HOTELS("Hôtels", inBottomBar = false),
+    HOME("Accueil"), FLIGHTS("Vols"), HOTELS("Hôtels"), ACTIVITIES("Sorties"), EXPERIENCE("Expérience"), BLOG("Blogue"),
+    ALERTS("Alertes", inBottomBar = false), TRIPS("Mes voyages", inBottomBar = false),
     SETTINGS("Réglages", inBottomBar = false),
 }
 
@@ -109,7 +109,19 @@ data class HotelState(
     val offers: List<com.riad.voyage.data.HotelOffer> = emptyList(),
     val searched: Boolean = false,
     val sort: HotelSort = HotelSort.BEST,
+    val minStars: Int = 0,
+    val minRating: Double = 0.0,
+    val freeCancelOnly: Boolean = false,
+    val breakfastOnly: Boolean = false,
+    val detail: HotelDetailState? = null,
 ) {
+    /** Hôtels après filtres, dans l'ordre choisi. */
+    val visible: List<com.riad.voyage.data.HotelOffer>
+        get() = sorted.filter { o ->
+            (o.stars ?: 0) >= minStars && (o.rating ?: 0.0) >= minRating &&
+                (!freeCancelOnly || o.refundable) &&
+                (!breakfastOnly || (o.board ?: "").lowercase().let { "break" in it || "déj" in it || "dej" in it || "bed and" in it })
+        }
     val nights get() = com.riad.voyage.data.HotelBooking.nights(checkIn, checkOut)
     val sorted: List<com.riad.voyage.data.HotelOffer>
         get() = when (sort) {
@@ -119,6 +131,22 @@ data class HotelState(
             HotelSort.DISTANCE -> offers.sortedBy { it.distanceM ?: Int.MAX_VALUE }
         }
 }
+
+/** Page d'un hôtel : fiche, avis, offres de chambres et réservation directe. */
+data class HotelDetailState(
+    val hotel: com.riad.voyage.data.HotelOffer,
+    val loading: Boolean = true,
+    val info: com.riad.voyage.data.HotelDetail? = null,
+    val reviews: List<com.riad.voyage.data.HotelReview> = emptyList(),
+    val summary: com.riad.voyage.data.ReviewSummary? = null,
+    val offers: List<com.riad.voyage.data.RoomOffer> = emptyList(),
+    val error: String? = null,
+    val booking: com.riad.voyage.data.RoomOffer? = null,     // offre en cours de réservation
+    val prebook: com.riad.voyage.data.Prebook? = null,
+    val bookingBusy: Boolean = false,
+    val bookingError: String? = null,
+    val confirmed: com.riad.voyage.data.HotelBookingResult? = null,
+)
 
 data class BlogState(
     val city: com.riad.voyage.data.BlogCity? = null,
@@ -229,6 +257,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         if (t == Tab.EXPERIENCE && _experience.value.answers.city.isBlank()) {
             val dest = _form.value.destination ?: _activityPlace.value
             if (dest != null) updateAnswers { it.copy(city = dest.name, place = dest) }
+        }
+        if (t == Tab.HOTELS && _hotels.value.city.isBlank()) {
+            val dest = _form.value.destination ?: _activityPlace.value
+            if (dest != null) _hotels.update { it.copy(city = dest.name, place = dest) }
         }
         _tab.value = t
         if (t == Tab.ACTIVITIES) searchActivities()
@@ -405,6 +437,95 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
     }
+
+    private val nationality get() = java.util.Locale.getDefault().country.ifBlank { "FR" }
+
+    /** Ouvre la page d'un hôtel : fiche, avis et toutes les offres, chargés en parallèle. */
+    fun openHotelDetail(o: com.riad.voyage.data.HotelOffer) {
+        val key = _settings.value.liteApiKey
+        val h = _hotels.value
+        _hotels.update { it.copy(detail = HotelDetailState(o)) }
+        if (key.isBlank()) { _hotels.update { it.copy(detail = it.detail?.copy(loading = false)) }; return }
+        viewModelScope.launch {
+            val more = com.riad.voyage.data.LiteApiMore
+            val info = async { kotlinx.coroutines.withTimeoutOrNull(20_000) { runCatching { more.detail(key, o.id) }.getOrNull() } }
+            val reviews = async { kotlinx.coroutines.withTimeoutOrNull(20_000) { runCatching { more.reviews(key, o.id) }.getOrNull() } }
+            val offers = async {
+                kotlinx.coroutines.withTimeoutOrNull(25_000) {
+                    runCatching { more.offers(key, o.id, h.checkIn, h.checkOut, h.adults, _settings.value.currency, nationality) }
+                }
+            }
+            val off = offers.await()
+            val rev = reviews.await()
+            _hotels.update { st ->
+                if (st.detail?.hotel?.id != o.id) st else st.copy(
+                    detail = st.detail!!.copy(
+                        loading = false, info = info.await(), reviews = rev?.first.orEmpty(), summary = rev?.second,
+                        offers = off?.getOrNull().orEmpty(),
+                        error = off?.exceptionOrNull()?.let { TravelpayoutsApi.userMessage(it) },
+                    ),
+                )
+            }
+        }
+    }
+
+    fun closeHotelDetail() = _hotels.update { it.copy(detail = null) }
+
+    /** Étape 1 de la réservation directe : LiteAPI confirme la disponibilité et le prix exact. */
+    fun startHotelBooking(offer: com.riad.voyage.data.RoomOffer) {
+        val key = _settings.value.liteApiKey
+        _hotels.update { it.copy(detail = it.detail?.copy(booking = offer, prebook = null, bookingBusy = true, bookingError = null, confirmed = null)) }
+        viewModelScope.launch {
+            val r = kotlinx.coroutines.withTimeoutOrNull(25_000) { runCatching { com.riad.voyage.data.LiteApiMore.prebook(key, offer.offerId) } }
+            _hotels.update { st ->
+                val d = st.detail ?: return@update st
+                st.copy(detail = when {
+                    r == null -> d.copy(bookingBusy = false, bookingError = t("Le service d'hôtels ne répond pas. Réessayez dans un instant."))
+                    r.isFailure -> d.copy(bookingBusy = false, bookingError = TravelpayoutsApi.userMessage(r.exceptionOrNull()!!))
+                    r.getOrNull() == null -> d.copy(bookingBusy = false, bookingError = t("Cette offre n'est plus disponible. Choisissez-en une autre."))
+                    else -> d.copy(bookingBusy = false, prebook = r.getOrNull())
+                })
+            }
+        }
+    }
+
+    /** Étape 2 : réservation au nom du voyageur, puis ajout dans « Mes voyages ». */
+    fun confirmHotelBooking(firstName: String, lastName: String, email: String) {
+        val key = _settings.value.liteApiKey
+        val d = _hotels.value.detail ?: return
+        val pre = d.prebook ?: return
+        _hotels.update { it.copy(detail = it.detail?.copy(bookingBusy = true, bookingError = null)) }
+        viewModelScope.launch {
+            val r = kotlinx.coroutines.withTimeoutOrNull(40_000) {
+                runCatching { com.riad.voyage.data.LiteApiMore.book(key, pre.prebookId, firstName.trim(), lastName.trim(), email.trim()) }
+            }
+            val ok = r?.getOrNull()
+            _hotels.update { st ->
+                val cur = st.detail ?: return@update st
+                st.copy(detail = when {
+                    ok != null -> cur.copy(bookingBusy = false, confirmed = ok)
+                    r == null -> cur.copy(bookingBusy = false, bookingError = t("Le service d'hôtels ne répond pas. Réessayez dans un instant."))
+                    else -> cur.copy(bookingBusy = false, bookingError = r.exceptionOrNull()?.let { TravelpayoutsApi.userMessage(it) }
+                        ?: t("La réservation n'a pas abouti."))
+                })
+            }
+            if (ok != null) {
+                val h = _hotels.value
+                val trip = tripFor(h.city)
+                val price = (ok.price ?: pre.price ?: d.booking?.price)?.let { com.riad.voyage.ui.formatPrice(it.toInt(), ok.currency ?: pre.currency ?: "EUR") }
+                val label = listOfNotNull("Hôtel réservé", ok.confirmation?.let { "Réf. $it" } ?: "Réf. ${ok.bookingId}", price).joinToString(" · ")
+                saveTrip(
+                    trip.copy(
+                        places = trip.places + com.riad.voyage.data.SavedPlace.of(d.hotel.toPoi("").copy(kind = label)),
+                        startDate = trip.startDate ?: h.checkIn.toString(), endDate = trip.endDate ?: h.checkOut.toString(),
+                    ),
+                    tf("Réservation ajoutée à votre voyage : {0}", t(h.city)),
+                )
+            }
+        }
+    }
+
+    fun cancelHotelBooking() = _hotels.update { it.copy(detail = it.detail?.copy(booking = null, prebook = null, bookingError = null, confirmed = null)) }
 
     fun saveHotel(o: com.riad.voyage.data.HotelOffer) {
         val h = _hotels.value

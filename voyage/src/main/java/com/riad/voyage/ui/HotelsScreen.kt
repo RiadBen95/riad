@@ -57,6 +57,7 @@ fun HotelsScreen(
     isFavorite: (String) -> Boolean,
     suggestCities: suspend (String) -> List<Place>,
     onConfigure: () -> Unit,
+    onOpen: (HotelOffer) -> Unit = {},
 ) {
     val context = LocalContext.current
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -123,10 +124,18 @@ fun HotelsScreen(
                         FilterChip(selected = state.sort == s, onClick = { onUpdate { it.copy(sort = s) } }, label = { Text(t(s.label)) })
                     }
                 }
-                Text(tf("{0} hôtels disponibles", state.offers.size), style = MaterialTheme.typography.titleSmall,
+                // Filtres : étoiles, note des clients, annulation gratuite, petit-déjeuner.
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 6.dp)) {
+                    item { FilterChip(selected = state.minStars == 3, onClick = { onUpdate { it.copy(minStars = if (it.minStars == 3) 0 else 3) } }, label = { Text("★★★+") }) }
+                    item { FilterChip(selected = state.minStars == 4, onClick = { onUpdate { it.copy(minStars = if (it.minStars == 4) 0 else 4) } }, label = { Text("★★★★+") }) }
+                    item { FilterChip(selected = state.minRating >= 8.0, onClick = { onUpdate { it.copy(minRating = if (it.minRating >= 8.0) 0.0 else 8.0) } }, label = { Text(t("Note 8+")) }) }
+                    item { FilterChip(selected = state.freeCancelOnly, onClick = { onUpdate { it.copy(freeCancelOnly = !it.freeCancelOnly) } }, label = { Text(t("Annulation gratuite")) }) }
+                    item { FilterChip(selected = state.breakfastOnly, onClick = { onUpdate { it.copy(breakfastOnly = !it.breakfastOnly) } }, label = { Text(t("Petit-déjeuner")) }) }
+                }
+                Text(tf("{0} hôtels disponibles", state.visible.size), style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.padding(top = 6.dp))
             }
-            items(state.sorted, key = { it.id }) { o -> HotelCard(o, state, isFavorite(o.name), { onSave(o) }) }
+            items(state.visible, key = { it.id }) { o -> HotelCard(o, state, isFavorite(o.name), { onSave(o) }, { onOpen(o) }) }
             item {
                 Text(t("Prix et disponibilités : LiteAPI. La réservation se finalise chez le partenaire choisi, au prix affiché par celui-ci."),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -146,11 +155,12 @@ private fun PartnerRow(name: String, onClick: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HotelCard(o: HotelOffer, state: HotelState, favorite: Boolean, onSave: () -> Unit) {
+private fun HotelCard(o: HotelOffer, state: HotelState, favorite: Boolean, onSave: () -> Unit, onOpen: () -> Unit) {
     val context = LocalContext.current
     var menu by remember { mutableStateOf(false) }
-    Card(shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
+    Card(onClick = onOpen, shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
         Column {
             Box(Modifier.fillMaxWidth().height(160.dp).background(MaterialTheme.colorScheme.primaryContainer)) {
                 o.photo?.let {

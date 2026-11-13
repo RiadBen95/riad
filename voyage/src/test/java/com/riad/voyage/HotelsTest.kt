@@ -45,3 +45,42 @@ class HotelsTest {
         assertEquals(3, HotelBooking.nights(LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 4)))
     }
 }
+
+class HotelDetailTest {
+    @Test
+    fun parsesDetailReviewsAndOffers() {
+        val d = com.riad.voyage.data.LiteApiMore.parseDetail(
+            """{"data":{"id":"lp1","name":"Hôtel du Louvre","hotelDescription":"<p>Face au <b>Louvre</b>.</p><p>Spa.</p>",
+              "hotelImages":[{"url":"https://img/2.jpg","defaultImage":false},{"url":"https://img/1.jpg","urlHd":"https://img/1hd.jpg","defaultImage":true}],
+              "hotelFacilities":["Wi-Fi gratuit","Spa","Wi-Fi gratuit"],"checkinCheckoutTimes":{"checkin":"15:00","checkout":"12:00"},
+              "starRating":5,"rating":8.9,"reviewCount":2400,
+              "rooms":[{"id":"r1","roomName":"Chambre Deluxe","roomSizeSquare":30,"maxOccupancy":2,"photos":[{"url":"https://img/r1.jpg"}],
+                        "roomAmenities":[{"name":"Climatisation"}]}]}}""",
+        )!!
+        assertEquals("Face au Louvre.\nSpa.", d.description)
+        assertEquals("https://img/1hd.jpg", d.images.first())
+        assertEquals(listOf("Wi-Fi gratuit", "Spa"), d.facilities)
+        assertEquals("15:00", d.checkin)
+        assertEquals(5, d.stars)
+        assertEquals("Chambre Deluxe", d.rooms.single().name)
+
+        val (reviews, summary) = com.riad.voyage.data.LiteApiMore.parseReviews(
+            """{"data":[{"averageScore":9,"name":"Amel","country":"dz","date":"2026-10-02 10:00","headline":"Parfait","pros":"Vue","cons":""},
+                        {"averageScore":7,"name":"X"}],
+               "sentimentAnalysis":{"categories":[{"name":"Propreté","rating":9.1}],"pros":["Emplacement"],"cons":["Prix"]}}""",
+        )
+        assertEquals(1, reviews.size)
+        assertEquals("2026-10-02", reviews[0].date)
+        assertEquals(listOf("Propreté" to 9.1), summary!!.categories)
+
+        val offers = com.riad.voyage.data.LiteApiMore.parseOffers(
+            """{"data":[{"hotelId":"lp1","roomTypes":[
+                {"offerId":"o1","offerRetailRate":{"amount":620,"currency":"EUR"},"rates":[{"name":"Deluxe","boardName":"Petit-déjeuner inclus",
+                  "cancellationPolicies":{"refundableTag":"RFN","cancelPolicyInfos":[{"cancelTime":"2026-11-28T12:00:00"}]}}]},
+                {"offerId":"o2","offerRetailRate":{"amount":540,"currency":"EUR"},"rates":[{"name":"Classique","cancellationPolicies":{"refundableTag":"NRFN"}}]}]}]}""",
+        )
+        assertEquals(listOf("o2", "o1"), offers.map { it.offerId })
+        assertTrue(offers[1].refundable)
+        assertEquals("2026-11-28 12:00", offers[1].cancelDeadline)
+    }
+}

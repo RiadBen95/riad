@@ -43,7 +43,11 @@ pour payer : aucune donnée bancaire ne passe par l'application.
 - **Hôtels** : recherche avec prix réels pour les dates et le nombre de voyageurs (LiteAPI, clé gratuite dans
   Réglages) : photo, étoiles, note et avis, distance, annulation gratuite, prix total et par nuit, tri ;
   réservation chez Booking.com, Hotels.com, Expedia, Agoda ou Google Hôtels avec hôtel et dates pré-remplis.
-  Accès depuis l'accueil, les résultats de vol, l'Expérience (« Où dormir ? ») et Mes voyages.
+  Accès depuis la barre du bas, l'accueil, les résultats de vol, l'Expérience (« Où dormir ? ») et Mes voyages.
+  Filtres (étoiles, note 8+, annulation gratuite, petit-déjeuner). Page de l'hôtel : galerie de photos,
+  description, équipements, heures d'arrivée et de départ, avis des clients avec analyse des points forts et
+  faibles, toutes les chambres disponibles (repas, conditions d'annulation, prix) ; réservation directe dans l'app
+  en mode test (clé « sandbox ») : vérification de l'offre, coordonnées, confirmation ajoutée à Mes voyages.
 - **Expérience sur tout le séjour** : demi-journée ou 1 à 30 jours ; chaque étape peut être retirée ou
   remplacée par un lieu proposé dans une liste, les horaires sont recalculés.
 - **Météo** (Open-Meteo, gratuit) : prévisions jusqu'à 16 jours prises en compte dans l'Expérience (musées
