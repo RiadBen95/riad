@@ -38,6 +38,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
     val activityCategory by vm.activityCategory.collectAsStateWithLifecycle()
     val places by vm.places.collectAsStateWithLifecycle()
     val recents by vm.recents.collectAsStateWithLifecycle()
+    val activityPlace by vm.activityPlace.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(message) {
@@ -127,6 +128,9 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         category = activityCategory,
                         places = places,
                         onCity = vm::setActivityCity,
+                        selectedPlace = activityPlace,
+                        onPlace = vm::setActivityPlace,
+                        suggestCities = vm::suggestCities,
                         onCategory = vm::setActivityCategory,
                         onSearch = { vm.searchActivities(force = true) },
                         wiki = vm::wikiSummary,

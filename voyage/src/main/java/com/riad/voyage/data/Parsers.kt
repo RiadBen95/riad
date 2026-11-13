@@ -19,6 +19,8 @@ object Parsers {
                 country = o.str("country_name"),
                 type = o.str("type").ifBlank { "city" },
                 cityName = o.str("city_name").ifBlank { null },
+                lat = o.optJSONObject("coordinates")?.optDouble("lat")?.takeIf { !it.isNaN() },
+                lon = o.optJSONObject("coordinates")?.optDouble("lon")?.takeIf { !it.isNaN() },
             )
         }
     }

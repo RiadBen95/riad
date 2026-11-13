@@ -88,6 +88,9 @@ fun ActivitiesScreen(
     category: ActivityLinks.Category,
     places: PlacesState,
     onCity: (String) -> Unit,
+    selectedPlace: com.riad.voyage.data.Place?,
+    onPlace: (com.riad.voyage.data.Place) -> Unit,
+    suggestCities: suspend (String) -> List<com.riad.voyage.data.Place>,
     onCategory: (ActivityLinks.Category) -> Unit,
     onSearch: () -> Unit,
     wiki: suspend (String) -> WikiSummary?,
@@ -112,17 +115,18 @@ fun ActivitiesScreen(
             )
         }
         item {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = city,
-                    onValueChange = onCity,
-                    label = { Text("Ville") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(onSearch = { search() }),
+            Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                PlaceField(
+                    label = "Ville",
+                    selected = selectedPlace,
+                    onSelect = onPlace,
+                    suggest = suggestCities,
                     modifier = Modifier.weight(1f),
+                    placeholder = "Ex. Paris, Alger, Rome…",
+                    onTextChange = onCity,
+                    initialText = city,
                 )
-                Button(onClick = search, enabled = city.isNotBlank()) { Text("OK") }
+                Button(onClick = search, enabled = city.isNotBlank(), modifier = Modifier.padding(top = 8.dp)) { Text("OK") }
             }
         }
         item {
@@ -160,7 +164,7 @@ fun ActivitiesScreen(
                 Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         CircularProgressIndicator()
-                        Text("Recherche des lieux…", modifier = Modifier.padding(top = 12.dp))
+                        Text(places.stage.ifBlank { "Recherche des lieux…" }, modifier = Modifier.padding(top = 12.dp))
                     }
                 }
             }

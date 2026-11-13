@@ -59,13 +59,15 @@ class ParsersTest {
     @Test
     fun places() {
         val json = """
-            [{"type":"city","code":"PAR","name":"Paris","country_name":"France"},
+            [{"type":"city","code":"PAR","name":"Paris","country_name":"France","coordinates":{"lon":2.35,"lat":48.85}},
              {"type":"airport","code":"CDG","name":"Charles de Gaulle","city_name":"Paris","country_name":"France"},
              {"type":"city","code":"","name":"?"}]
         """.trimIndent()
         val places = Parsers.places(json)
         assertEquals(2, places.size)
         assertEquals("Paris", places[0].label)
+        assertEquals(48.85, places[0].lat!!, 1e-6)
+        assertNull(places[1].lat)
         assertEquals("Charles de Gaulle (CDG)", places[1].label)
         assertTrue(places[1].subtitle.startsWith("Paris, France"))
     }

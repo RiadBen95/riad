@@ -84,6 +84,7 @@ data class PlacesState(
     val city: String = "",
     val category: ActivityLinks.Category? = null,
     val guideFound: Boolean = false,
+    val stage: String = "",
 ) {
     /** Sélection « les meilleurs » : cités par le guide ou très connus ; sinon les premiers du classement. */
     val best: List<com.riad.voyage.data.PointOfInterest>
@@ -118,6 +119,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val results: StateFlow<ResultsState> = _results.asStateFlow()
 
 
+    private val _activityPlace = MutableStateFlow<Place?>(null)
+    val activityPlace: StateFlow<Place?> = _activityPlace.asStateFlow()
+
     private val _activityCity = MutableStateFlow("")
     val activityCity: StateFlow<String> = _activityCity.asStateFlow()
 
@@ -149,12 +153,20 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         // Les sorties reprennent la destination du vol si rien n'est saisi.
         if (t == Tab.ACTIVITIES && _activityCity.value.isBlank()) {
             _activityCity.value = _form.value.destination?.name.orEmpty()
+            _activityPlace.value = _form.value.destination
         }
         _tab.value = t
         if (t == Tab.ACTIVITIES) searchActivities()
     }
 
     fun setActivityCity(city: String) { _activityCity.value = city }
+
+    /** Ville choisie dans les suggestions : on garde sa position et on lance la recherche. */
+    fun setActivityPlace(p: Place) {
+        _activityPlace.value = p
+        _activityCity.value = p.name
+        searchActivities(force = true)
+    }
     fun setActivityCategory(c: ActivityLinks.Category) {
         _activityCategory.value = c
         searchActivities()
@@ -170,33 +182,56 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             (current.loading || current.items.isNotEmpty())
         ) return
         placesJob?.cancel()
-        _places.value = PlacesState(loading = true, city = city, category = category)
+        val chosen = _activityPlace.value?.takeIf { it.name.equals(city, ignoreCase = true) }
+        _places.value = PlacesState(loading = true, stage = "Recherche de la ville…", city = city, category = category)
         placesJob = viewModelScope.launch {
-            _places.value = try {
+            val result = try {
                 val key = city.lowercase()
-                val geo = geoCache[key] ?: com.riad.voyage.data.PlacesApi.geocode(city)?.also { geoCache[key] = it }
+                // 1) Position de la ville : celle de l'autocomplétion si on l'a, sinon OpenStreetMap.
+                val fromSuggestion = chosen?.let { p ->
+                    if (p.lat != null && p.lon != null) com.riad.voyage.data.GeoPoint(p.lat, p.lon, p.name) else null
+                }
+                val geo = geoCache[key] ?: fromSuggestion?.also { geoCache[key] = it }
+                    ?: kotlinx.coroutines.withTimeoutOrNull(15_000) {
+                        runCatching { com.riad.voyage.data.PlacesApi.geocode(city) }.getOrNull()
+                    }?.also { geoCache[key] = it }
                 if (geo == null) {
-                    PlacesState(error = "Ville introuvable : vérifiez l'orthographe.", city = city, category = category)
+                    PlacesState(
+                        error = "Ville introuvable ou service indisponible. Choisissez la ville dans la liste proposée.",
+                        city = city, category = category,
+                    )
                 } else {
+                    _places.value = _places.value.copy(stage = "Recherche des lieux…")
+                    // 2) Lieux (obligatoire) et guide de la ville (facultatif), en parallèle et avec des délais.
                     val (raw, guide) = coroutineScope {
-                        val pois = async { com.riad.voyage.data.PlacesApi.search(geo, category) }
-                        val guide = async { cityGuide(geo) }
+                        val pois = async {
+                            kotlinx.coroutines.withTimeoutOrNull(45_000) { com.riad.voyage.data.PlacesApi.search(geo, category) }
+                        }
+                        val guide = async { kotlinx.coroutines.withTimeoutOrNull(12_000) { cityGuide(geo, city) } ?: emptySet() }
                         pois.await() to guide.await()
                     }
-                    val items = rank(raw, guide)
-                    PlacesState(items = items, city = city, category = category, guideFound = guide.isNotEmpty(),
-                        error = if (items.isEmpty()) "Aucun lieu trouvé pour cette ville." else null)
+                    if (raw == null) {
+                        PlacesState(error = "Le service des lieux met trop de temps à répondre. Réessayez dans un instant.", city = city, category = category)
+                    } else {
+                        _places.value = _places.value.copy(stage = "Classement des meilleurs lieux…")
+                        val items = kotlinx.coroutines.withTimeoutOrNull(12_000) { rank(raw, guide) } ?: raw
+                        PlacesState(items = items, city = city, category = category, guideFound = guide.isNotEmpty(),
+                            error = if (items.isEmpty()) "Aucun lieu trouvé pour cette ville." else null)
+                    }
                 }
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
                 PlacesState(error = TravelpayoutsApi.userMessage(e), city = city, category = category)
             }
+            _places.value = result
         }
     }
 
-    private suspend fun cityGuide(geo: com.riad.voyage.data.GeoPoint): Set<String> {
-        val id = geo.wikidata ?: return emptySet()
+    private suspend fun cityGuide(geo: com.riad.voyage.data.GeoPoint, city: String): Set<String> {
+        val id = geo.wikidata
+            ?: runCatching { com.riad.voyage.data.PlacesApi.geocode(city)?.wikidata }.getOrNull()
+            ?: return emptySet()
         guideCache[id]?.let { return it }
         val names = runCatching { com.riad.voyage.data.PlacesApi.guideNames(id) }.getOrDefault(emptySet())
         if (names.isNotEmpty()) guideCache[id] = names
@@ -238,6 +273,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         if (term.trim().length < 2) return emptyList()
         val online = runCatching { api().searchPlaces(term.trim()) }.getOrDefault(emptyList())
         return online.ifEmpty { PopularPlaces.filter(term) }
+    }
+
+    /** Suggestions de villes uniquement (pas d'aéroports) pour l'onglet Sorties. */
+    suspend fun suggestCities(term: String): List<Place> {
+        val all = suggestPlaces(term)
+        return all.filter { !it.isAirport }.ifEmpty { all }
     }
 
     fun updateForm(transform: (FlightForm) -> FlightForm) {
@@ -353,7 +394,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Ouvre les sorties de la ville de destination. */
     fun activitiesAtDestination() {
         val q = _results.value.query ?: _form.value
-        q.destination?.name?.let { _activityCity.value = it }
+        q.destination?.let { _activityCity.value = it.name; _activityPlace.value = it }
         selectTab(Tab.ACTIVITIES)
     }
 

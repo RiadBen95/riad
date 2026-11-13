@@ -149,7 +149,7 @@ object PlacesApi {
             }
             ActivityLinks.Category.TOURS -> ""
         }
-        return "[out:json][timeout:25];($body);out center tags 200;"
+        return "[out:json][timeout:30];($body);out center tags 200;"
     }
 
     private suspend fun get(url: String): String = request(url, null)
@@ -158,8 +158,8 @@ object PlacesApi {
     private suspend fun request(url: String, form: String?): String = withContext(Dispatchers.IO) {
         val conn = URL(url).openConnection() as HttpURLConnection
         try {
-            conn.connectTimeout = 15_000
-            conn.readTimeout = 40_000
+            conn.connectTimeout = 10_000
+            conn.readTimeout = 30_000
             conn.setRequestProperty("User-Agent", UA)
             conn.setRequestProperty("Accept", "application/json")
             if (form != null) {

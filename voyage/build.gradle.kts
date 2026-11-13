@@ -12,11 +12,27 @@ android {
         applicationId = "com.riad.voyage"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        // Numéro de version croissant à chaque compilation GitHub, pour que les mises à jour soient acceptées.
+        val build = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
+        versionCode = build
+        versionName = "1.$build"
+    }
+
+    // Clé de signature fixe (versionnée) : chaque nouvelle version s'installe par-dessus l'ancienne
+    // sans désinstaller. C'est une clé de test publique, à remplacer avant une publication sur le Play Store.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("debug-signing.jks")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
     }
 
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
+        }
         release {
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")

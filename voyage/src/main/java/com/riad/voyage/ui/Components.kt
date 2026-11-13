@@ -59,8 +59,11 @@ fun PlaceField(
     onSelect: (Place) -> Unit,
     suggest: suspend (String) -> List<Place>,
     modifier: Modifier = Modifier,
+    placeholder: String = "Ville ou aéroport",
+    onTextChange: ((String) -> Unit)? = null,
+    initialText: String? = null,
 ) {
-    var text by remember(selected) { mutableStateOf(selected?.label ?: "") }
+    var text by remember(selected) { mutableStateOf(initialText?.takeIf { selected == null } ?: selected?.label ?: "") }
     var editing by remember { mutableStateOf(false) }
     var suggestions by remember { mutableStateOf<List<Place>>(emptyList()) }
     val focus = LocalFocusManager.current
@@ -77,9 +80,9 @@ fun PlaceField(
     Column(modifier) {
         OutlinedTextField(
             value = text,
-            onValueChange = { text = it; editing = true },
+            onValueChange = { text = it; editing = true; onTextChange?.invoke(it) },
             label = { Text(label) },
-            placeholder = { Text("Ville ou aéroport") },
+            placeholder = { Text(placeholder) },
             singleLine = true,
             trailingIcon = {
                 if (selected != null && !editing) {

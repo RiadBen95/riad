@@ -10,6 +10,8 @@ data class Place(
     val country: String,
     val type: String,          // "city" ou "airport"
     val cityName: String? = null,
+    val lat: Double? = null,
+    val lon: Double? = null,
 ) {
     val isAirport get() = type == "airport"
     val label get() = if (isAirport) "$name ($code)" else name
