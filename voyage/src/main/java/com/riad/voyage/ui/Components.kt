@@ -62,6 +62,7 @@ fun PlaceField(
     placeholder: String = "Ville ou aéroport",
     onTextChange: ((String) -> Unit)? = null,
     initialText: String? = null,
+    citiesOnly: Boolean = false,   // Sorties : pas de code ni de mention d'aéroport
 ) {
     var text by remember(selected) { mutableStateOf(initialText?.takeIf { selected == null } ?: selected?.label ?: "") }
     var editing by remember { mutableStateOf(false) }
@@ -85,7 +86,7 @@ fun PlaceField(
             placeholder = { Text(placeholder) },
             singleLine = true,
             trailingIcon = {
-                if (selected != null && !editing) {
+                if (selected != null && !editing && !citiesOnly) {
                     Text(
                         selected.code,
                         modifier = Modifier.padding(end = 12.dp),
@@ -119,16 +120,18 @@ fun PlaceField(
                             .padding(horizontal = 14.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(
-                            p.code,
-                            modifier = Modifier.width(52.dp),
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
+                        if (!citiesOnly) {
+                            Text(
+                                p.code,
+                                modifier = Modifier.width(52.dp),
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
                         Column {
                             Text(p.name, style = MaterialTheme.typography.bodyLarge)
                             Text(
-                                p.subtitle,
+                                if (citiesOnly) p.country.ifBlank { " " } else p.subtitle,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )

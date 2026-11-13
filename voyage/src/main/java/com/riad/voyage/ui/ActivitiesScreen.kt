@@ -126,6 +126,7 @@ fun ActivitiesScreen(
                     placeholder = "Ex. Paris, Alger, Rome…",
                     onTextChange = onCity,
                     initialText = city,
+                    citiesOnly = true,
                 )
                 Button(onClick = search, enabled = city.isNotBlank(), modifier = Modifier.padding(top = 8.dp)) { Text("OK") }
             }
