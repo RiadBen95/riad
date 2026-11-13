@@ -33,6 +33,7 @@ data class PointOfInterest(
     val wikidata: String? = null,
     val sitelinks: Int = 0,        // nombre de Wikipédias (langues) qui ont un article sur ce lieu
     val inGuide: Boolean = false,  // cité par le guide Wikivoyage de la ville
+    val imageUrl: String? = null,  // photo connue d'avance (base embarquée)
 ) {
     val isMustSee get() = sitelinks >= 20
     val score get() = sitelinks + (if (inGuide) 30 else 0)
@@ -138,9 +139,9 @@ object PlacesApi {
                    nwr["leisure"~"^(park|garden)$"]["name"]${around(3000)};"""
             }
             ActivityLinks.Category.BEACHES -> """nwr["natural"="beach"]["name"]${around(25000)};"""
-            ActivityLinks.Category.RESTAURANTS -> """nwr["amenity"="restaurant"]["name"]${around(1500)};"""
-            ActivityLinks.Category.CAFES -> """nwr["amenity"="cafe"]["name"]${around(1500)};"""
-            ActivityLinks.Category.BARS -> """nwr["amenity"~"^(bar|pub|biergarten)$"]["name"]${around(1500)};"""
+            ActivityLinks.Category.RESTAURANTS -> """nwr["amenity"="restaurant"]["name"]${around(1000)};"""
+            ActivityLinks.Category.CAFES -> """nwr["amenity"="cafe"]["name"]${around(1000)};"""
+            ActivityLinks.Category.BARS -> """nwr["amenity"~"^(bar|pub|biergarten)$"]["name"]${around(1000)};"""
             ActivityLinks.Category.NIGHTLIFE -> """nwr["amenity"="nightclub"]["name"]${around(4000)};"""
             ActivityLinks.Category.SHOPPING -> {
                 val a = around(5000)
@@ -149,7 +150,7 @@ object PlacesApi {
             }
             ActivityLinks.Category.TOURS -> ""
         }
-        return "[out:json][timeout:30];($body);out center tags 200;"
+        return "[out:json][timeout:15];($body);out center tags 150;"
     }
 
     private suspend fun get(url: String): String = request(url, null)
@@ -158,8 +159,8 @@ object PlacesApi {
     private suspend fun request(url: String, form: String?): String = withContext(Dispatchers.IO) {
         val conn = URL(url).openConnection() as HttpURLConnection
         try {
-            conn.connectTimeout = 10_000
-            conn.readTimeout = 30_000
+            conn.connectTimeout = 8_000
+            conn.readTimeout = 18_000
             conn.setRequestProperty("User-Agent", UA)
             conn.setRequestProperty("Accept", "application/json")
             if (form != null) {
@@ -329,6 +330,8 @@ object PlacesParser {
         return kinds[tags.str("tourism")] ?: kinds[tags.str("historic")] ?: kinds[tags.str("leisure")]
             ?: kinds[tags.str("amenity")] ?: kinds[tags.str("natural")] ?: kinds[tags.str("shop")] ?: "Lieu à visiter"
     }
+
+    fun distanceMeters(lat1: Double, lon1: Double, lat2: Double, lon2: Double) = distance(lat1, lon1, lat2, lon2)
 
     private fun distance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
         val r = 6_371_000.0

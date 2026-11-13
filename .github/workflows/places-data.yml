@@ -32,4 +32,6 @@ jobs:
           git add voyage/src/main/assets/places.json.gz
           if git diff --cached --quiet; then echo "Aucun changement"; exit 0; fi
           git commit -m "Mettre à jour la base des lieux (Wikidata)"
+          # La branche a pu avancer pendant la génération : on se replace dessus avant d'envoyer.
+          git pull --rebase origin ${{ github.ref_name }}
           git push origin HEAD:${{ github.ref_name }}

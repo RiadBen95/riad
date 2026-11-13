@@ -132,6 +132,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val places: StateFlow<PlacesState> = _places.asStateFlow()
     private var placesJob: kotlinx.coroutines.Job? = null
     private val geoCache = mutableMapOf<String, com.riad.voyage.data.GeoPoint>()
+    private val placesCache = mutableMapOf<String, PlacesState>()
+
+    /** Chargement de la base des lieux remarquables, lancé dès l'ouverture de l'app. */
+    private val notableReady = viewModelScope.async(kotlinx.coroutines.Dispatchers.IO) {
+        com.riad.voyage.data.NotablePlaces.load(getApplication())
+    }
     private val wikiCache = mutableMapOf<String, com.riad.voyage.data.WikiSummary?>()
     private val guideCache = mutableMapOf<String, Set<String>>()
 
@@ -177,55 +183,76 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val city = _activityCity.value.trim()
         val category = _activityCategory.value
         if (city.isBlank() || category == ActivityLinks.Category.TOURS) return
+        val key = "${city.lowercase()}|$category"
+        // Déjà cherché : réponse immédiate depuis le cache.
+        if (!force) placesCache[key]?.let { _places.value = it; return }
         val current = _places.value
-        if (!force && current.city.equals(city, ignoreCase = true) && current.category == category &&
-            (current.loading || current.items.isNotEmpty())
-        ) return
+        if (!force && current.city.equals(city, ignoreCase = true) && current.category == category && current.loading) return
+
         placesJob?.cancel()
         val chosen = _activityPlace.value?.takeIf { it.name.equals(city, ignoreCase = true) }
         _places.value = PlacesState(loading = true, stage = "Recherche de la ville…", city = city, category = category)
         placesJob = viewModelScope.launch {
-            val result = try {
-                val key = city.lowercase()
-                // 1) Position de la ville : celle de l'autocomplétion si on l'a, sinon OpenStreetMap.
-                val fromSuggestion = chosen?.let { p ->
-                    if (p.lat != null && p.lon != null) com.riad.voyage.data.GeoPoint(p.lat, p.lon, p.name) else null
-                }
-                val geo = geoCache[key] ?: fromSuggestion?.also { geoCache[key] = it }
-                    ?: kotlinx.coroutines.withTimeoutOrNull(15_000) {
-                        runCatching { com.riad.voyage.data.PlacesApi.geocode(city) }.getOrNull()
-                    }?.also { geoCache[key] = it }
-                if (geo == null) {
-                    PlacesState(
-                        error = "Ville introuvable ou service indisponible. Choisissez la ville dans la liste proposée.",
-                        city = city, category = category,
-                    )
-                } else {
-                    _places.value = _places.value.copy(stage = "Recherche des lieux…")
-                    // 2) Lieux (obligatoire) et guide de la ville (facultatif), en parallèle et avec des délais.
-                    val (raw, guide) = coroutineScope {
-                        val pois = async {
-                            kotlinx.coroutines.withTimeoutOrNull(45_000) { com.riad.voyage.data.PlacesApi.search(geo, category) }
-                        }
-                        val guide = async { kotlinx.coroutines.withTimeoutOrNull(12_000) { cityGuide(geo, city) } ?: emptySet() }
-                        pois.await() to guide.await()
-                    }
-                    if (raw == null) {
-                        PlacesState(error = "Le service des lieux met trop de temps à répondre. Réessayez dans un instant.", city = city, category = category)
-                    } else {
-                        _places.value = _places.value.copy(stage = "Classement des meilleurs lieux…")
-                        val items = kotlinx.coroutines.withTimeoutOrNull(12_000) { rank(raw, guide) } ?: raw
-                        PlacesState(items = items, city = city, category = category, guideFound = guide.isNotEmpty(),
-                            error = if (items.isEmpty()) "Aucun lieu trouvé pour cette ville." else null)
-                    }
-                }
-            } catch (e: kotlinx.coroutines.CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                PlacesState(error = TravelpayoutsApi.userMessage(e), city = city, category = category)
+            val geo = resolveCity(city, chosen)
+            if (geo == null) {
+                _places.value = PlacesState(
+                    error = "Ville introuvable ou connexion indisponible. Choisissez la ville dans la liste proposée.",
+                    city = city, category = category,
+                )
+                return@launch
             }
-            _places.value = result
+
+            // 1) Lieux remarquables : base embarquée, instantané et hors ligne.
+            val notable = if (com.riad.voyage.data.NotablePlaces.supports(category)) {
+                notableReady.await()
+                com.riad.voyage.data.NotablePlaces.search(geo, category)
+            } else emptyList()
+            if (notable.size >= 5) {
+                val state = PlacesState(items = notable, city = city, category = category)
+                placesCache[key] = state
+                _places.value = state
+                return@launch
+            }
+
+            // 2) Sinon (restaurants, bars… ou petite ville) : recherche en ligne, affichée dès qu'elle arrive.
+            _places.value = _places.value.copy(stage = "Recherche des lieux…")
+            val live = kotlinx.coroutines.withTimeoutOrNull(25_000) {
+                runCatching { com.riad.voyage.data.PlacesApi.search(geo, category) }.getOrNull()
+            }
+            val merged = (notable + (live ?: emptyList())).distinctBy { it.name.lowercase() }
+            if (merged.isEmpty()) {
+                _places.value = PlacesState(
+                    error = if (live == null) "Le service des lieux ne répond pas. Réessayez dans un instant."
+                    else "Aucun lieu trouvé pour cette ville.",
+                    city = city, category = category,
+                )
+                return@launch
+            }
+            val first = PlacesState(items = merged, city = city, category = category)
+            _places.value = first
+            placesCache[key] = first
+
+            // 3) En arrière-plan : classement avec le guide Wikivoyage (la liste est déjà affichée).
+            val guide = kotlinx.coroutines.withTimeoutOrNull(10_000) { cityGuide(geo, city) } ?: emptySet()
+            val ranked = kotlinx.coroutines.withTimeoutOrNull(10_000) { rank(merged, guide) } ?: return@launch
+            val better = first.copy(items = ranked, guideFound = guide.isNotEmpty())
+            placesCache[key] = better
+            if (_places.value.city == city && _places.value.category == category) _places.value = better
         }
+    }
+
+    /** Position de la ville : suggestion choisie, liste intégrée, cache, puis OpenStreetMap. */
+    private suspend fun resolveCity(city: String, chosen: Place?): com.riad.voyage.data.GeoPoint? {
+        val key = city.lowercase()
+        geoCache[key]?.let { return it }
+        val known = chosen?.takeIf { it.lat != null && it.lon != null }
+            ?: PopularPlaces.all.firstOrNull { it.name.equals(city, ignoreCase = true) && it.lat != null }
+        val geo = known?.let { com.riad.voyage.data.GeoPoint(it.lat!!, it.lon!!, it.name) }
+            ?: kotlinx.coroutines.withTimeoutOrNull(10_000) {
+                runCatching { com.riad.voyage.data.PlacesApi.geocode(city) }.getOrNull()
+            }
+        geo?.let { geoCache[key] = it }
+        return geo
     }
 
     private suspend fun cityGuide(geo: com.riad.voyage.data.GeoPoint, city: String): Set<String> {

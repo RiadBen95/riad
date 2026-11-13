@@ -222,7 +222,7 @@ private fun PlaceCard(p: PointOfInterest, city: String, wiki: suspend (String) -
     }
     Card(Modifier.fillMaxWidth()) {
         Column {
-            summary?.imageUrl?.let { url ->
+            (p.imageUrl ?: summary?.imageUrl)?.let { url ->
                 AsyncImage(
                     model = url,
                     contentDescription = p.name,
