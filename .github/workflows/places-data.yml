@@ -1,0 +1,35 @@
+name: Données des lieux
+
+# Génère la base des lieux remarquables (Wikidata) embarquée dans l'application.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - tools/build_places.py
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Interroger Wikidata
+        run: python tools/build_places.py voyage/src/main/assets/places.json.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: places-data
+          path: voyage/src/main/assets/places.json.gz
+      - name: Enregistrer dans le dépôt
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add voyage/src/main/assets/places.json.gz
+          if git diff --cached --quiet; then echo "Aucun changement"; exit 0; fi
+          git commit -m "Mettre à jour la base des lieux (Wikidata)"
+          git push origin HEAD:${{ github.ref_name }}
