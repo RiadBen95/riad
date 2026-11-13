@@ -30,7 +30,7 @@ import java.time.YearMonth
 import java.time.temporal.ChronoUnit
 
 enum class Tab(val label: String, val inBottomBar: Boolean = true) {
-    HOME("Accueil"), FLIGHTS("Vols"), ACTIVITIES("Sorties"), ALERTS("Alertes"),
+    HOME("Accueil"), FLIGHTS("Vols"), ACTIVITIES("Sorties"), EXPERIENCE("Expérience"), ALERTS("Alertes"),
     SETTINGS("Réglages", inBottomBar = false),
 }
 
@@ -95,6 +95,18 @@ const val SOURCE_GUIDE = "guide"
 const val SOURCE_MAP = "map"
 const val SOURCE_RATINGS = "ratings"
 
+const val QUIZ_STEPS = 6
+
+data class ExperienceState(
+    val answers: com.riad.voyage.data.Quiz.Answers = com.riad.voyage.data.Quiz.Answers(),
+    val step: Int = 0,
+    val loading: Boolean = false,
+    val stage: String = "",
+    val result: com.riad.voyage.data.Experience? = null,
+    val error: String? = null,
+    val seed: Int = 0,
+)
+
 class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val settingsStore = SettingsStore(app)
     private val alertStore = AlertStore(app)
@@ -138,6 +150,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val wikiCache = mutableMapOf<String, com.riad.voyage.data.WikiSummary?>()
     private val guideCache = mutableMapOf<String, Set<String>>()
 
+    private val _experience = MutableStateFlow(ExperienceState())
+    val experience: StateFlow<ExperienceState> = _experience.asStateFlow()
+    private var experiencePools: Map<ActivityLinks.Category, List<com.riad.voyage.data.PointOfInterest>> = emptyMap()
+
     private val _alerts = MutableStateFlow(alertStore.all())
     val alerts: StateFlow<List<PriceAlert>> = _alerts.asStateFlow()
 
@@ -157,6 +173,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         if (t == Tab.ACTIVITIES && _activityCity.value.isBlank()) {
             _activityCity.value = _form.value.destination?.name.orEmpty()
             _activityPlace.value = _form.value.destination
+        }
+        if (t == Tab.EXPERIENCE && _experience.value.answers.city.isBlank()) {
+            val dest = _form.value.destination ?: _activityPlace.value
+            if (dest != null) updateAnswers { it.copy(city = dest.name, place = dest) }
         }
         _tab.value = t
         if (t == Tab.ACTIVITIES) searchActivities()
@@ -276,6 +296,85 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             publish(key, PlacesState(items = merged, city = city, category = category,
                 guideFound = guidePicks.isNotEmpty(), source = SOURCE_MAP))
         }
+    }
+
+    // ---------- Expérience ----------
+
+    fun updateAnswers(transform: (com.riad.voyage.data.Quiz.Answers) -> com.riad.voyage.data.Quiz.Answers) =
+        _experience.update { it.copy(answers = transform(it.answers)) }
+
+    fun quizStep(delta: Int) = _experience.update { it.copy(step = (it.step + delta).coerceIn(0, QUIZ_STEPS - 1), error = null) }
+
+    fun editExperience() = _experience.update { it.copy(result = null, step = 0, error = null) }
+
+    /** Charge les meilleurs lieux de chaque catégorie utile, puis compose l'expérience. */
+    fun generateExperience() {
+        val a = _experience.value.answers
+        val city = a.city.trim()
+        if (city.isBlank()) return
+        _experience.update { it.copy(loading = true, stage = "Recherche de la ville…", error = null, result = null) }
+        viewModelScope.launch {
+            val geo = resolveCity(city, a.place?.takeIf { it.name.equals(city, ignoreCase = true) })
+            if (geo == null) {
+                _experience.update { it.copy(loading = false, error = "Ville introuvable : choisissez-la dans la liste proposée.") }
+                return@launch
+            }
+            val needed = com.riad.voyage.data.ExperienceBuilder.neededCategories(a)
+            _experience.update { it.copy(stage = "Sélection des meilleurs lieux de $city…") }
+            val pools = coroutineScope {
+                needed.map { c -> async { c to (kotlinx.coroutines.withTimeoutOrNull(25_000) { loadCategory(city, geo, c) } ?: emptyList()) } }
+                    .map { it.await() }.toMap()
+            }
+            experiencePools = pools
+            val seed = (System.currentTimeMillis() % 100_000).toInt()
+            val exp = com.riad.voyage.data.ExperienceBuilder.build(a, city, pools, seed)
+            _experience.update {
+                if (exp.days.isEmpty()) it.copy(loading = false, error = "Pas assez de lieux trouvés pour $city. Essayez d'autres envies ou une grande ville proche.")
+                else it.copy(loading = false, result = exp, seed = seed)
+            }
+        }
+    }
+
+    /** Autre proposition avec les mêmes réponses (instantané : les lieux sont déjà chargés). */
+    fun regenerateExperience() {
+        val st = _experience.value
+        if (experiencePools.isEmpty()) return generateExperience()
+        val seed = st.seed + 7919
+        val exp = com.riad.voyage.data.ExperienceBuilder.build(st.answers, st.answers.city.trim(), experiencePools, seed)
+        _experience.update { it.copy(result = exp, seed = seed) }
+    }
+
+    /** Meilleurs lieux d'une catégorie (même logique que l'onglet Sorties, sans l'afficher). */
+    private suspend fun loadCategory(
+        city: String,
+        geo: com.riad.voyage.data.GeoPoint,
+        category: ActivityLinks.Category,
+    ): List<com.riad.voyage.data.PointOfInterest> {
+        val key = "${city.lowercase()}|$category"
+        placesCache[key]?.items?.takeIf { it.isNotEmpty() }?.let { return it }
+        val db = com.riad.voyage.data.NotablePlaces
+        val items: List<com.riad.voyage.data.PointOfInterest> = if (db.supports(category)) {
+            runCatching { db.search(geo, category) }.getOrNull().orEmpty()
+        } else {
+            val listings = kotlinx.coroutines.withTimeoutOrNull(15_000) {
+                runCatching { com.riad.voyage.data.WikivoyageGuide.listings(city, geo.wikidata) }.getOrNull()
+            }.orEmpty()
+            val guide = com.riad.voyage.data.GuideParser.select(listings, category).take(30)
+                .map { com.riad.voyage.data.GuideParser.toPoi(it, category, geo) }
+            val st = _settings.value
+            val rated = if (st.googleKey.isNotBlank() || st.tripadvisorKey.isNotBlank() || st.foursquareKey.isNotBlank()) {
+                runCatching { com.riad.voyage.data.RatingsAggregator.search(st, quotas, city, geo, category, guide) }
+                    .getOrNull()?.places.orEmpty()
+            } else emptyList()
+            when {
+                rated.size >= 3 -> rated
+                guide.size >= 3 -> guide
+                else -> (guide + runCatching { com.riad.voyage.data.PlacesApi.search(geo, category) }.getOrNull().orEmpty())
+                    .distinctBy { it.name.lowercase() }.take(30)
+            }
+        }
+        if (items.isNotEmpty()) placesCache[key] = PlacesState(items = items, city = city, category = category)
+        return items
     }
 
     private fun publish(key: String, state: PlacesState) {

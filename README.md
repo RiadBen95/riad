@@ -33,6 +33,9 @@ pour payer : aucune donnée bancaire ne passe par l'application.
   boîtes de nuit, shopping, visites). Les lieux de la ville s'affichent dans l'app (photo, description,
   adresse, horaires, distance) grâce à OpenStreetMap et Wikipédia. « Réserver des billets » ouvre GetYourGuide ou
   Tiqets pour ce lieu ; « Itinéraire » ouvre Google Maps. Les visites guidées renvoient vers GetYourGuide, Viator, Klook.
+- **Expérience** : un questionnaire de 6 questions (ville, durée, avec qui, envies, rythme, budget) puis un
+  programme heure par heure qui enchaîne visites, balades, restaurants, cafés et bars proches les uns des autres,
+  avec parcours à pied dans Google Maps et « Autre proposition » en un geste.
 - **Vol + sorties** : depuis les résultats, « Que faire sur place » ouvre les sorties de la destination.
 - **Alertes de prix** : suivez un trajet ; l'app vérifie toutes les ~12 h et envoie une notification si le prix baisse.
 - **Mode démo** avec des prix fictifs tant qu'aucune clé API n'est saisie.

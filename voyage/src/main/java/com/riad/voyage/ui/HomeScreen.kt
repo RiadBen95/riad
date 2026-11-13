@@ -78,6 +78,7 @@ fun HomeScreen(
     demo: Boolean,
     onOpenFlights: () -> Unit,
     onOpenActivities: () -> Unit,
+    onOpenExperience: () -> Unit,
     onOpenAlerts: () -> Unit,
     onOpenSettings: () -> Unit,
     onRecent: (RecentSearch) -> Unit,
@@ -172,6 +173,7 @@ fun HomeScreen(
             ) {
                 QuickTile("Vols", AppIcons.Flight, onOpenFlights, Modifier.weight(1f))
                 QuickTile("Sorties", AppIcons.Ticket, onOpenActivities, Modifier.weight(1f))
+                QuickTile("Expérience", AppIcons.Sparkle, onOpenExperience, Modifier.weight(1f))
                 QuickTile("Alertes", AppIcons.Bell, onOpenAlerts, Modifier.weight(1f), badge = alerts.size.takeIf { it > 0 })
             }
         }

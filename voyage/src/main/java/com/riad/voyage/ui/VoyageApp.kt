@@ -39,6 +39,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
     val places by vm.places.collectAsStateWithLifecycle()
     val recents by vm.recents.collectAsStateWithLifecycle()
     val activityPlace by vm.activityPlace.collectAsStateWithLifecycle()
+    val experience by vm.experience.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(message) {
@@ -82,6 +83,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                     demo = settings.isDemo,
                     onOpenFlights = { vm.selectTab(Tab.FLIGHTS) },
                     onOpenActivities = { vm.selectTab(Tab.ACTIVITIES) },
+                    onOpenExperience = { vm.selectTab(Tab.EXPERIENCE) },
                     onOpenAlerts = { vm.selectTab(Tab.ALERTS) },
                     onOpenSettings = configure,
                     onRecent = vm::applyRecent,
@@ -137,6 +139,25 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                     )
                 }
 
+                Tab.EXPERIENCE -> {
+                    BackHandler {
+                        when {
+                            experience.result != null || experience.loading -> vm.editExperience()
+                            experience.step > 0 -> vm.quizStep(-1)
+                            else -> vm.selectTab(Tab.HOME)
+                        }
+                    }
+                    ExperienceScreen(
+                        state = experience,
+                        onAnswers = vm::updateAnswers,
+                        onStep = vm::quizStep,
+                        onGenerate = vm::generateExperience,
+                        onRegenerate = vm::regenerateExperience,
+                        onEdit = vm::editExperience,
+                        suggestCities = vm::suggestCities,
+                    )
+                }
+
                 Tab.ALERTS -> {
                     BackHandler { vm.selectTab(Tab.HOME) }
                     AlertsScreen(alerts, settings.isDemo, checking, vm::checkAlertsNow, vm::removeAlert, configure)
@@ -155,6 +176,7 @@ private fun tabIcon(t: Tab) = when (t) {
     Tab.HOME -> AppIcons.Home
     Tab.FLIGHTS -> AppIcons.Flight
     Tab.ACTIVITIES -> AppIcons.Ticket
+    Tab.EXPERIENCE -> AppIcons.Sparkle
     Tab.ALERTS -> AppIcons.Bell
     Tab.SETTINGS -> AppIcons.Settings
 }
