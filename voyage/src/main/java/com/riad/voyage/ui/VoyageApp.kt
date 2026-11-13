@@ -44,6 +44,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
     val trips by vm.trips.collectAsStateWithLifecycle()
     val openTrip by vm.openTrip.collectAsStateWithLifecycle()
     val tripArticle by vm.tripArticle.collectAsStateWithLifecycle()
+    val hotels by vm.hotels.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(message) {
@@ -89,6 +90,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                     onOpenActivities = { vm.selectTab(Tab.ACTIVITIES) },
                     onOpenExperience = { vm.selectTab(Tab.EXPERIENCE) },
                     onOpenBlog = { vm.selectTab(Tab.BLOG) },
+                    onOpenHotels = { vm.openHotels(null, null, null, null) },
                     trips = trips,
                     onOpenTrip = vm::openTrip,
                     onOpenAlerts = { vm.selectTab(Tab.ALERTS) },
@@ -109,6 +111,11 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         onBook = { f -> openUrl(context, vm.bookingUrl(f)) },
                         onActivities = vm::activitiesAtDestination,
                         onPlanStay = { vm.planStayFromFlight(null) },
+                        onHotels = {
+                            val q = results.query
+                            vm.openHotels(q?.destination?.name, q?.destination, q?.departure,
+                                if (q?.roundTrip == true && q.flexibleMonth != true) q.returnDate else null, q?.adults)
+                        },
                         onSaveFlight = vm::saveFlight,
                         onFollow = {
                             onFollowRequested()
@@ -167,6 +174,12 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         onEdit = vm::editExperience,
                         suggestCities = vm::suggestCities,
                         onSave = vm::saveExperience,
+                        alternatives = vm::stepAlternatives,
+                        onHotels = {
+                            val a = experience.answers
+                            vm.openHotels(a.city, a.place, a.startDate, a.startDate.plusDays(a.duration.days.toLong()))
+                        },
+                        onReplace = vm::replaceExperienceStep,
                     )
                 }
 
@@ -196,6 +209,20 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                     )
                 }
 
+                Tab.HOTELS -> {
+                    BackHandler { vm.selectTab(Tab.HOME) }
+                    HotelsScreen(
+                        state = hotels,
+                        hasKey = settings.liteApiKey.isNotBlank(),
+                        onUpdate = vm::updateHotels,
+                        onSearch = vm::searchHotels,
+                        onSave = vm::saveHotel,
+                        isFavorite = { name -> trips.any { tr -> tr.places.any { it.name.equals(name, ignoreCase = true) } } },
+                        suggestCities = vm::suggestCities,
+                        onConfigure = configure,
+                    )
+                }
+
                 Tab.TRIPS -> {
                     BackHandler {
                         when {
@@ -213,6 +240,10 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         onRemove = vm::removeFromTrip,
                         onReadArticle = vm::readSavedArticle,
                         onAlerts = { vm.selectTab(Tab.ALERTS) },
+                        onHotels = { tr ->
+                            vm.openHotels(tr.city, null, tr.startDate?.let { runCatching { java.time.LocalDate.parse(it) }.getOrNull() },
+                                tr.endDate?.let { runCatching { java.time.LocalDate.parse(it) }.getOrNull() })
+                        },
                         alertCount = alerts.size,
                     )
                 }
@@ -238,6 +269,7 @@ private fun tabIcon(t: Tab) = when (t) {
     Tab.EXPERIENCE -> AppIcons.Sparkle
     Tab.BLOG -> AppIcons.Book
     Tab.TRIPS -> AppIcons.Luggage
+    Tab.HOTELS -> AppIcons.Hotel
     Tab.ALERTS -> AppIcons.Bell
     Tab.SETTINGS -> AppIcons.Settings
 }

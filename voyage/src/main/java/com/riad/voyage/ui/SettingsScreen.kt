@@ -63,6 +63,7 @@ fun SettingsScreen(
     var googleKey by remember(settings) { mutableStateOf(settings.googleKey) }
     var tripadvisorKey by remember(settings) { mutableStateOf(settings.tripadvisorKey) }
     var foursquareKey by remember(settings) { mutableStateOf(settings.foursquareKey) }
+    var liteApiKey by remember(settings) { mutableStateOf(settings.liteApiKey) }
 
     Column(
         Modifier
@@ -116,9 +117,25 @@ fun SettingsScreen(
         RatingKeyField(com.riad.voyage.data.RatingSource.TRIPADVISOR, t("Clé Tripadvisor Content API"), tripadvisorKey, { tripadvisorKey = it }, quotas, onQuotaLimit)
         RatingKeyField(com.riad.voyage.data.RatingSource.FOURSQUARE, t("Clé Foursquare Places API"), foursquareKey, { foursquareKey = it }, quotas, onQuotaLimit)
 
+        Text(t("Hôtels : prix en direct (facultatif)"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
+        Text(
+            t("Avec une clé LiteAPI (gratuite sur liteapi.travel), l'onglet Hôtels affiche les prix réels pour vos dates. Sans clé, il propose les sites de réservation."),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        OutlinedTextField(
+            value = liteApiKey,
+            onValueChange = { liteApiKey = it },
+            label = { Text(t("Clé LiteAPI")) },
+            singleLine = true,
+            visualTransformation = PasswordVisualTransformation(),
+            modifier = Modifier.fillMaxWidth(),
+        )
+
         val edited = Settings(
             token = token.trim(), marker = marker.trim(), currency = currency,
             googleKey = googleKey.trim(), tripadvisorKey = tripadvisorKey.trim(), foursquareKey = foursquareKey.trim(),
+            liteApiKey = liteApiKey.trim(),
         )
         val unchanged = edited == settings
         Button(

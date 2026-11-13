@@ -36,6 +36,11 @@ import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -60,6 +65,9 @@ fun ExperienceScreen(
     onEdit: () -> Unit,
     suggestCities: suspend (String) -> List<Place>,
     onSave: () -> Unit = {},
+    alternatives: (Int, Int) -> List<Pair<ActivityLinks.Category, com.riad.voyage.data.PointOfInterest>> = { _, _ -> emptyList() },
+    onReplace: (Int, Int, Pair<ActivityLinks.Category, com.riad.voyage.data.PointOfInterest>?) -> Unit = { _, _, _ -> },
+    onHotels: () -> Unit = {},
 ) {
     when {
         state.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -70,7 +78,7 @@ fun ExperienceScreen(
                 Text(state.stage, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
             }
         }
-        state.result != null -> ExperienceResult(state, onRegenerate, onEdit, onSave)
+        state.result != null -> ExperienceResult(state, onRegenerate, onEdit, onSave, alternatives, onReplace, onHotels)
         else -> Questionnaire(state, onAnswers, onStep, onGenerate, suggestCities)
     }
 }
@@ -134,8 +142,18 @@ private fun Questionnaire(
                 }
                 id == "duration" -> {
                     QuestionTitle(t("Combien de temps avez-vous ?"))
-                    Quiz.Duration.entries.forEach { d ->
-                        ChoiceCard(t(d.label), null, a.duration == d) { onAnswers { it.copy(duration = d) } }
+                    ChoiceCard(t("Une demi-journée"), null, a.duration.halfDay) { onAnswers { it.copy(duration = Quiz.Duration.HALF) } }
+                    val end = a.startDate.plusDays((a.duration.days - 1).toLong())
+                    ChoiceCard(
+                        t("Une ou plusieurs journées"),
+                        if (a.duration.halfDay) t("Le programme couvre tout votre séjour")
+                        else tf("Du {0} au {1}", formatDay(a.startDate), formatDay(end)),
+                        !a.duration.halfDay,
+                    ) { if (a.duration.halfDay) onAnswers { it.copy(duration = Quiz.Duration.DAY) } }
+                    if (!a.duration.halfDay) {
+                        Stepper(t("Nombre de jours"), a.duration.days, 1..Quiz.Duration.MAX_DAYS, { n ->
+                            onAnswers { it.copy(duration = Quiz.Duration(n)) }
+                        })
                     }
                 }
                 id == "company" -> {
@@ -262,8 +280,25 @@ private fun ChoiceCard(title: String, description: String?, selected: Boolean, o
 }
 
 @Composable
-private fun ExperienceResult(state: ExperienceState, onRegenerate: () -> Unit, onEdit: () -> Unit, onSave: () -> Unit) {
+private fun ExperienceResult(
+    state: ExperienceState,
+    onRegenerate: () -> Unit,
+    onEdit: () -> Unit,
+    onSave: () -> Unit,
+    alternatives: (Int, Int) -> List<Pair<ActivityLinks.Category, com.riad.voyage.data.PointOfInterest>>,
+    onReplace: (Int, Int, Pair<ActivityLinks.Category, com.riad.voyage.data.PointOfInterest>?) -> Unit,
+    onHotels: () -> Unit,
+) {
     val exp = state.result ?: return
+    // Étape en cours de remplacement (jour, étape) et lieux proposés à la place.
+    var editing by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+    editing?.let { (d, i) ->
+        val step = exp.days.getOrNull(d)?.steps?.getOrNull(i)
+        if (step == null) editing = null
+        else ReplaceDialog(step, alternatives(d, i), exp.city,
+            onPick = { choice -> onReplace(d, i, choice); editing = null },
+            onDismiss = { editing = null })
+    }
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             Card(
@@ -284,12 +319,13 @@ private fun ExperienceResult(state: ExperienceState, onRegenerate: () -> Unit, o
                         OutlinedButton(onClick = onEdit) { Text(t("Modifier")) }
                     }
                     Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) { Text(t("💾 Enregistrer dans mon voyage")) }
+                    OutlinedButton(onClick = onHotels, modifier = Modifier.fillMaxWidth()) { Text(t("🏨 Où dormir ?")) }
                 }
             }
         }
-        exp.days.forEach { day ->
+        exp.days.forEachIndexed { dayIndex, day ->
             item { DayHeader(day, exp.city) }
-            items(day.steps) { s -> StepCard(s, exp.city) }
+            itemsIndexed(day.steps) { stepIndex, s -> StepCard(s, exp.city) { editing = dayIndex to stepIndex } }
         }
         item {
             Text(
@@ -325,7 +361,7 @@ private fun DayHeader(day: ExperienceDay, city: String) {
 }
 
 @Composable
-private fun StepCard(s: ExperienceStep, city: String) {
+private fun StepCard(s: ExperienceStep, city: String, onChange: () -> Unit = {}) {
     val context = LocalContext.current
     Row {
         Column(Modifier.width(58.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -372,6 +408,7 @@ private fun StepCard(s: ExperienceStep, city: String) {
                             },
                         )
                     }
+                    TextButton(onClick = onChange, contentPadding = PaddingValues(horizontal = 4.dp)) { Text(t("Changer")) }
                 }
             }
         }
@@ -401,4 +438,57 @@ private fun tasteQuestion(i: Quiz.Interest) = when (i) {
     Quiz.Interest.NIGHT -> t("Quelle ambiance pour vos soirées ?")
     Quiz.Interest.SHOPPING -> t("Quel shopping ?")
     Quiz.Interest.BEACH -> t("Quelles plages ?")
+}
+
+/** Retirer une étape ou la remplacer par un lieu de la liste. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ReplaceDialog(
+    step: ExperienceStep,
+    options: List<Pair<ActivityLinks.Category, com.riad.voyage.data.PointOfInterest>>,
+    city: String,
+    onPick: (Pair<ActivityLinks.Category, com.riad.voyage.data.PointOfInterest>?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(tf("Remplacer « {0} »", step.place.name)) },
+        text = {
+            LazyColumn(Modifier.height(420.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                item {
+                    OutlinedButton(onClick = { onPick(null) }, modifier = Modifier.fillMaxWidth()) {
+                        Text(t("Retirer sans remplacer"))
+                    }
+                }
+                if (options.isEmpty()) {
+                    item { Text(t("Pas d'autre lieu disponible pour cette étape."), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                } else {
+                    item { Text(t("Ou choisissez un autre lieu :"), style = MaterialTheme.typography.labelLarge) }
+                }
+                items(options, key = { it.second.id }) { (c, p) ->
+                    Card(
+                        onClick = { onPick(c to p) },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Column(Modifier.padding(12.dp)) {
+                            Text("${c.emoji} ${p.name}", fontWeight = FontWeight.Bold)
+                            Text(
+                                tk(p.kind) + " · ⏱ " + com.riad.voyage.data.ExperienceBuilder.formatDuration(
+                                    com.riad.voyage.data.ExperienceBuilder.visitMinutes(p, c),
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            p.ratings.maxByOrNull { it.count }?.let { r ->
+                                Text("★ ${"%.1f".format(r.rating)} ${r.source.label}", style = MaterialTheme.typography.labelMedium,
+                                    color = com.riad.voyage.ui.theme.BrandCoral)
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text(t("Annuler")) } },
+    )
 }

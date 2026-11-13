@@ -546,3 +546,38 @@ Clé Tripadvisor Content API	Tripadvisor Content API key	مفتاح Tripadvisor 
 Clé Foursquare Places API	Foursquare Places API key	مفتاح Foursquare Places API	Clave de Foursquare Places API	Foursquare Places API 密钥	Foursquare Places API キー	Foursquare Places API कुंजी
 Erreur inconnue	Unknown error	خطأ غير معروف	Error desconocido	未知错误	不明なエラー	अज्ञात त्रुटि
 Le service des lieux est très sollicité, réessayez dans un instant.	The places service is very busy, try again in a moment.	خدمة الأماكن مزدحمة جدًا، حاول بعد قليل.	El servicio de lugares está muy solicitado, inténtalo en un momento.	地点服务繁忙，请稍后重试。	スポット検索が混雑しています。しばらくして再試行してください。	जगहों की सेवा बहुत व्यस्त है, थोड़ी देर में कोशिश करें।
+Hôtels	Hotels	فنادق	Hoteles	酒店	ホテル	होटल
+Comparez les hôtels de la ville pour vos dates, puis réservez au meilleur prix.	Compare the city's hotels for your dates, then book at the best price.	قارن فنادق المدينة لتواريخك، ثم احجز بأفضل سعر.	Compara los hoteles de la ciudad para tus fechas y reserva al mejor precio.	比较该城市在您日期内的酒店，以最优价格预订。	日程に合わせて街のホテルを比較し、最安値で予約。	अपनी तारीखों के लिए शहर के होटलों की तुलना करें, फिर सबसे अच्छे दाम पर बुक करें।
+Arrivée	Check-in	الوصول	Llegada	入住	チェックイン	चेक-इन
+Voyageurs (adultes)	Travellers (adults)	المسافرون (بالغون)	Viajeros (adultos)	旅客（成人）	宿泊者（大人）	यात्री (वयस्क)
+Rechercher les hôtels	Search hotels	ابحث عن فنادق	Buscar hoteles	搜索酒店	ホテルを検索	होटल खोजें
+Prix en direct désactivés	Live prices turned off	الأسعار المباشرة معطّلة	Precios en directo desactivados	实时价格未启用	リアルタイム価格はオフです	लाइव दाम बंद हैं
+Ajoutez une clé LiteAPI (gratuite) dans Réglages pour voir ici les hôtels disponibles avec leur prix. En attendant, réservez chez nos partenaires :	Add a (free) LiteAPI key in Settings to see available hotels with their prices here. Meanwhile, book with our partners:	أضف مفتاح LiteAPI (مجاني) في الإعدادات لرؤية الفنادق المتاحة وأسعارها هنا. وفي الأثناء، احجز لدى شركائنا:	Añade una clave LiteAPI (gratuita) en Ajustes para ver aquí los hoteles disponibles con su precio. Mientras tanto, reserva con nuestros socios:	在设置中添加 LiteAPI 密钥（免费），即可在此查看可订酒店及价格。在此之前，可通过合作伙伴预订：	設定で LiteAPI キー（無料）を追加すると、空室と料金をここに表示できます。それまではパートナーサイトで予約できます：	उपलब्ध होटल और उनके दाम यहाँ देखने के लिए सेटिंग्स में (मुफ़्त) LiteAPI कुंजी जोड़ें। तब तक हमारे साझेदारों के साथ बुक करें:
+Hôtels : prix en direct (facultatif)	Hotels: live prices (optional)	الفنادق: أسعار مباشرة (اختياري)	Hoteles: precios en directo (opcional)	酒店：实时价格（可选）	ホテル：リアルタイム価格（任意）	होटल: लाइव दाम (वैकल्पिक)
+Avec une clé LiteAPI (gratuite sur liteapi.travel), l'onglet Hôtels affiche les prix réels pour vos dates. Sans clé, il propose les sites de réservation.	With a LiteAPI key (free on liteapi.travel), the Hotels section shows real prices for your dates. Without a key, it suggests booking sites.	مع مفتاح LiteAPI (مجاني على liteapi.travel) يعرض قسم الفنادق الأسعار الحقيقية لتواريخك. ودون مفتاح يقترح مواقع الحجز.	Con una clave LiteAPI (gratuita en liteapi.travel), la sección Hoteles muestra precios reales para tus fechas. Sin clave, propone sitios de reserva.	有了 LiteAPI 密钥（在 liteapi.travel 免费获取），酒店页面会显示您日期的真实价格；没有密钥时会推荐预订网站。	LiteAPI キー（liteapi.travel で無料）があれば、ホテル画面に日程の実際の料金を表示します。キーがない場合は予約サイトを案内します。	LiteAPI कुंजी (liteapi.travel पर मुफ़्त) होने पर होटल भाग आपकी तारीखों के असली दाम दिखाता है। बिना कुंजी के बुकिंग साइटें सुझाता है।
+Clé LiteAPI	LiteAPI key	مفتاح LiteAPI	Clave LiteAPI	LiteAPI 密钥	LiteAPI キー	LiteAPI कुंजी
+Clé LiteAPI refusée. Vérifiez-la dans Réglages.	LiteAPI key rejected. Check it in Settings.	تم رفض مفتاح LiteAPI. تحقّق منه في الإعدادات.	Clave LiteAPI rechazada. Revísala en Ajustes.	LiteAPI 密钥被拒绝，请在设置中检查。	LiteAPI キーが拒否されました。設定で確認してください。	LiteAPI कुंजी अस्वीकार हुई। सेटिंग्स में जाँचें।
+Erreur du service d'hôtels ({0}).	Hotel service error ({0}).	خطأ في خدمة الفنادق ({0}).	Error del servicio de hoteles ({0}).	酒店服务出错（{0}）。	ホテル検索のエラー（{0}）。	होटल सेवा में त्रुटि ({0})।
+Le service d'hôtels ne répond pas. Réessayez dans un instant.	The hotel service isn't responding. Try again in a moment.	خدمة الفنادق لا تستجيب. حاول بعد قليل.	El servicio de hoteles no responde. Inténtalo en un momento.	酒店服务无响应，请稍后重试。	ホテル検索が応答しません。しばらくして再試行してください。	होटल सेवा जवाब नहीं दे रही। थोड़ी देर में कोशिश करें।
+Aucun hôtel disponible pour ces dates.	No hotels available for these dates.	لا توجد فنادق متاحة لهذه التواريخ.	No hay hoteles disponibles para estas fechas.	这些日期没有可订酒店。	この日程で空室のあるホテルはありません。	इन तारीखों के लिए कोई होटल उपलब्ध नहीं।
+{0} hôtels disponibles	{0} hotels available	{0} فندق متاح	{0} hoteles disponibles	{0} 家可订酒店	空室のあるホテル {0} 件	{0} होटल उपलब्ध
+Recommandés	Recommended	موصى بها	Recomendados	推荐	おすすめ	सुझाए गए
+Note	Rating	التقييم	Valoración	评分	評価	रेटिंग
+Distance	Distance	المسافة	Distancia	距离	距離	दूरी
+Annulation gratuite	Free cancellation	إلغاء مجاني	Cancelación gratuita	免费取消	無料キャンセル	मुफ़्त रद्दीकरण
+{0} / nuit	{0} / night	{0} / ليلة	{0} / noche	{0}/晚	{0}/泊	{0} / रात
+Réserver sur {0}	Book on {0}	احجز على {0}	Reservar en {0}	在 {0} 预订	{0} で予約	{0} पर बुक करें
+Prix et disponibilités : LiteAPI. La réservation se finalise chez le partenaire choisi, au prix affiché par celui-ci.	Prices and availability: LiteAPI. Booking is completed with the chosen partner, at the price it shows.	الأسعار والتوفر: LiteAPI. يكتمل الحجز لدى الشريك المختار وبالسعر الذي يعرضه.	Precios y disponibilidad: LiteAPI. La reserva se completa con el socio elegido, al precio que muestre.	价格与空房：LiteAPI。预订在所选合作伙伴处完成，以其显示价格为准。	料金と空室：LiteAPI。予約は選んだパートナーサイトで、表示価格にて完了します。	दाम और उपलब्धता: LiteAPI। बुकिंग चुने गए साझेदार के यहाँ उसके दिखाए दाम पर पूरी होती है।
+🏨 Hôtels à {0}	🏨 Hotels in {0}	🏨 فنادق في {0}	🏨 Hoteles en {0}	🏨 {0}的酒店	🏨 {0}のホテル	🏨 {0} में होटल
+🏨 Où dormir ?	🏨 Where to stay?	🏨 أين تقيم؟	🏨 ¿Dónde dormir?	🏨 住哪里？	🏨 どこに泊まる？	🏨 कहाँ ठहरें?
+🏨 Trouver un hôtel	🏨 Find a hotel	🏨 ابحث عن فندق	🏨 Buscar un hotel	🏨 查找酒店	🏨 ホテルを探す	🏨 होटल खोजें
+Une ou plusieurs journées	One or more days	يوم أو أكثر	Uno o varios días	一天或多天	1日以上	एक या कई दिन
+Le programme couvre tout votre séjour	The plan covers your whole stay	يغطي البرنامج إقامتك بالكامل	El plan cubre toda tu estancia	行程覆盖您的整个停留期	プランは滞在全体をカバーします	कार्यक्रम आपके पूरे प्रवास को शामिल करता है
+Du {0} au {1}	From {0} to {1}	من {0} إلى {1}	Del {0} al {1}	{0} 至 {1}	{0}〜{1}	{0} से {1} तक
+Nombre de jours	Number of days	عدد الأيام	Número de días	天数	日数	दिनों की संख्या
+{0} jours	{0} days	{0} أيام	{0} días	{0}天	{0}日間	{0} दिन
+Changer	Change	تغيير	Cambiar	更换	変更	बदलें
+Remplacer « {0} »	Replace "{0}"	استبدال «{0}»	Reemplazar «{0}»	替换“{0}”	「{0}」を入れ替え	"{0}" बदलें
+Retirer sans remplacer	Remove without replacing	إزالة دون استبدال	Quitar sin reemplazar	删除且不替换	入れ替えずに削除	बिना बदले हटाएँ
+Ou choisissez un autre lieu :	Or choose another place:	أو اختر مكانًا آخر:	O elige otro lugar:	或选择其他地点：	または別のスポットを選択：	या कोई और जगह चुनें:
+Pas d'autre lieu disponible pour cette étape.	No other place available for this stop.	لا يوجد مكان آخر متاح لهذه المحطة.	No hay otro lugar disponible para esta parada.	此站没有其他可选地点。	この行程に代わりのスポットはありません。	इस पड़ाव के लिए कोई और जगह उपलब्ध नहीं।

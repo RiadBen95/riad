@@ -40,6 +40,12 @@ pour payer : aucune donnée bancaire ne passe par l'application.
   (destination du vol, ville des sorties, expérience) avec un filtre « Pour vous » selon ses goûts ; sans recherche
   préalable, icônes des villes les plus emblématiques ; barre de recherche ville / monument / lieu ; lecture
   complète de l'article dans l'app.
+- **Hôtels** : recherche avec prix réels pour les dates et le nombre de voyageurs (LiteAPI, clé gratuite dans
+  Réglages) : photo, étoiles, note et avis, distance, annulation gratuite, prix total et par nuit, tri ;
+  réservation chez Booking.com, Hotels.com, Expedia, Agoda ou Google Hôtels avec hôtel et dates pré-remplis.
+  Accès depuis l'accueil, les résultats de vol, l'Expérience (« Où dormir ? ») et Mes voyages.
+- **Expérience sur tout le séjour** : demi-journée ou 1 à 30 jours ; chaque étape peut être retirée ou
+  remplacée par un lieu proposé dans une liste, les horaires sont recalculés.
 - **Météo** (Open-Meteo, gratuit) : prévisions jusqu'à 16 jours prises en compte dans l'Expérience (musées
   s'il pleut, parcs et plages au soleil, point de vue au coucher du soleil), météo affichée par jour.
 - **Vol → séjour** : depuis les résultats, « Planifier mon séjour » ouvre l'Expérience avec la ville, les dates

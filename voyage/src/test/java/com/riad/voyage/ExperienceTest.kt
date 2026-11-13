@@ -115,4 +115,33 @@ class ExperienceTest {
         val dry = ExperienceBuilder.build(a, "Paris", pools).days.single()
         assertEquals(Category.PARKS, dry.steps.first().category)
     }
+
+    @Test
+    fun longStayCoversEveryDay() {
+        val a = Quiz.Answers(city = "Paris", interests = setOf(Quiz.Interest.HISTORY, Quiz.Interest.ART), duration = Quiz.Duration(7))
+        val exp = ExperienceBuilder.build(a, "Paris", pools)
+        assertEquals(7, exp.days.size)
+        // Chaque jour a son déjeuner et son dîner, même quand les restaurants doivent resservir.
+        exp.days.forEach { d -> assertEquals(2, d.steps.count { it.category == Category.RESTAURANTS }) }
+        exp.days.forEach { d -> assertEquals(d.steps.size, d.steps.map { it.place.id }.distinct().size) }
+        assertEquals("7 jours", Quiz.Duration(7).label)
+    }
+
+    @Test
+    fun stepCanBeReplacedOrRemoved() {
+        val a = Quiz.Answers(city = "Paris", interests = setOf(Quiz.Interest.HISTORY))
+        val exp = ExperienceBuilder.build(a, "Paris", pools)
+        val day = exp.days.single()
+        val alts = ExperienceBuilder.alternatives(a, exp, pools, 0, 0)
+        assertTrue(alts.isNotEmpty())
+        assertTrue(alts.none { (_, p) -> p.id in exp.placeIds })
+        val replaced = ExperienceBuilder.replaceStep(a, exp, 0, 0, alts.first())
+        assertEquals(alts.first().second.id, replaced.days.single().steps.first().place.id)
+        assertEquals(day.steps.size, replaced.days.single().steps.size)
+        val removed = ExperienceBuilder.replaceStep(a, exp, 0, 0, null)
+        assertEquals(day.steps.size - 1, removed.days.single().steps.size)
+        // Les horaires restent cohérents après modification, et le déjeuner pas avant 12h30.
+        removed.days.single().steps.zipWithNext().forEach { (x, y) -> assertTrue(minutes(y.time) >= minutes(x.time) + x.durationMin) }
+        assertTrue(minutes(removed.days.single().steps.first { it.moment == "Déjeuner" }.time) >= 12 * 60 + 30)
+    }
 }

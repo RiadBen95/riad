@@ -31,7 +31,7 @@ import java.time.temporal.ChronoUnit
 
 enum class Tab(val label: String, val inBottomBar: Boolean = true) {
     HOME("Accueil"), FLIGHTS("Vols"), ACTIVITIES("Sorties"), EXPERIENCE("Expérience"), BLOG("Blogue"),
-    ALERTS("Alertes", inBottomBar = false), TRIPS("Mes voyages", inBottomBar = false),
+    ALERTS("Alertes", inBottomBar = false), TRIPS("Mes voyages", inBottomBar = false), HOTELS("Hôtels", inBottomBar = false),
     SETTINGS("Réglages", inBottomBar = false),
 }
 
@@ -95,6 +95,30 @@ const val SOURCE_FAME = "fame"
 const val SOURCE_GUIDE = "guide"
 const val SOURCE_MAP = "map"
 const val SOURCE_RATINGS = "ratings"
+
+enum class HotelSort(val label: String) { BEST("Recommandés"), PRICE("Prix"), RATING("Note"), DISTANCE("Distance") }
+
+data class HotelState(
+    val city: String = "",
+    val place: Place? = null,
+    val checkIn: LocalDate = LocalDate.now().plusDays(14),
+    val checkOut: LocalDate = LocalDate.now().plusDays(17),
+    val adults: Int = 2,
+    val loading: Boolean = false,
+    val error: String? = null,
+    val offers: List<com.riad.voyage.data.HotelOffer> = emptyList(),
+    val searched: Boolean = false,
+    val sort: HotelSort = HotelSort.BEST,
+) {
+    val nights get() = com.riad.voyage.data.HotelBooking.nights(checkIn, checkOut)
+    val sorted: List<com.riad.voyage.data.HotelOffer>
+        get() = when (sort) {
+            HotelSort.BEST -> offers.sortedByDescending { it.score }
+            HotelSort.PRICE -> offers.sortedBy { it.totalPrice ?: Double.MAX_VALUE }
+            HotelSort.RATING -> offers.sortedByDescending { it.rating ?: 0.0 }
+            HotelSort.DISTANCE -> offers.sortedBy { it.distanceM ?: Int.MAX_VALUE }
+        }
+}
 
 data class BlogState(
     val city: com.riad.voyage.data.BlogCity? = null,
@@ -174,6 +198,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val experience: StateFlow<ExperienceState> = _experience.asStateFlow()
     private var experiencePools: Map<ActivityLinks.Category, List<com.riad.voyage.data.PointOfInterest>> = emptyMap()
     private var experienceWeather: Map<LocalDate, com.riad.voyage.data.DayWeather> = emptyMap()
+
+    private val _hotels = MutableStateFlow(HotelState())
+    val hotels: StateFlow<HotelState> = _hotels.asStateFlow()
 
     private val _blog = MutableStateFlow(BlogState())
     val blog: StateFlow<BlogState> = _blog.asStateFlow()
@@ -322,6 +349,67 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             publish(key, PlacesState(items = merged, city = city, category = category,
                 guideFound = guidePicks.isNotEmpty(), source = SOURCE_MAP))
         }
+    }
+
+    // ---------- Hôtels ----------
+
+    /** Ouvre les hôtels pour une ville et des dates (depuis un vol, une expérience ou un voyage). */
+    fun openHotels(city: String?, place: Place?, checkIn: LocalDate?, checkOut: LocalDate?, adults: Int? = null) {
+        _hotels.update { h ->
+            val ci = checkIn ?: h.checkIn
+            val co = (checkOut ?: ci.plusDays(h.nights)).let { if (it.isAfter(ci)) it else ci.plusDays(1) }
+            val sameCity = city.isNullOrBlank() || city.equals(h.city, ignoreCase = true)
+            h.copy(
+                city = city?.takeIf { it.isNotBlank() } ?: h.city, place = place ?: h.place.takeIf { sameCity },
+                checkIn = ci, checkOut = co, adults = adults ?: h.adults,
+                offers = if (sameCity && ci == h.checkIn && co == h.checkOut) h.offers else emptyList(),
+                searched = sameCity && ci == h.checkIn && co == h.checkOut && h.searched,
+            )
+        }
+        _tab.value = Tab.HOTELS
+        if (!_hotels.value.searched && _hotels.value.city.isNotBlank() && _settings.value.liteApiKey.isNotBlank()) searchHotels()
+    }
+
+    fun updateHotels(transform: (HotelState) -> HotelState) = _hotels.update { h ->
+        val n = transform(h)
+        val fixed = if (!n.checkOut.isAfter(n.checkIn)) n.copy(checkOut = n.checkIn.plusDays(1)) else n
+        if (fixed.city != h.city || fixed.checkIn != h.checkIn || fixed.checkOut != h.checkOut || fixed.adults != h.adults)
+            fixed.copy(searched = false, offers = emptyList(), error = null) else fixed
+    }
+
+    fun searchHotels() {
+        val h = _hotels.value
+        val key = _settings.value.liteApiKey
+        if (h.city.isBlank()) return
+        if (key.isBlank()) { _hotels.update { it.copy(searched = true) }; return }
+        _hotels.update { it.copy(loading = true, error = null) }
+        viewModelScope.launch {
+            val geo = resolveCity(h.city, h.place?.takeIf { it.name.equals(h.city, ignoreCase = true) })
+            if (geo == null) {
+                _hotels.update { it.copy(loading = false, searched = true, error = t("Ville introuvable : choisissez-la dans la liste proposée.")) }
+                return@launch
+            }
+            val nationality = java.util.Locale.getDefault().country.ifBlank { "FR" }
+            val result = kotlinx.coroutines.withTimeoutOrNull(35_000) {
+                runCatching {
+                    com.riad.voyage.data.LiteApi.search(key, geo, h.checkIn, h.checkOut, h.adults, _settings.value.currency, nationality)
+                }
+            }
+            _hotels.update {
+                when {
+                    result == null -> it.copy(loading = false, searched = true, error = t("Le service d'hôtels ne répond pas. Réessayez dans un instant."))
+                    result.isFailure -> it.copy(loading = false, searched = true, error = TravelpayoutsApi.userMessage(result.exceptionOrNull()!!))
+                    else -> it.copy(loading = false, searched = true, offers = result.getOrDefault(emptyList()),
+                        error = if (result.getOrDefault(emptyList()).isEmpty()) t("Aucun hôtel disponible pour ces dates.") else null)
+                }
+            }
+        }
+    }
+
+    fun saveHotel(o: com.riad.voyage.data.HotelOffer) {
+        val h = _hotels.value
+        val price = o.totalPrice?.let { com.riad.voyage.ui.formatPrice(it.toInt(), o.currency) }.orEmpty()
+        toggleFavorite(o.toPoi(price), h.city)
     }
 
     // ---------- Mes voyages ----------
@@ -604,11 +692,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val end = flight?.returnAt?.let { com.riad.voyage.data.parseDateTime(it)?.toLocalDate() }
             ?: if (q.roundTrip && !q.flexibleMonth) q.returnDate else null
         val nights = end?.let { ChronoUnit.DAYS.between(start, it) } ?: 1
-        val duration = when {
-            nights <= 1 -> com.riad.voyage.data.Quiz.Duration.DAY
-            nights == 2L -> com.riad.voyage.data.Quiz.Duration.TWO
-            else -> com.riad.voyage.data.Quiz.Duration.THREE
-        }
+        // L'expérience couvre tout le séjour : du jour d'arrivée au jour du départ.
+        val duration = if (end == null) com.riad.voyage.data.Quiz.Duration.DAY
+        else com.riad.voyage.data.Quiz.Duration((nights + 1).toInt().coerceIn(1, com.riad.voyage.data.Quiz.Duration.MAX_DAYS))
         updateAnswers { it.copy(city = dest.name, place = dest, startDate = start, duration = duration) }
         val firstOpen = com.riad.voyage.data.Quiz.steps(_experience.value.answers).indexOf("company").coerceAtLeast(0)
         _experience.update { it.copy(step = firstOpen, result = null, error = null) }
@@ -616,6 +702,21 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _activityPlace.value = dest
         _blog.update { BlogState() }
         _tab.value = Tab.EXPERIENCE
+    }
+
+    /** Lieux proposés pour remplacer une étape du programme. */
+    fun stepAlternatives(dayIndex: Int, stepIndex: Int): List<Pair<ActivityLinks.Category, com.riad.voyage.data.PointOfInterest>> {
+        val st = _experience.value
+        val exp = st.result ?: return emptyList()
+        return com.riad.voyage.data.ExperienceBuilder.alternatives(st.answers, exp, experiencePools, dayIndex, stepIndex)
+    }
+
+    /** Retire une étape (choice = null) ou la remplace par le lieu choisi ; les horaires sont recalculés. */
+    fun replaceExperienceStep(dayIndex: Int, stepIndex: Int, choice: Pair<ActivityLinks.Category, com.riad.voyage.data.PointOfInterest>?) {
+        val st = _experience.value
+        val exp = st.result ?: return
+        val updated = com.riad.voyage.data.ExperienceBuilder.replaceStep(st.answers, exp, dayIndex, stepIndex, choice)
+        _experience.update { it.copy(result = updated, previous = it.previous + exp.placeIds) }
     }
 
     /** Autre proposition : mêmes réponses, en écartant les lieux de la proposition affichée (pas de hasard). */

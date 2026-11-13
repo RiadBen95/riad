@@ -60,6 +60,7 @@ fun FlightResultsScreen(
     onBook: (Flight) -> Unit,
     onActivities: () -> Unit,
     onPlanStay: () -> Unit = {},
+    onHotels: () -> Unit = {},
     onSaveFlight: (Flight) -> Unit = {},
     onFollow: () -> Unit,
     onOpenSite: () -> Unit,
@@ -127,6 +128,9 @@ fun FlightResultsScreen(
                     // Enchaînement vers le séjour : programme personnalisé avec la ville et les dates du vol.
                     Button(onClick = onPlanStay, modifier = Modifier.fillMaxWidth()) {
                         Text(tf("✨ Planifier mon séjour à {0}", t(q.destination?.name ?: "")))
+                    }
+                    OutlinedButton(onClick = onHotels, modifier = Modifier.fillMaxWidth()) {
+                        Text(tf("🏨 Hôtels à {0}", t(q.destination?.name ?: "")))
                     }
                 }
                 item {

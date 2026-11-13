@@ -8,11 +8,22 @@ import kotlin.math.max
 
 /** Questionnaire « Expérience ». */
 object Quiz {
-    enum class Duration(val label: String, val days: Int, val halfDay: Boolean) {
-        HALF("Une demi-journée", 1, true),
-        DAY("Une journée", 1, false),
-        TWO("Deux jours", 2, false),
-        THREE("Trois jours", 3, false),
+    /** Durée du séjour : une demi-journée, ou un nombre de jours libre (l'expérience couvre tout le séjour). */
+    data class Duration(val days: Int, val halfDay: Boolean = false) {
+        val label: String
+            get() = when {
+                halfDay -> t("Une demi-journée")
+                days == 1 -> t("Une journée")
+                else -> tf("{0} jours", days)
+            }
+
+        companion object {
+            const val MAX_DAYS = 30
+            val HALF = Duration(1, halfDay = true)
+            val DAY = Duration(1)
+            val TWO = Duration(2)
+            val THREE = Duration(3)
+        }
     }
 
     enum class Company(val label: String, val emoji: String) {
@@ -332,6 +343,125 @@ object ExperienceBuilder {
         else -> 10 + (meters / 1000.0 * 3).toInt()
     }
 
+    private fun isOutdoor(p: PointOfInterest, c: ActivityLinks.Category): Boolean {
+        if (c == ActivityLinks.Category.PARKS || c == ActivityLinks.Category.BEACHES) return true
+        val k = normalize(p.kind)
+        return listOf("point de vue", "belvedere", "observation", "place", "pont", "fontaine", "jardin", "parc",
+            "plage", "archeolog", "ruines", "monument", "arc ", "memorial", "porte", "marche", "zoo").any { it in k }
+    }
+
+    private fun isIndoor(p: PointOfInterest, c: ActivityLinks.Category): Boolean {
+        if (c == ActivityLinks.Category.MUSEUMS) return true
+        val k = normalize(p.kind)
+        return listOf("musee", "galerie", "chateau", "palais", "aquarium", "opera", "theatre", "salle", "centre commercial",
+            "grand magasin", "cathedrale", "basilique", "eglise", "mosquee", "synagogue", "halle").any { it in k }
+    }
+
+    /** Raison affichée sous une étape : notes, notoriété, goûts, météo. */
+    fun reason(a: Quiz.Answers, city: String, category: ActivityLinks.Category, p: PointOfInterest, w: DayWeather?): String {
+        val rating = p.ratings.maxByOrNull { it.count }
+        val taste = matchingTaste(p, tastesFor(a, category))
+        val base = when {
+            rating != null -> tf("Noté {0} sur {1} ({2} avis)", "%.1f".format(rating.rating), rating.source.label, rating.count)
+            p.sitelinks >= 60 -> tf("L'un des lieux les plus célèbres de {0}", t(city))
+            p.isMustSee -> tf("Un incontournable de {0}", t(city))
+            p.inGuide -> t("Recommandé par le guide Wikivoyage")
+            category == ActivityLinks.Category.PARKS || category == ActivityLinks.Category.BEACHES -> t("Pour souffler au grand air")
+            else -> t("Parmi les lieux les plus réputés de la ville")
+        }
+        val withTaste = if (taste != null) tf("Pour votre envie « {0} » · {1}", t(taste.label).lowercase(), base) else base
+        return when {
+            w != null && w.rainy && isIndoor(p, category) -> t("Idéal par temps de pluie") + " · " + withTaste
+            w != null && w.sunny && isOutdoor(p, category) -> t("Parfait sous le soleil prévu") + " · " + withTaste
+            else -> withTaste
+        }
+    }
+
+    private fun parseTime(t: String): Int? =
+        Regex("(\\d{1,2})h(\\d{2})").find(t)?.let { it.groupValues[1].toInt() * 60 + it.groupValues[2].toInt() }
+
+    /** Heure minimale de certaines étapes (repas). */
+    private fun fixedStart(moment: String): Int? = when (moment) {
+        "Déjeuner" -> 12 * 60 + 30
+        "Dîner" -> 20 * 60
+        "Verre en soirée" -> 21 * 60 + 30
+        else -> null
+    }
+
+    /** Recalcule horaires, trajets et distances d'une journée après une modification. */
+    fun retime(a: Quiz.Answers, steps: List<ExperienceStep>): List<ExperienceStep> {
+        if (steps.isEmpty()) return steps
+        var clock = parseTime(steps.first().time) ?: a.start.minutes
+        var prev: ExperienceStep? = null
+        return steps.map { st ->
+            val meters = prev?.place?.takeIf { it.hasCoordinates && st.place.hasCoordinates }
+                ?.let { PlacesParser.distanceMeters(it.lat, it.lon, st.place.lat, st.place.lon).toInt() }
+            val travel = when {
+                prev == null -> 0
+                meters == null -> 15
+                else -> travelMinutes(meters, a.mobility)
+            }
+            val buffer = if (prev != null && fixedStart(st.moment) == null) a.pace.bufferMin else 0
+            val start = max(clock + travel + buffer, fixedStart(st.moment) ?: 0)
+            clock = start + st.durationMin
+            val out = st.copy(time = fmt(start), fromPreviousM = meters, travelMin = if (prev == null) null else travel)
+            prev = out
+            out
+        }
+    }
+
+    /**
+     * Lieux de remplacement pour une étape : même type de repas ou de sortie, ou n'importe quelle
+     * visite pour une étape de visite ; jamais un lieu déjà au programme. Les meilleurs en premier.
+     */
+    fun alternatives(
+        a: Quiz.Answers,
+        exp: Experience,
+        pools: Map<ActivityLinks.Category, List<PointOfInterest>>,
+        dayIndex: Int,
+        stepIndex: Int,
+        limit: Int = 12,
+    ): List<Pair<ActivityLinks.Category, PointOfInterest>> {
+        val day = exp.days.getOrNull(dayIndex) ?: return emptyList()
+        val step = day.steps.getOrNull(stepIndex) ?: return emptyList()
+        val usedIds = exp.placeIds
+        val categories = if (step.category in venueCategories) listOf(step.category)
+        else activityCategories(a).ifEmpty { defaultActivities }
+        val anchor = day.steps.getOrNull(stepIndex - 1)?.place ?: step.place
+        return categories.flatMap { c -> pools[c].orEmpty().filter { it.id !in usedIds }.map { c to it } }
+            .distinctBy { it.second.id }
+            .sortedByDescending { (c, p) ->
+                val km = if (anchor.hasCoordinates && p.hasCoordinates)
+                    PlacesParser.distanceMeters(anchor.lat, anchor.lon, p.lat, p.lon) / 1000 else 3.0
+                tasteScore(p, tastesFor(a, c)) * 1.2 + emblem(p) - km * (if (a.mobility == Quiz.Mobility.WALK) 0.8 else 0.3) +
+                    (if (day.weather?.rainy == true && isOutdoor(p, c)) -3.0 else 0.0)
+            }
+            .take(limit)
+    }
+
+    /** Retire une étape (replacement = null) ou la remplace, puis recalcule la journée. */
+    fun replaceStep(
+        a: Quiz.Answers,
+        exp: Experience,
+        dayIndex: Int,
+        stepIndex: Int,
+        replacement: Pair<ActivityLinks.Category, PointOfInterest>?,
+    ): Experience {
+        val day = exp.days.getOrNull(dayIndex) ?: return exp
+        val step = day.steps.getOrNull(stepIndex) ?: return exp
+        val steps = day.steps.toMutableList()
+        if (replacement == null) steps.removeAt(stepIndex)
+        else {
+            val (c, p) = replacement
+            steps[stepIndex] = step.copy(
+                category = c, place = p, why = reason(a, exp.city, c, p, day.weather),
+                durationMin = visitMinutes(p, c, a.depth),
+            )
+        }
+        val newDay = day.copy(steps = retime(a, steps))
+        return exp.copy(days = exp.days.mapIndexed { i, d -> if (i == dayIndex) newDay else d })
+    }
+
     private fun fmt(min: Int) = "${min / 60}h${"%02d".format(min % 60)}"
 
     fun formatDuration(min: Int): String = when {
@@ -365,6 +495,7 @@ object ExperienceBuilder {
                 "grand magasin", "cathedrale", "basilique", "eglise", "mosquee", "synagogue", "halle").any { it in k }
         }
         var today: DayWeather? = null
+        val usedToday = mutableSetOf<String>()
         val used = mutableSetOf<String>()
         val activities = activityCategories(a).filter { !pools[it].isNullOrEmpty() }.ifEmpty {
             defaultActivities.filter { !pools[it].isNullOrEmpty() }
@@ -382,7 +513,8 @@ object ExperienceBuilder {
         /** Candidats d'une catégorie : ceux qui collent aux goûts si on en a assez, sinon tous. */
         fun candidates(category: ActivityLinks.Category): List<PointOfInterest> {
             val tastes = tastesFor(a, category)
-            val all = pools[category].orEmpty().filter { it.id !in used }
+            val fresh = pools[category].orEmpty().filter { it.id !in used }
+            val all = if (fresh.isEmpty() && category in venueCategories) pools[category].orEmpty().filter { it.id !in usedToday } else fresh
             val dietOk = if (category == ActivityLinks.Category.RESTAURANTS && a.diet.keywords.isNotEmpty()) {
                 val matching = all.filter { p -> a.diet.keywords.any { normalize("${p.name} ${p.kind} ${p.description.orEmpty()}").contains(it) } }
                 if (matching.size >= 2) matching else all
@@ -432,29 +564,12 @@ object ExperienceBuilder {
             return s
         }
 
-        fun why(category: ActivityLinks.Category, p: PointOfInterest): String {
-            val rating = p.ratings.maxByOrNull { it.count }
-            val taste = matchingTaste(p, tastesFor(a, category))
-            val base = when {
-                rating != null -> tf("Noté {0} sur {1} ({2} avis)", "%.1f".format(rating.rating), rating.source.label, rating.count)
-                p.sitelinks >= 60 -> tf("L'un des lieux les plus célèbres de {0}", t(city))
-                p.isMustSee -> tf("Un incontournable de {0}", t(city))
-                p.inGuide -> t("Recommandé par le guide Wikivoyage")
-                category == ActivityLinks.Category.PARKS || category == ActivityLinks.Category.BEACHES -> t("Pour souffler au grand air")
-                else -> t("Parmi les lieux les plus réputés de la ville")
-            }
-            val withTaste = if (taste != null) tf("Pour votre envie « {0} » · {1}", t(taste.label).lowercase(), base) else base
-            val w = today
-            return when {
-                w != null && w.rainy && indoor(p, category) -> t("Idéal par temps de pluie") + " · " + withTaste
-                w != null && w.sunny && outdoor(p, category) -> t("Parfait sous le soleil prévu") + " · " + withTaste
-                else -> withTaste
-            }
-        }
+        fun why(category: ActivityLinks.Category, p: PointOfInterest): String = reason(a, city, category, p, today)
 
         val days = (1..a.duration.days).map { dayIndex ->
             val date = a.startDate.plusDays((dayIndex - 1).toLong())
             today = weather[date]
+            usedToday.clear()
             val steps = mutableListOf<ExperienceStep>()
             var last: PointOfInterest? = null
             var lastCategory: ActivityLinks.Category? = null
@@ -472,6 +587,7 @@ object ExperienceBuilder {
                 val start = max(clock + travel, fixedStart ?: 0)
                 steps += ExperienceStep(fmt(start), moment, category, p, why(category, p), meters, minutes, if (last == null) null else travel)
                 used += p.id
+                usedToday += p.id
                 last = p
                 lastCategory = category
                 clock = start + minutes

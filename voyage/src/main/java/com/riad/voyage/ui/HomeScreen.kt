@@ -82,6 +82,7 @@ fun HomeScreen(
     onOpenActivities: () -> Unit,
     onOpenExperience: () -> Unit,
     onOpenBlog: () -> Unit,
+    onOpenHotels: () -> Unit = {},
     trips: List<com.riad.voyage.data.Trip> = emptyList(),
     onOpenTrip: (String?) -> Unit = {},
     onOpenAlerts: () -> Unit,
@@ -177,7 +178,18 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 QuickTile(t("Vols"), AppIcons.Flight, onOpenFlights, Modifier.weight(1f))
+                QuickTile(t("Hôtels"), AppIcons.Hotel, onOpenHotels, Modifier.weight(1f))
                 QuickTile(t("Sorties"), AppIcons.Ticket, onOpenActivities, Modifier.weight(1f))
+            }
+        }
+        item {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .offset(y = (-10).dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
                 QuickTile(t("Expérience"), AppIcons.Sparkle, onOpenExperience, Modifier.weight(1f))
                 QuickTile(t("Blogue"), AppIcons.Book, onOpenBlog, Modifier.weight(1f))
                 QuickTile(t("Voyages"), AppIcons.Luggage, { onOpenTrip(null) }, Modifier.weight(1f), badge = alerts.size.takeIf { it > 0 })

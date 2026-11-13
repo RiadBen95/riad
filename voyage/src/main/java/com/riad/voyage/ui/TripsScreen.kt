@@ -52,11 +52,12 @@ fun TripsScreen(
     onReadArticle: (SavedArticle?) -> Unit,
     onAlerts: () -> Unit,
     alertCount: Int,
+    onHotels: (Trip) -> Unit = {},
 ) {
     val trip = trips.firstOrNull { it.id == openId }
     when {
         article != null -> ArticleReader(article, onClose = { onReadArticle(null) })
-        trip != null -> TripDetail(trip, onBack = { onOpen(null) }, onDelete, onRemove, onReadArticle)
+        trip != null -> TripDetail(trip, onBack = { onOpen(null) }, onDelete, onRemove, onReadArticle, onHotels)
         else -> TripList(trips, onOpen, onAlerts, alertCount)
     }
 }
@@ -122,6 +123,7 @@ private fun TripDetail(
     onDelete: (String) -> Unit,
     onRemove: (String, String, Int) -> Unit,
     onReadArticle: (SavedArticle?) -> Unit,
+    onHotels: (Trip) -> Unit,
 ) {
     val context = LocalContext.current
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -137,6 +139,9 @@ private fun TripDetail(
                     runCatching { context.startActivity(Intent.createChooser(send, t("Partager mon voyage"))) }
                 }) { Text(t("Partager")) }
                 OutlinedButton(onClick = { onDelete(trip.id) }) { Text(t("Supprimer")) }
+            }
+            OutlinedButton(onClick = { onHotels(trip) }, modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                Text(t("🏨 Trouver un hôtel"))
             }
         }
 
