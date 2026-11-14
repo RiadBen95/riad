@@ -49,12 +49,13 @@ fun BlogScreen(
     wiki: suspend (String) -> WikiSummary?,
     hasPersonalFilter: Boolean,
     onSaveArticle: (Article) -> Unit = {},
+    embedded: Boolean = false,   // dans la page Ville : pas de titre (la ville est choisie en haut)
 ) {
     when {
         state.article != null -> ArticleReader(state.article, onCloseArticle, onSave = { onSaveArticle(state.article) })
         state.articleLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
         else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            item {
+            if (!embedded) item {
                 Text(t("Articles"), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                 Text(
                     t("Récits et histoire des lieux les plus emblématiques, choisis selon vos voyages et vos envies."),

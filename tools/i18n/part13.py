@@ -1,0 +1,20 @@
+# Voyage créé explicitement, mode rapide, programme relié, sources.
+ROWS = [
+["+ Nouveau voyage", "+ New trip", "+ رحلة جديدة", "+ Nuevo viaje", "+ 新建行程", "+ 新しい旅行", "+ नई यात्रा"],
+["Ajouter", "Add", "إضافة", "Añadir", "添加", "追加", "जोड़ें"],
+["Dates et voyageurs", "Dates and travellers", "التواريخ والمسافرون", "Fechas y viajeros", "日期和旅客", "日程と人数", "तारीखें और यात्री"],
+["Dates à préciser", "Dates to be set", "التواريخ غير محددة", "Fechas por definir", "日期待定", "日程未定", "तारीखें तय करनी हैं"],
+["Informations indicatives, à vérifier avant le départ. Taux de change du jour : open.er-api.com.", "Indicative information, to be checked before departure. Today's exchange rates: open.er-api.com.", "معلومات إرشادية يجب التحقق منها قبل السفر. أسعار الصرف اليوم: open.er-api.com.", "Información orientativa, a verificar antes de salir. Tipos de cambio del día: open.er-api.com.", "信息仅供参考，出发前请核实。当日汇率：open.er-api.com。", "参考情報です。出発前にご確認ください。本日の為替レート：open.er-api.com。", "जानकारी अनुमानित है, यात्रा से पहले जाँच लें। आज की विनिमय दरें: open.er-api.com।"],
+["Nouveau voyage", "New trip", "رحلة جديدة", "Nuevo viaje", "新建行程", "新しい旅行", "नई यात्रा"],
+["Personnaliser en détail ›", "Customise in detail ›", "تخصيص بالتفصيل ›", "Personalizar en detalle ›", "详细定制 ›", "詳しく設定 ›", "विस्तार से चुनें ›"],
+["Prix indicatifs vus récemment (Travelpayouts) : le prix final est confirmé sur le site de réservation.", "Indicative prices seen recently (Travelpayouts): the final price is confirmed on the booking site.", "أسعار إرشادية شوهدت مؤخرًا (Travelpayouts): يُؤكَّد السعر النهائي على موقع الحجز.", "Precios orientativos vistos recientemente (Travelpayouts): el precio final se confirma en el sitio de reserva.", "近期参考价格（Travelpayouts）：最终价格以预订网站为准。", "最近の参考価格（Travelpayouts）。最終価格は予約サイトで確定します。", "हाल में दिखी अनुमानित कीमतें (Travelpayouts): अंतिम कीमत बुकिंग साइट पर तय होगी।"],
+["Suggestions selon la durée, la météo prévue et vos activités.", "Suggestions based on the length of stay, the forecast and your activities.", "اقتراحات حسب المدة والطقس المتوقع وأنشطتك.", "Sugerencias según la duración, la previsión y tus actividades.", "根据行程长短、天气预报和活动给出的建议。", "日数・天気予報・アクティビティに合わせた提案です。", "अवधि, मौसम पूर्वानुमान और गतिविधियों के आधार पर सुझाव।"],
+["Version rapide ›", "Quick version ›", "النسخة السريعة ›", "Versión rápida ›", "快速版 ›", "かんたん版 ›", "छोटा संस्करण ›"],
+["Voyage créé : {0}", "Trip created: {0}", "تم إنشاء الرحلة: {0}", "Viaje creado: {0}", "已创建行程：{0}", "旅行を作成しました：{0}", "यात्रा बनाई गई: {0}"],
+["durée estimée", "estimated time", "مدة تقديرية", "duración estimada", "预计时长", "所要時間の目安", "अनुमानित समय"],
+["prévisions Open-Meteo", "Open-Meteo forecast", "توقعات Open-Meteo", "previsión de Open-Meteo", "Open-Meteo 预报", "Open-Meteo の予報", "Open-Meteo पूर्वानुमान"],
+["Étape ajoutée", "Added stop", "محطة مضافة", "Parada añadida", "自行添加的一站", "追加した立ち寄り先", "जोड़ा गया पड़ाव"],
+["✓ Enregistré dans votre voyage, mis à jour à chaque changement ›", "✓ Saved in your trip, updated with every change ›", "✓ محفوظ في رحلتك ويُحدَّث مع كل تغيير ›", "✓ Guardado en tu viaje, actualizado con cada cambio ›", "✓ 已保存到行程，每次修改自动更新 ›", "✓ 旅行に保存済み。変更のたびに更新されます ›", "✓ आपकी यात्रा में सहेजा गया, हर बदलाव पर अपडेट ›"],
+["✨ Créer le programme sur mesure", "✨ Create a tailor-made itinerary", "✨ إنشاء برنامج حسب الطلب", "✨ Crear el programa a medida", "✨ 创建定制行程", "✨ オーダーメイドのプランを作る", "✨ मनपसंद कार्यक्रम बनाएँ"],
+["✨ Refaire le programme sur mesure", "✨ Redo the tailor-made itinerary", "✨ إعادة إنشاء البرنامج", "✨ Rehacer el programa a medida", "✨ 重新定制行程", "✨ プランを作り直す", "✨ कार्यक्रम दोबारा बनाएँ"],
+]

@@ -32,8 +32,19 @@ fun CityScreen(
     places: @Composable () -> Unit,
     articles: @Composable () -> Unit,
     info: @Composable () -> Unit,
+    city: String,
+    selected: com.riad.voyage.data.Place?,
+    onCity: (com.riad.voyage.data.Place) -> Unit,
+    onCityText: (String) -> Unit,
+    suggest: suspend (String) -> List<com.riad.voyage.data.Place>,
 ) {
     Column(Modifier.fillMaxSize()) {
+        // Une seule ville pour les trois onglets.
+        PlaceField(
+            label = t("Ville"), selected = selected, onSelect = onCity, suggest = suggest,
+            placeholder = t("Ex. Paris, Alger, Rome…"), onTextChange = onCityText, initialText = city, citiesOnly = true,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        )
         TabRow(selectedTabIndex = section.ordinal) {
             CitySection.entries.forEach { s ->
                 Tab(selected = s == section, onClick = { onSection(s) }, text = { Text(t(s.label), maxLines = 1) })
@@ -72,6 +83,10 @@ fun PracticalInfo(
         }
         if (city != null && info == null) {
             item { Text(t("Pas encore d'infos pratiques pour ce pays."), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        }
+        item {
+            Text(t("Informations indicatives, à vérifier avant le départ. Taux de change du jour : open.er-api.com."),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         item {
             InfoCard("💱 " + t("Monnaie et convertisseur")) {

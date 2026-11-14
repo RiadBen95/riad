@@ -42,10 +42,12 @@ class PlannerTest {
 
     @Test fun tripJsonKeepsExpensesAndPacking() {
         val t = Trip("t1", "Rome", expenses = listOf(Expense(1, "Pizza", 24.5, "EUR", "MEALS", "2026-07-01")),
-            packed = setOf("Pyjama"), extraItems = listOf("Livre"))
+            packed = setOf("Pyjama"), extraItems = listOf("Livre"), travellers = 3, startDate = "2026-07-01", endDate = "2026-07-04")
         val back = TripJson.decodeList(TripJson.encodeList(listOf(t))).single()
         assertEquals(t.expenses, back.expenses)
         assertEquals(setOf("Pyjama"), back.packed)
         assertEquals(listOf("Livre"), back.extraItems)
+        assertEquals(3, back.travellers)
+        assertEquals(3, back.nights)
     }
 }

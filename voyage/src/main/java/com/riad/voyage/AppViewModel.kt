@@ -243,7 +243,11 @@ data class ExperienceState(
     val result: Experience? = null,
     val error: String? = null,
     val previous: Set<String> = emptySet(),
-)
+    val quick: Boolean = true,            // questionnaire rapide (3 questions)
+    val tripId: String? = null,           // voyage relié : le programme y est enregistré automatiquement
+) {
+    val steps get() = Quiz.steps(answers, quick)
+}
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val settingsStore = SettingsStore(app)
@@ -302,7 +306,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val wikiCache = mutableMapOf<String, WikiSummary?>()
     private val guideCache = mutableMapOf<String, Set<String>>()
 
-    private val _experience = MutableStateFlow(ExperienceState())
+    private val answersStore = com.riad.voyage.data.AnswersStore(app)
+    private val _experience = MutableStateFlow(ExperienceState(answers = answersStore.load()))
     val experience: StateFlow<ExperienceState> = _experience.asStateFlow()
     private var experiencePools: Map<ActivityLinks.Category, List<PointOfInterest>> = emptyMap()
     private var experienceWeather: Map<LocalDate, DayWeather> = emptyMap()
@@ -339,6 +344,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val citySection: StateFlow<CitySection> = _citySection.asStateFlow()
 
     fun setCitySection(s: CitySection) { _citySection.value = s; selectTab(Tab.CITY) }
+
+    /** Ville choisie en haut de la page Ville : lieux, articles et infos pratiques la suivent. */
+    fun chooseCity(p: Place) {
+        _activityCity.value = p.name
+        _activityPlace.value = p
+        selectTab(Tab.CITY)
+    }
 
     /** Ville affichée dans la page Ville (lieux, articles, infos) : recherche en cours, sinon prochain voyage. */
     fun currentCity(): Pair<String, String>? {
@@ -377,8 +389,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
         _tab.value = t
         if (t == Tab.CITY && section == CitySection.PLACES) searchActivities()
-        if (t == Tab.CITY && section == CitySection.ARTICLES && _blog.value.city == null) {
-            blogContext().firstOrNull()?.let { (c, why) -> openBlogCity(c, why) }
+        // Les articles suivent la ville choisie en haut de la page Ville.
+        if (t == Tab.CITY && section == CitySection.ARTICLES && !_blog.value.city?.name.equals(_activityCity.value, ignoreCase = true)) {
+            val ctx = blogContext()
+            (ctx.firstOrNull { it.first.name.equals(_activityCity.value, true) } ?: ctx.firstOrNull())?.let { (c, why) -> openBlogCity(c, why) }
         }
     }
 
@@ -566,7 +580,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val trip = _trips.value.firstOrNull { it.id == trip0.id } ?: trip0
         val a = _experience.value.answers
         budgetFor(trip.city, countryOf(trip.city, trip.country), trip, rates, trip.nights ?: 3,
-            if (a.city.equals(trip.city, true)) travellersFor(a.company) else 2)
+            trip.travellers ?: if (a.city.equals(trip.city, true)) travellersFor(a.company) else 2)
     }
 
     /** Budget du programme Expérience affiché (+ vols et hôtel choisis pour la même ville). */
@@ -951,10 +965,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
-    fun saveExperience() {
+    fun saveExperience(silent: Boolean = false) {
         val st = _experience.value
         val exp = st.result ?: return
-        val trip = tripFor(exp.city, st.answers.place?.country.orEmpty())
+        val trip = linkedTrip(st) ?: tripFor(exp.city, st.answers.place?.country.orEmpty())
         val program = exp.days.map { d ->
             SavedDay(d.title, d.weather?.label, d.steps.map { s ->
                 SavedStep(s.time, t(s.moment), s.category.emoji, s.why, s.durationMin,
@@ -962,11 +976,43 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             })
         }
         val end = st.answers.startDate.plusDays((st.answers.duration.days - 1).toLong())
-        saveTrip(
-            trip.copy(programTitle = exp.title, program = program,
-                startDate = trip.startDate ?: st.answers.startDate.toString(), endDate = trip.endDate ?: end.toString()),
-            tf("Programme enregistré dans votre voyage : {0}", t(exp.city)),
-        )
+        val updated = trip.copy(programTitle = exp.title, program = program,
+            startDate = trip.startDate ?: st.answers.startDate.toString(), endDate = trip.endDate ?: end.toString())
+        if (silent) { tripStore.upsert(updated); refreshTrips() }
+        else saveTrip(updated, tf("Programme enregistré dans votre voyage : {0}", t(exp.city)))
+        _experience.update { it.copy(tripId = updated.id) }
+    }
+
+    // ---------- Créer un voyage ----------
+
+    /** Nouveau voyage : destination, dates et voyageurs, saisis une fois et réutilisés partout. */
+    fun createTrip(city: String, place: Place?, start: LocalDate, end: LocalDate, travellers: Int) {
+        val trip = Trip(id = "trip-${System.currentTimeMillis()}", city = city.trim(), country = place?.country.orEmpty(),
+            startDate = start.toString(), endDate = end.toString(), travellers = travellers)
+        saveTrip(trip, tf("Voyage créé : {0}", t(trip.city)))
+        openTrip(trip.id)
+    }
+
+    fun updateTripInfo(id: String, start: LocalDate, end: LocalDate, travellers: Int) = updateTrip(id) {
+        it.copy(startDate = start.toString(), endDate = end.toString(), travellers = travellers)
+    }
+
+    /** « Programme sur mesure » depuis un voyage : ville, dates et voyageurs déjà remplis ; reste les envies. */
+    fun planTrip(trip: Trip) {
+        val days = ((trip.nights ?: 0) + 1).coerceIn(1, Quiz.Duration.MAX_DAYS)
+        updateAnswers { a ->
+            a.copy(
+                city = trip.city, place = null, startDate = trip.start ?: LocalDate.now(), duration = Quiz.Duration(days),
+                company = when (trip.travellers) {
+                    1 -> Quiz.Company.SOLO
+                    2 -> if (a.company == Quiz.Company.SOLO) Quiz.Company.COUPLE else a.company
+                    null -> a.company
+                    else -> if (a.company == Quiz.Company.FAMILY) a.company else Quiz.Company.FRIENDS
+                },
+            )
+        }
+        _experience.update { it.copy(quick = true, step = it.steps.indexOf("interests"), result = null, error = null, tripId = trip.id) }
+        _tab.value = Tab.EXPERIENCE
     }
 
     fun isFavorite(name: String) = _trips.value.any { tr -> tr.places.any { it.name.equals(name, ignoreCase = true) } }
@@ -1130,8 +1176,51 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _experience.update { it.copy(answers = transform(it.answers)) }
 
     fun quizStep(delta: Int) = _experience.update {
-        val total = Quiz.steps(it.answers).size
-        it.copy(step = (it.step + delta).coerceIn(0, total - 1), error = null)
+        it.copy(step = (it.step + delta).coerceIn(0, it.steps.size - 1), error = null)
+    }
+
+    /** Passe du questionnaire rapide au questionnaire détaillé (et inversement). */
+    fun setQuickQuiz(quick: Boolean) = _experience.update { it.copy(quick = quick, step = 0, result = null, error = null) }
+
+    /**
+     * Change un réglage depuis le résultat (compagnie, rythme, budget…) et recompose le programme.
+     * Régime ou goûts changés : on recharge les lieux (la recherche en dépend).
+     */
+    fun refineExperience(transform: (Quiz.Answers) -> Quiz.Answers) {
+        val old = _experience.value.answers
+        updateAnswers(transform)
+        val a = _experience.value.answers
+        if (a.diet != old.diet || a.tastes != old.tastes || experiencePools.isEmpty()) return generateExperience()
+        answersStore.save(a)
+        val exp = ExperienceBuilder.build(a, a.city.trim(), experiencePools, weather = experienceWeather)
+        _experience.update { it.copy(result = exp, previous = emptySet()) }
+        autosave()
+    }
+
+    fun moveExperienceStep(dayIndex: Int, stepIndex: Int, delta: Int) = editResult {
+        ExperienceBuilder.moveStep(_experience.value.answers, it, dayIndex, stepIndex, delta)
+    }
+
+    fun addExperienceStep(dayIndex: Int, name: String) = editResult {
+        if (name.isBlank()) it else ExperienceBuilder.addStep(_experience.value.answers, it, dayIndex, name)
+    }
+
+    private fun editResult(transform: (Experience) -> Experience) {
+        val exp = _experience.value.result ?: return
+        _experience.update { it.copy(result = transform(exp)) }
+        autosave()
+    }
+
+    /** Programme relié à un voyage : chaque changement y est enregistré sans action de la personne. */
+    private fun autosave() {
+        val st = _experience.value
+        if (linkedTrip(st) != null) saveExperience(silent = true)
+    }
+
+    /** Voyage relié au programme affiché (même ville), s'il y en a un. */
+    private fun linkedTrip(st: ExperienceState): Trip? {
+        val city = st.result?.city ?: st.answers.city
+        return _trips.value.firstOrNull { it.id == st.tripId && it.city.equals(city.trim(), ignoreCase = true) }
     }
 
     fun editExperience() = _experience.update { it.copy(result = null, step = 0, error = null) }
@@ -1182,10 +1271,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             _experience.update { it.copy(stage = t("Composition du programme…")) }
             experienceWeather = weatherJob.await()
             val exp = ExperienceBuilder.build(a, city, analysed, weather = experienceWeather)
+            answersStore.save(a)
             _experience.update {
                 if (exp.days.isEmpty()) it.copy(loading = false, error = tf("Pas assez de lieux trouvés pour {0}. Essayez d'autres envies ou une grande ville proche.", t(city)))
                 else it.copy(loading = false, result = exp, previous = emptySet())
             }
+            autosave()
         }
     }
 
@@ -1204,8 +1295,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val duration = if (end == null) Quiz.Duration.DAY
         else Quiz.Duration((nights + 1).toInt().coerceIn(1, Quiz.Duration.MAX_DAYS))
         updateAnswers { it.copy(city = dest.name, place = dest, startDate = start, duration = duration) }
-        val firstOpen = Quiz.steps(_experience.value.answers).indexOf("company").coerceAtLeast(0)
-        _experience.update { it.copy(step = firstOpen, result = null, error = null) }
+        _experience.update { it.copy(step = it.steps.indexOf("interests").coerceAtLeast(0), result = null, error = null) }
         _activityCity.value = dest.name
         _activityPlace.value = dest
         _blog.update { BlogState() }
@@ -1225,6 +1315,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val exp = st.result ?: return
         val updated = ExperienceBuilder.replaceStep(st.answers, exp, dayIndex, stepIndex, choice)
         _experience.update { it.copy(result = updated, previous = it.previous + exp.placeIds) }
+        autosave()
     }
 
     /** Autre proposition : mêmes réponses, en écartant les lieux de la proposition affichée (pas de hasard). */
@@ -1234,6 +1325,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val avoid = st.previous + (st.result?.placeIds ?: emptySet())
         val exp = ExperienceBuilder.build(st.answers, st.answers.city.trim(), experiencePools, avoid, experienceWeather)
         _experience.update { it.copy(result = exp, previous = avoid) }
+        autosave()
     }
 
     /** Meilleurs lieux d'une catégorie (même logique que l'onglet Sorties, sans l'afficher). */

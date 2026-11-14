@@ -74,6 +74,7 @@ fun ActivitiesScreen(
     isFavorite: (String) -> Boolean = { false },
     onFavorite: (PointOfInterest) -> Unit = {},
     onReadArticle: (String) -> Unit = {},
+    embedded: Boolean = false,   // dans la page Ville : la ville est choisie en haut de la page
 ) {
     var detail by remember { mutableStateOf<PointOfInterest?>(null) }
     detail?.let { p ->
@@ -95,27 +96,29 @@ fun ActivitiesScreen(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item {
-            Text(t("Lieux à visiter"), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text(
-                t("Musées, attractions et restaurants de la ville. Réservez vos billets à l'avance pour éviter la file d'attente."),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        item {
-            Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                PlaceField(
-                    label = t("Ville"),
-                    selected = selectedPlace,
-                    onSelect = onPlace,
-                    suggest = suggestCities,
-                    modifier = Modifier.weight(1f),
-                    placeholder = t("Ex. Paris, Alger, Rome…"),
-                    onTextChange = onCity,
-                    initialText = city,
-                    citiesOnly = true,
+        if (!embedded) {
+            item {
+                Text(t("Lieux à visiter"), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    t("Musées, attractions et restaurants de la ville. Réservez vos billets à l'avance pour éviter la file d'attente."),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Button(onClick = search, enabled = city.isNotBlank(), modifier = Modifier.padding(top = 8.dp)) { Text("OK") }
+            }
+            item {
+                Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PlaceField(
+                        label = t("Ville"),
+                        selected = selectedPlace,
+                        onSelect = onPlace,
+                        suggest = suggestCities,
+                        modifier = Modifier.weight(1f),
+                        placeholder = t("Ex. Paris, Alger, Rome…"),
+                        onTextChange = onCity,
+                        initialText = city,
+                        citiesOnly = true,
+                    )
+                    Button(onClick = search, enabled = city.isNotBlank(), modifier = Modifier.padding(top = 8.dp)) { Text("OK") }
+                }
             }
         }
         // Météo de la ville choisie (une fois la recherche lancée).

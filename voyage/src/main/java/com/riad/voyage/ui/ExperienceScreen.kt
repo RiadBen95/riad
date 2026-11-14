@@ -48,6 +48,7 @@ fun ExperienceScreen(
     isFavorite: (String) -> Boolean = { false },
     onFavorite: (PointOfInterest) -> Unit = {},
     onReadArticle: (String) -> Unit = {},
+    edits: ExperienceEdits = ExperienceEdits(),
 ) {
     when {
         state.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -59,10 +60,20 @@ fun ExperienceScreen(
             }
         }
         state.result != null -> ExperienceResult(state, onRegenerate, onEdit, onSave, alternatives, onReplace, onHotels, onBudget,
-            wiki, isFavorite, onFavorite, onReadArticle)
-        else -> Questionnaire(state, onAnswers, onStep, onGenerate, suggestCities)
+            wiki, isFavorite, onFavorite, onReadArticle, edits)
+        else -> Questionnaire(state, onAnswers, onStep, onGenerate, suggestCities, edits)
     }
 }
+
+/** Modifications du programme depuis l'écran Expérience (ordre, ajout, réglages) et lien avec le voyage. */
+class ExperienceEdits(
+    val move: (Int, Int, Int) -> Unit = { _, _, _ -> },
+    val add: (Int, String) -> Unit = { _, _ -> },
+    val refine: ((Quiz.Answers) -> Quiz.Answers) -> Unit = {},
+    val detailed: (Boolean) -> Unit = {},
+    val linked: Boolean = false,
+    val openTrip: () -> Unit = {},
+)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -72,9 +83,10 @@ private fun Questionnaire(
     onStep: (Int) -> Unit,
     onGenerate: () -> Unit,
     suggestCities: suspend (String) -> List<Place>,
+    edits: ExperienceEdits,
 ) {
     val a = state.answers
-    val steps = Quiz.steps(a)
+    val steps = state.steps
     val step = state.step.coerceIn(0, steps.size - 1)
     val id = steps[step]
     val canContinue = when (id) {
@@ -96,7 +108,13 @@ private fun Questionnaire(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             LinearProgressIndicator(progress = { (step + 1f) / steps.size }, modifier = Modifier.fillMaxWidth())
-            Text(tf("Question {0} sur {1}", step + 1, steps.size), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(tf("Question {0} sur {1}", step + 1, steps.size), style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                TextButton(onClick = { edits.detailed(state.quick) }) {
+                    Text(if (state.quick) t("Personnaliser en détail ›") else t("Version rapide ›"))
+                }
+            }
 
             when {
                 id == "city" -> {
@@ -123,6 +141,8 @@ private fun Questionnaire(
                 }
                 id == "duration" -> {
                     QuestionTitle(t("Combien de temps avez-vous ?"))
+                    // Version rapide : la date de début est demandée ici (pas de question à part).
+                    if (state.quick) DateButton(t("Premier jour"), a.startDate, java.time.LocalDate.now(), { d -> onAnswers { it.copy(startDate = d) } }, Modifier.fillMaxWidth())
                     ChoiceCard(t("Une demi-journée"), null, a.duration.halfDay) { onAnswers { it.copy(duration = Quiz.Duration.HALF) } }
                     val end = a.startDate.plusDays((a.duration.days - 1).toLong())
                     ChoiceCard(
@@ -274,8 +294,11 @@ private fun ExperienceResult(
     isFavorite: (String) -> Boolean,
     onFavorite: (PointOfInterest) -> Unit,
     onReadArticle: (String) -> Unit,
+    edits: ExperienceEdits,
 ) {
     val exp = state.result ?: return
+    var adding by remember { mutableStateOf<Int?>(null) }   // jour où l'on ajoute une étape
+    adding?.let { d -> AddStepDialog(onDismiss = { adding = null }) { name -> edits.add(d, name); adding = null } }
     // Étape dont la fiche détaillée est ouverte.
     var detail by remember { mutableStateOf<ExperienceStep?>(null) }
     detail?.let { s ->
@@ -294,7 +317,9 @@ private fun ExperienceResult(
         if (step == null) editing = null
         else ReplaceDialog(step, alternatives(d, i), exp.city,
             onPick = { choice -> onReplace(d, i, choice); editing = null },
-            onDismiss = { editing = null })
+            onDismiss = { editing = null },
+            onMove = { delta -> edits.move(d, i, delta); editing = null },
+            canUp = i > 0, canDown = i < exp.days[d].steps.lastIndex)
     }
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
@@ -315,12 +340,18 @@ private fun ExperienceResult(
                         Button(onClick = onRegenerate) { Text(t("Autre proposition")) }
                         OutlinedButton(onClick = onEdit) { Text(t("Modifier")) }
                     }
-                    Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) { Text(t("💾 Enregistrer dans mon voyage")) }
+                    if (edits.linked) {
+                        TextButton(onClick = edits.openTrip, contentPadding = PaddingValues(0.dp)) {
+                            Text(t("✓ Enregistré dans votre voyage, mis à jour à chaque changement ›"))
+                        }
+                    } else Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) { Text(t("💾 Enregistrer dans mon voyage")) }
                     OutlinedButton(onClick = onHotels, modifier = Modifier.fillMaxWidth()) { Text(t("🏨 Où dormir ?")) }
                     OutlinedButton(onClick = onBudget, modifier = Modifier.fillMaxWidth()) { Text(t("💰 Budget du séjour")) }
                 }
             }
         }
+        // Réglages utilisés : à toucher pour changer et recomposer le programme.
+        item { SettingsChips(state.answers, edits.refine) }
         // Carte de l'itinéraire (une puce par jour).
         item {
             ProgramMap(exp.days.mapIndexed { i, d ->
@@ -330,6 +361,9 @@ private fun ExperienceResult(
         exp.days.forEachIndexed { dayIndex, day ->
             item { DayHeader(day, exp.city) }
             itemsIndexed(day.steps) { stepIndex, s -> StepCard(s, exp.city, onOpen = { detail = s }) { editing = dayIndex to stepIndex } }
+            item {
+                TextButton(onClick = { adding = dayIndex }, contentPadding = PaddingValues(0.dp)) { Text(t("+ Ajouter une étape")) }
+            }
         }
         item {
             Text(
@@ -381,7 +415,7 @@ private fun StepCard(s: ExperienceStep, city: String, onOpen: () -> Unit = {}, o
                 Text(s.why, style = MaterialTheme.typography.bodySmall)
                 if (s.durationMin > 0) {
                     Text(
-                        "⏱ " + tf("{0} sur place", ExperienceBuilder.formatDuration(s.durationMin)),
+                        "⏱ " + tf("{0} sur place", ExperienceBuilder.formatDuration(s.durationMin)) + " · " + t("durée estimée"),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Medium,
                     )
@@ -454,12 +488,21 @@ private fun ReplaceDialog(
     city: String,
     onPick: (Pair<ActivityLinks.Category, PointOfInterest>?) -> Unit,
     onDismiss: () -> Unit,
+    onMove: (Int) -> Unit,
+    canUp: Boolean,
+    canDown: Boolean,
 ) {
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(tf("Remplacer « {0} »", step.place.name)) },
         text = {
             LazyColumn(Modifier.height(420.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                item {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = { onMove(-1) }, enabled = canUp, modifier = Modifier.weight(1f)) { Text(t("↑ Monter")) }
+                        OutlinedButton(onClick = { onMove(1) }, enabled = canDown, modifier = Modifier.weight(1f)) { Text(t("↓ Descendre")) }
+                    }
+                }
                 item {
                     OutlinedButton(onClick = { onPick(null) }, modifier = Modifier.fillMaxWidth()) {
                         Text(t("Retirer sans remplacer"))
@@ -496,4 +539,42 @@ private fun ReplaceDialog(
         confirmButton = {},
         dismissButton = { TextButton(onClick = onDismiss) { Text(t("Annuler")) } },
     )
+}
+
+/** Ajouter une étape libre au programme. */
+@Composable
+private fun AddStepDialog(onDismiss: () -> Unit, onAdd: (String) -> Unit) {
+    var name by remember { mutableStateOf("") }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(t("Nouvelle étape")) },
+        text = { OutlinedTextField(name, { name = it }, label = { Text(t("Lieu ou activité")) }, singleLine = true) },
+        confirmButton = { TextButton(onClick = { onAdd(name) }, enabled = name.isNotBlank()) { Text(t("Ajouter")) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(t("Annuler")) } },
+    )
+}
+
+/** Puces des réglages du programme ; chacune ouvre un menu et recompose le programme au choix. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SettingsChips(a: Quiz.Answers, refine: ((Quiz.Answers) -> Quiz.Answers) -> Unit) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        SettingChip("${a.company.emoji} ${t(a.company.label)}", Quiz.Company.entries.map { "${it.emoji} ${t(it.label)}" to { refine { x -> x.copy(company = it) } } })
+        SettingChip(t(a.pace.label), Quiz.Pace.entries.map { t(it.label) to { refine { x -> x.copy(pace = it) } } })
+        SettingChip(t(a.mobility.label), Quiz.Mobility.entries.map { t(it.label) to { refine { x -> x.copy(mobility = it) } } })
+        SettingChip("🍽️ " + t(a.diet.label), Quiz.Diet.entries.map { t(it.label) to { refine { x -> x.copy(diet = it) } } })
+        SettingChip(t(a.budget.label), Quiz.Budget.entries.map { t(it.label) to { refine { x -> x.copy(budget = it) } } })
+        SettingChip(t(a.style.label), Quiz.Style.entries.map { t(it.label) to { refine { x -> x.copy(style = it) } } })
+    }
+}
+
+@Composable
+private fun SettingChip(label: String, options: List<Pair<String, () -> Unit>>) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        AssistChip(onClick = { open = true }, label = { Text(label) })
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            options.forEach { (text, action) -> DropdownMenuItem(text = { Text(text) }, onClick = { open = false; action() }) }
+        }
+    }
 }

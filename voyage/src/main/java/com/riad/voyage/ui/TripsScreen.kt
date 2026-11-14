@@ -41,6 +41,10 @@ class TripActions(
     val addPackItem: (String, String) -> Unit = { _, _ -> },
     val removePackItem: (String, String) -> Unit = { _, _ -> },
     val practical: (Trip) -> Unit = {},
+    val create: (String, com.riad.voyage.data.Place?, LocalDate, LocalDate, Int) -> Unit = { _, _, _, _, _ -> },
+    val updateInfo: (String, LocalDate, LocalDate, Int) -> Unit = { _, _, _, _ -> },
+    val plan: (Trip) -> Unit = {},
+    val suggestCities: suspend (String) -> List<com.riad.voyage.data.Place> = { emptyList() },
 )
 
 @Composable
@@ -65,13 +69,17 @@ fun TripsScreen(
     when {
         article != null -> ArticleReader(article, onClose = { onReadArticle(null) })
         trip != null -> TripDetail(trip, onBack = { onOpen(null) }, onDelete, onRemove, onReadArticle, onHotels, onBudget, wiki, onReadArticle2, weather, actions)
-        else -> TripList(trips, onOpen, onAlerts, alertCount)
+        else -> TripList(trips, onOpen, onAlerts, alertCount, actions)
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TripList(trips: List<Trip>, onOpen: (String?) -> Unit, onAlerts: () -> Unit, alertCount: Int) {
+private fun TripList(trips: List<Trip>, onOpen: (String?) -> Unit, onAlerts: () -> Unit, alertCount: Int, actions: TripActions) {
+    var creating by remember { mutableStateOf(false) }
+    if (creating) TripInfoDialog(null, actions.suggestCities, onDismiss = { creating = false }) { city, place, start, end, n ->
+        actions.create(city, place, start, end, n); creating = false
+    }
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             Text(t("Mes voyages"), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
@@ -79,6 +87,9 @@ private fun TripList(trips: List<Trip>, onOpen: (String?) -> Unit, onAlerts: () 
                 t("Vos vols, programmes, lieux et articles gardés, disponibles même sans connexion."),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+        item {
+            Button(onClick = { creating = true }, modifier = Modifier.fillMaxWidth()) { Text(t("+ Nouveau voyage")) }
         }
         item {
             OutlinedButton(onClick = onAlerts, modifier = Modifier.fillMaxWidth()) {
@@ -141,6 +152,10 @@ private fun TripDetail(
     var showPacking by remember { mutableStateOf(false) }
     var stepDialog by remember { mutableStateOf<Triple<Int, Int?, SavedStep?>?>(null) }   // jour, index (null = ajout), étape
     if (showPacking) PackingSheet(trip, actions, onDismiss = { showPacking = false })
+    var editingInfo by remember { mutableStateOf(false) }
+    if (editingInfo) TripInfoDialog(trip, actions.suggestCities, onDismiss = { editingInfo = false }) { _, _, start, end, n ->
+        actions.updateInfo(trip.id, start, end, n); editingInfo = false
+    }
     stepDialog?.let { (day, index, step) ->
         StepDialog(step, onDismiss = { stepDialog = null }) { time, name, note ->
             if (index == null) actions.addStep(trip.id, day, time, name, note) else actions.editStep(trip.id, day, index, time, name, note)
@@ -160,7 +175,16 @@ private fun TripDetail(
         item {
             TextButton(onClick = onBack, contentPadding = PaddingValues(0.dp)) { Text(t("← Mes voyages")) }
             Text("✈️ " + t(trip.city), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            datesOf(trip)?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    listOfNotNull(datesOf(trip), trip.travellers?.let { tf("{0} voyageur(s)", it) }).joinToString(" · ").ifBlank { t("Dates à préciser") },
+                    color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f),
+                )
+                TextButton(onClick = { editingInfo = true }) { Text(t("✎ Modifier")) }
+            }
+            Button(onClick = { actions.plan(trip) }, modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                Text(if (trip.program.isEmpty()) t("✨ Créer le programme sur mesure") else t("✨ Refaire le programme sur mesure"))
+            }
             TripWeather(trip, weather, Modifier.padding(top = 8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
                 Button(onClick = {
@@ -342,6 +366,8 @@ private fun PackingSheet(trip: Trip, actions: TripActions, onDismiss: () -> Unit
                 Text("🧳 " + tf("Bagages pour {0}", t(trip.city)), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 val all = items.orEmpty().map { it.key } + trip.extraItems
                 Text(tf("{0} / {1} prêts", all.count { it in trip.packed }, all.size), color = MaterialTheme.colorScheme.primary)
+                Text(t("Suggestions selon la durée, la météo prévue et vos activités."), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (items == null) CircularProgressIndicator(Modifier.padding(16.dp))
             }
             val list = items.orEmpty()
@@ -377,4 +403,36 @@ private fun PackRow(label: String, checked: Boolean, onToggle: () -> Unit) {
         Checkbox(checked = checked, onCheckedChange = { onToggle() })
         Text(label, color = if (checked) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface)
     }
+}
+
+/** Créer un voyage (destination, dates, voyageurs) ou modifier ses dates et voyageurs. */
+@Composable
+private fun TripInfoDialog(
+    trip: Trip?,
+    suggest: suspend (String) -> List<com.riad.voyage.data.Place>,
+    onDismiss: () -> Unit,
+    onSave: (String, com.riad.voyage.data.Place?, LocalDate, LocalDate, Int) -> Unit,
+) {
+    var city by remember { mutableStateOf(trip?.city.orEmpty()) }
+    var place by remember { mutableStateOf<com.riad.voyage.data.Place?>(null) }
+    var start by remember { mutableStateOf(trip?.start ?: LocalDate.now().plusDays(14)) }
+    var end by remember { mutableStateOf(trip?.end ?: start.plusDays(3)) }
+    var travellers by remember { mutableStateOf(trip?.travellers ?: 2) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (trip == null) t("Nouveau voyage") else t("Dates et voyageurs")) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (trip == null) PlaceField(
+                    label = t("Destination"), selected = place, onSelect = { place = it; city = it.name }, suggest = suggest,
+                    placeholder = t("Ex. Paris, Alger, Rome…"), onTextChange = { city = it; place = null }, citiesOnly = true,
+                )
+                DateButton(t("Arrivée"), start, LocalDate.now(), { start = it; if (end.isBefore(it)) end = it }, Modifier.fillMaxWidth())
+                DateButton(t("Départ"), end, start, { end = it }, Modifier.fillMaxWidth())
+                Stepper(t("Voyageurs"), travellers, 1..10, { travellers = it })
+            }
+        },
+        confirmButton = { TextButton(onClick = { onSave(city, place, start, end, travellers) }, enabled = city.isNotBlank()) { Text(t("Enregistrer")) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(t("Annuler")) } },
+    )
 }

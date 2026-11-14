@@ -118,6 +118,9 @@ fun FlightResultsScreen(
                         OutlinedButton(onClick = onFollow, modifier = Modifier.weight(1f)) { Text(t("🔔 Suivre ce prix")) }
                         OutlinedButton(onClick = onActivities, modifier = Modifier.weight(1f)) { Text(t("🎟️ Que faire sur place")) }
                     }
+                    Text(t("Prix indicatifs vus récemment (Travelpayouts) : le prix final est confirmé sur le site de réservation."),
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 6.dp))
                 }
                 if (state.flights.isEmpty()) {
                     item {

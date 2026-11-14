@@ -241,7 +241,7 @@ fun WeatherStrip(
     if (all.isEmpty()) return
     val shown = if (from == null) all.take(7) else all.filter { !it.date.isBefore(from) && !it.date.isAfter(to ?: from) }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(tf("Météo à {0}", t(city)), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+        Text(tf("Météo à {0}", t(city)) + " · " + t("prévisions Open-Meteo"), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
         if (shown.isEmpty()) {
             Text(t("Prévisions disponibles 16 jours avant le départ."), style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)

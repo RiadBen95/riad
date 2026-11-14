@@ -155,8 +155,14 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                     CityScreen(
                         section = citySection,
                         onSection = vm::setCitySection,
+                        city = activityCity,
+                        selected = activityPlace,
+                        onCity = vm::chooseCity,
+                        onCityText = vm::setActivityCity,
+                        suggest = vm::suggestCities,
                         places = {
                             ActivitiesScreen(
+                                embedded = true,
                                 city = activityCity,
                                 category = activityCategory,
                                 places = places,
@@ -175,9 +181,10 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         },
                         articles = {
                             BlogScreen(
+                                embedded = true,
                                 state = blog,
                                 context = vm.blogContext(),
-                                onCity = vm::openBlogCity,
+                                onCity = { c, why -> vm.openBlogCity(c, why); vm.setActivityCity(c.name) },
                                 onPlace = vm::openBlogPlace,
                                 onClearCity = vm::clearBlogCity,
                                 onFilter = vm::setBlogFilter,
@@ -230,6 +237,12 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         isFavorite = { name -> trips.any { tr -> tr.places.any { it.name.equals(name, ignoreCase = true) } } },
                         onFavorite = { p -> vm.toggleFavorite(p, experience.result?.city ?: experience.answers.city) },
                         onReadArticle = vm::readPlaceArticle,
+                        edits = ExperienceEdits(
+                            move = vm::moveExperienceStep, add = vm::addExperienceStep, refine = vm::refineExperience,
+                            detailed = { wasQuick -> vm.setQuickQuiz(!wasQuick) },
+                            linked = trips.any { it.id == experience.tripId && it.city.equals(experience.result?.city ?: experience.answers.city, true) },
+                            openTrip = { experience.tripId?.let(vm::openTrip) },
+                        ),
                     )
                 }
 
@@ -297,6 +310,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                             moveStep = vm::moveStep, deleteStep = vm::deleteStep, editStep = vm::editStep, addStep = vm::addStep,
                             addDay = vm::addDay, packing = vm::packingFor, togglePacked = vm::togglePacked,
                             addPackItem = vm::addPackItem, removePackItem = vm::removePackItem, practical = vm::openPractical,
+                            create = vm::createTrip, updateInfo = vm::updateTripInfo, plan = vm::planTrip, suggestCities = vm::suggestCities,
                         ),
                     )
                 }

@@ -161,8 +161,11 @@ object Quiz {
         val startDate: java.time.LocalDate = java.time.LocalDate.now(),
     )
 
-    /** Étapes du questionnaire : une question de suivi par envie qui en propose. */
-    fun steps(a: Answers): List<String> = buildList {
+    /**
+     * Étapes du questionnaire. Mode rapide : ville, durée, envies (le reste garde les dernières
+     * réponses ou les valeurs par défaut, modifiables depuis le résultat). Mode détaillé : tout.
+     */
+    fun steps(a: Answers, quick: Boolean = false): List<String> = if (quick) listOf("city", "duration", "interests") else buildList {
         add("city"); add("date"); add("duration"); add("company"); add("interests")
         Interest.entries.filter { it in a.interests && Taste.of(it).isNotEmpty() }.forEach { add("taste:${it.name}") }
         add("style"); add("pace"); add("depth"); add("start"); add("mobility"); add("diet"); add("budget")
@@ -475,6 +478,29 @@ object ExperienceBuilder {
         }
         val newDay = day.copy(steps = retime(a, steps))
         return exp.copy(days = exp.days.mapIndexed { i, d -> if (i == dayIndex) newDay else d })
+    }
+
+    /** Déplace une étape d'un cran dans sa journée ; les horaires sont recalculés. */
+    fun moveStep(a: Quiz.Answers, exp: Experience, dayIndex: Int, stepIndex: Int, delta: Int): Experience {
+        val day = exp.days.getOrNull(dayIndex) ?: return exp
+        val target = stepIndex + delta
+        if (stepIndex !in day.steps.indices || target !in day.steps.indices) return exp
+        val steps = day.steps.toMutableList().apply { add(target, removeAt(stepIndex)) }
+        return exp.copy(days = exp.days.mapIndexed { i, d -> if (i == dayIndex) d.copy(steps = retime(a, steps)) else d })
+    }
+
+    /** Ajoute en fin de journée une étape libre (lieu saisi à la main). */
+    fun addStep(a: Quiz.Answers, exp: Experience, dayIndex: Int, name: String): Experience {
+        val day = exp.days.getOrNull(dayIndex) ?: return exp
+        val place = PointOfInterest(
+            id = "custom/${System.currentTimeMillis()}", name = name.trim(), kind = "Étape ajoutée", lat = 0.0, lon = 0.0,
+            distanceM = -1, address = null, openingHours = null, website = null, phone = null, wikipedia = null,
+            notable = false, isVenue = false, hasCoordinates = false,
+        )
+        val last = day.steps.lastOrNull()
+        val start = last?.let { (parseTime(it.time) ?: a.start.minutes) + it.durationMin } ?: a.start.minutes
+        val step = ExperienceStep(fmt(start), "Étape ajoutée", ActivityLinks.Category.TOURS, place, "", null, 60)
+        return exp.copy(days = exp.days.mapIndexed { i, d -> if (i == dayIndex) d.copy(steps = retime(a, d.steps + step)) else d })
     }
 
     private fun fmt(min: Int) = "${min / 60}h${"%02d".format(min % 60)}"

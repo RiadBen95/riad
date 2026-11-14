@@ -102,6 +102,20 @@ class ExperienceTest {
     }
 
     @Test
+    fun quickQuizAndDirectEdits() {
+        val a = Quiz.Answers(city = "Paris", interests = setOf(Quiz.Interest.ART, Quiz.Interest.FOOD))
+        assertEquals(listOf("city", "duration", "interests"), Quiz.steps(a, quick = true))
+        val exp = ExperienceBuilder.build(a, "Paris", pools)
+        val first = exp.days[0].steps
+        val moved = ExperienceBuilder.moveStep(a, exp, 0, 0, 1).days[0].steps
+        assertEquals(first[0].place.id, moved[1].place.id)
+        assertEquals(first[1].place.id, moved[0].place.id)
+        val added = ExperienceBuilder.addStep(a, exp, 0, "Pique-nique").days[0].steps
+        assertEquals("Pique-nique", added.last().place.name)
+        assertEquals(first.size + 1, added.size)
+    }
+
+    @Test
     fun onlyChosenInterestsMakeTheDay() {
         val a = Quiz.Answers(city = "Paris", interests = setOf(Quiz.Interest.FOOD), company = Quiz.Company.SOLO)
         val cats = ExperienceBuilder.build(a, "Paris", pools).days.single().steps.map { it.category }.toSet()

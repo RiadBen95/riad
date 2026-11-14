@@ -193,3 +193,33 @@ class PendingBookingStore(context: Context) {
 
     fun clear() = prefs.edit().remove("p").apply()
 }
+
+/** Dernières réponses de l'Expérience : valeurs de départ du questionnaire rapide. */
+class AnswersStore(context: Context) {
+    private val prefs = context.getSharedPreferences("experience", Context.MODE_PRIVATE)
+
+    private inline fun <reified E : Enum<E>> JSONObject.enum(key: String, default: E): E =
+        runCatching { enumValueOf<E>(getString(key)) }.getOrDefault(default)
+
+    private inline fun <reified E : Enum<E>> JSONObject.enums(key: String): Set<E> =
+        optJSONArray(key)?.let { a -> (0 until a.length()).mapNotNull { runCatching { enumValueOf<E>(a.getString(it)) }.getOrNull() }.toSet() }.orEmpty()
+
+    fun load(): Quiz.Answers {
+        val d = Quiz.Answers()
+        val o = runCatching { JSONObject(prefs.getString("last", null) ?: return d) }.getOrNull() ?: return d
+        return d.copy(
+            company = o.enum("company", d.company), interests = o.enums("interests"), tastes = o.enums("tastes"),
+            style = o.enum("style", d.style), pace = o.enum("pace", d.pace), depth = o.enum("depth", d.depth),
+            start = o.enum("start", d.start), mobility = o.enum("mobility", d.mobility), diet = o.enum("diet", d.diet),
+            budget = o.enum("budget", d.budget),
+        )
+    }
+
+    fun save(a: Quiz.Answers) {
+        val o = JSONObject().put("company", a.company.name).put("style", a.style.name).put("pace", a.pace.name)
+            .put("depth", a.depth.name).put("start", a.start.name).put("mobility", a.mobility.name)
+            .put("diet", a.diet.name).put("budget", a.budget.name)
+            .put("interests", JSONArray(a.interests.map { it.name })).put("tastes", JSONArray(a.tastes.map { it.name }))
+        prefs.edit().putString("last", o.toString()).apply()
+    }
+}

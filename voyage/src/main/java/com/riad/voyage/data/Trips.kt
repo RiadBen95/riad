@@ -67,6 +67,7 @@ data class Trip(
     val country: String = "",
     val startDate: String? = null,
     val endDate: String? = null,
+    val travellers: Int? = null,
     val programTitle: String? = null,
     val program: List<SavedDay> = emptyList(),
     val flights: List<SavedFlight> = emptyList(),
@@ -120,7 +121,7 @@ object TripJson {
 
     fun encode(t: Trip): JSONObject = JSONObject()
         .put("id", t.id).put("city", t.city).put("country", t.country)
-        .put("startDate", t.startDate).put("endDate", t.endDate).put("programTitle", t.programTitle).put("updated", t.updated)
+        .put("startDate", t.startDate).put("endDate", t.endDate).put("travellers", t.travellers ?: JSONObject.NULL).put("programTitle", t.programTitle).put("updated", t.updated)
         .put("program", t.program.arr { d ->
             JSONObject().put("title", d.title).put("weather", d.weather).put("steps", d.steps.arr { st ->
                 JSONObject().put("time", st.time).put("moment", st.moment).put("emoji", st.emoji).put("why", st.why)
@@ -149,6 +150,7 @@ object TripJson {
         country = o.optString("country"),
         startDate = o.s("startDate"),
         endDate = o.s("endDate"),
+        travellers = o.optInt("travellers", 0).takeIf { it > 0 },
         programTitle = o.s("programTitle"),
         program = o.optJSONArray("program").list { d ->
             SavedDay(d.optString("title"), d.s("weather"), d.optJSONArray("steps").list { st ->
