@@ -233,7 +233,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         HotelDetailScreen(
                             state = hotels,
                             d = detail,
-                            sandbox = settings.liteApiKey.startsWith("sandbox"),
+                            sandbox = com.riad.voyage.data.LitePayment.isSandbox(settings.liteApiKey),
                             onBack = vm::closeHotelDetail,
                             onBook = vm::startHotelBooking,
                             onConfirm = vm::confirmHotelBooking,

@@ -136,10 +136,10 @@ fun SettingsScreen(
                 val k = liteApiKey.trim()
                 when {
                     k.isEmpty() -> {}
-                    k.startsWith("sandbox") -> Text(t("🧪 Clé de test : réservations et paiements fictifs."))
+                    com.riad.voyage.data.LitePayment.isSandbox(k) -> Text(t("🧪 Clé de test : réservations et paiements fictifs."))
                     k.startsWith("prod") -> Text(t("✅ Clé réelle : réservations et paiements réels."),
                         color = MaterialTheme.colorScheme.error)
-                    else -> Text(t("Type de clé non reconnu : elle devrait commencer par « sandbox_ » ou « prod_ »."))
+                    else -> Text(t("Type de clé non reconnu : elle devrait commencer par « sand_ » ou « prod_ »."))
                 }
             },
         )

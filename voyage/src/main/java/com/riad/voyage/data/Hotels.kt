@@ -53,7 +53,7 @@ data class HotelOffer(
 
 /**
  * Recherche d'hôtels avec LiteAPI (Nuitée) : fiches des hôtels autour de la ville, puis prix réels
- * pour les dates et le nombre de voyageurs. Clé gratuite (« sandbox_… » pour tester, « prod_… » en réel).
+ * pour les dates et le nombre de voyageurs. Clé gratuite (« sand_… » pour tester, « prod_… » en réel).
  */
 object LiteApi {
     private const val BASE = "https://api.liteapi.travel/v3.0"
@@ -326,6 +326,9 @@ data class Prebook(
 /** Page de paiement LiteAPI (formulaire de carte sécurisé), affichée dans l'app. */
 object LitePayment {
     const val RETURN_URL = "https://envolee.app/paiement-termine"
+
+    /** Clé de test LiteAPI : « sand_… » (les clés réelles commencent par « prod_ »). */
+    fun isSandbox(key: String) = key.trim().lowercase().let { it.startsWith("sand") }
 
     fun html(secretKey: String, sandbox: Boolean, businessName: String = "Envolée"): String {
         fun js(s: String) = JSONObject.quote(s)

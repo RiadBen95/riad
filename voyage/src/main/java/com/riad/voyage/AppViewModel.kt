@@ -669,7 +669,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val d = _hotels.value.detail ?: return
         val pre = d.prebook ?: return
         val guest = listOf(firstName.trim(), lastName.trim(), email.trim())
-        val sandbox = key.startsWith("sandbox")
+        val sandbox = com.riad.voyage.data.LitePayment.isSandbox(key)
         when {
             pre.secretKey != null && pre.transactionId != null -> _hotels.update {
                 it.copy(detail = it.detail?.copy(guest = guest, bookingError = null,

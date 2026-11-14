@@ -5,6 +5,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PaymentTest {
+    @Test fun sandboxKeysAreRecognised() {
+        assertTrue(LitePayment.isSandbox("sand_c0155ab8-0000"))
+        assertTrue(!LitePayment.isSandbox("prod_1234"))
+    }
+
     @Test fun paymentPageCarriesKeysAndReturnUrl() {
         val live = LitePayment.html("sec_123'\"", sandbox = false)
         assertTrue(live.contains("publicKey: \"live\""))
