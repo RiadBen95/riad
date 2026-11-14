@@ -1,11 +1,6 @@
 package com.riad.voyage.data
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
-import java.net.URLEncoder
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -68,34 +63,21 @@ class TravelpayoutsApi(
         return Parsers.calendar(get(url, auth = true))
     }
 
-    private suspend fun get(url: String, auth: Boolean): String = withContext(Dispatchers.IO) {
-        val conn = URL(url).openConnection() as HttpURLConnection
-        try {
-            conn.connectTimeout = 15_000
-            conn.readTimeout = 20_000
-            conn.setRequestProperty("Accept", "application/json")
-            if (auth && token.isNotBlank()) conn.setRequestProperty("X-Access-Token", token)
-            val code = conn.responseCode
-            if (code in 200..299) {
-                conn.inputStream.bufferedReader().use { it.readText() }
-            } else {
-                val detail = conn.errorStream?.bufferedReader()?.use { it.readText() }.orEmpty()
-                throw ApiException(
-                    when (code) {
-                        401, 403 -> com.riad.voyage.t("Clé API refusée. Vérifiez-la dans Réglages.")
-                        429 -> com.riad.voyage.t("Trop de recherches en peu de temps. Réessayez dans une minute.")
-                        else -> "Erreur du serveur ($code). ${detail.take(120)}"
-                    },
-                    code,
-                )
-            }
-        } finally {
-            conn.disconnect()
-        }
+    private suspend fun get(url: String, auth: Boolean): String = try {
+        Net.fetch(url, if (auth && token.isNotBlank()) mapOf("X-Access-Token" to token) else emptyMap(), connectMs = 15_000)
+    } catch (e: HttpError) {
+        throw ApiException(
+            when (e.code) {
+                401, 403 -> com.riad.voyage.t("Clé API refusée. Vérifiez-la dans Réglages.")
+                429 -> com.riad.voyage.t("Trop de recherches en peu de temps. Réessayez dans une minute.")
+                else -> "Erreur du serveur (${e.code}). ${e.body.take(120)}"
+            },
+            e.code,
+        )
     }
 
     companion object {
-        fun enc(s: String): String = URLEncoder.encode(s, "UTF-8").replace("+", "%20")
+        fun enc(s: String): String = Net.enc(s)
 
         private val ddMM = DateTimeFormatter.ofPattern("ddMM")
 

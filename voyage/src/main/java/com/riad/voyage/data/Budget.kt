@@ -1,8 +1,6 @@
 package com.riad.voyage.data
 
 import org.json.JSONObject
-import java.text.Normalizer
-import kotlin.math.ceil
 
 /**
  * Niveau de prix d'un pays par rapport à la France (1,0), pour estimer repas, hôtels,
@@ -27,7 +25,7 @@ object CostIndex {
         "senegal" to 0.5, "afrique du sud" to 0.55, "south africa" to 0.55,
     )
 
-    private fun norm(s: String) = Normalizer.normalize(s.trim().lowercase(), Normalizer.Form.NFD).replace(Regex("\\p{Mn}+"), "")
+    private fun norm(s: String) = s.plain()
 
     fun of(country: String): Double = byCountry[norm(country)] ?: 0.9
 }
@@ -76,7 +74,7 @@ data class BudgetLine(
 )
 
 object BudgetCalculator {
-    private fun norm(s: String) = Normalizer.normalize(s.lowercase(), Normalizer.Form.NFD).replace(Regex("\\p{Mn}+"), "")
+    private fun norm(s: String) = s.plain()
 
     fun days(nights: Int) = (nights + 1).coerceAtLeast(1)
 

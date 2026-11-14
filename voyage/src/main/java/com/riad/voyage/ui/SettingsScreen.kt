@@ -1,12 +1,14 @@
 package com.riad.voyage.ui
 
-import com.riad.voyage.tf
-import com.riad.voyage.t
+import Settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -14,6 +16,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -24,23 +28,23 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.riad.voyage.KeyStatus
+import com.riad.voyage.data.LitePayment
+import com.riad.voyage.data.QuotaStore
+import com.riad.voyage.data.RatingSource
 import com.riad.voyage.data.Settings
+import com.riad.voyage.t
+import com.riad.voyage.tf
 import com.riad.voyage.ui.theme.dealColor
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.size
-import androidx.compose.ui.Alignment
 
 private val currencies = listOf("EUR", "USD", "GBP", "CHF", "CAD", "DZD", "MAD", "TND")
 
@@ -49,8 +53,8 @@ fun SettingsScreen(
     settings: Settings,
     keyStatus: KeyStatus,
     onSave: (Settings) -> Unit,
-    quotas: com.riad.voyage.data.QuotaStore,
-    onQuotaLimit: (com.riad.voyage.data.RatingSource, Int) -> Unit,
+    quotas: QuotaStore,
+    onQuotaLimit: (RatingSource, Int) -> Unit,
     onLanguage: (com.riad.voyage.Lang?) -> Unit,
 ) {
     val context = LocalContext.current
@@ -114,9 +118,9 @@ fun SettingsScreen(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        RatingKeyField(com.riad.voyage.data.RatingSource.GOOGLE, t("Clé Google Places API"), googleKey, { googleKey = it }, quotas, onQuotaLimit)
-        RatingKeyField(com.riad.voyage.data.RatingSource.TRIPADVISOR, t("Clé Tripadvisor Content API"), tripadvisorKey, { tripadvisorKey = it }, quotas, onQuotaLimit)
-        RatingKeyField(com.riad.voyage.data.RatingSource.FOURSQUARE, t("Clé Foursquare Places API"), foursquareKey, { foursquareKey = it }, quotas, onQuotaLimit)
+        RatingKeyField(RatingSource.GOOGLE, t("Clé Google Places API"), googleKey, { googleKey = it }, quotas, onQuotaLimit)
+        RatingKeyField(RatingSource.TRIPADVISOR, t("Clé Tripadvisor Content API"), tripadvisorKey, { tripadvisorKey = it }, quotas, onQuotaLimit)
+        RatingKeyField(RatingSource.FOURSQUARE, t("Clé Foursquare Places API"), foursquareKey, { foursquareKey = it }, quotas, onQuotaLimit)
 
         Text(t("Hôtels : prix en direct (facultatif)"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
         Text(
@@ -136,7 +140,7 @@ fun SettingsScreen(
                 val k = liteApiKey.trim()
                 when {
                     k.isEmpty() -> {}
-                    com.riad.voyage.data.LitePayment.isSandbox(k) -> Text(t("🧪 Clé de test : réservations et paiements fictifs."))
+                    LitePayment.isSandbox(k) -> Text(t("🧪 Clé de test : réservations et paiements fictifs."))
                     k.startsWith("prod") -> Text(t("✅ Clé réelle : réservations et paiements réels."),
                         color = MaterialTheme.colorScheme.error)
                     else -> Text(t("Type de clé non reconnu : elle devrait commencer par « sand_ » ou « prod_ »."))
@@ -219,12 +223,12 @@ private fun KeyStatusCard(settings: Settings, status: KeyStatus) {
 
 @Composable
 private fun RatingKeyField(
-    source: com.riad.voyage.data.RatingSource,
+    source: RatingSource,
     label: String,
     value: String,
     onChange: (String) -> Unit,
-    quotas: com.riad.voyage.data.QuotaStore,
-    onQuotaLimit: (com.riad.voyage.data.RatingSource, Int) -> Unit,
+    quotas: QuotaStore,
+    onQuotaLimit: (RatingSource, Int) -> Unit,
 ) {
     var limitText by remember { mutableStateOf(quotas.limit(source).toString()) }
     Card(Modifier.fillMaxWidth()) {

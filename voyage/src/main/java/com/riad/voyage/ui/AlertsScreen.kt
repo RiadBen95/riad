@@ -1,7 +1,6 @@
 package com.riad.voyage.ui
 
-import com.riad.voyage.tf
-import com.riad.voyage.t
+import PriceAlert
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -23,9 +22,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.riad.voyage.alerts.AlertChecker
 import com.riad.voyage.data.PriceAlert
+import com.riad.voyage.t
+import com.riad.voyage.tf
 import java.text.DateFormat
 import java.util.Date
-import java.util.Locale
 
 @Composable
 fun AlertsScreen(

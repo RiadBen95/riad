@@ -1,5 +1,9 @@
 package com.riad.voyage.alerts
 
+import AlertStore
+import PriceAlert
+import SettingsStore
+import TravelpayoutsApi
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager

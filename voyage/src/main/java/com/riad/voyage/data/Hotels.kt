@@ -1,13 +1,7 @@
 package com.riad.voyage.data
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
-import java.net.URLEncoder
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import kotlin.math.ln
@@ -124,7 +118,7 @@ object LiteApi {
             post("$BASE/hotels/rates", key, ratesBody().put("aiSearch", phrase).toString()) to emptyList<SemanticHit>()
         } catch (e: ApiException) {
             if (e.code == 401 || e.code == 403) throw e
-            val hits = parseSemantic(get("$BASE/data/hotel/search?query=${java.net.URLEncoder.encode(phrase, "UTF-8")}&limit=30", key))
+            val hits = parseSemantic(get("$BASE/data/hotel/search?query=${Net.enc(phrase)}&limit=30", key))
             if (hits.isEmpty()) return emptyList()
             post("$BASE/hotels/rates", key, ratesBody().put("hotelIds", JSONArray(hits.map { it.id })).toString()) to hits
         }
@@ -223,45 +217,15 @@ object LiteApi {
         return out
     }
 
-    private suspend fun get(url: String, key: String) = request(url, key, null)
-    private suspend fun post(url: String, key: String, body: String) = request(url, key, body)
-
-    private suspend fun request(url: String, key: String, body: String?): String = withContext(Dispatchers.IO) {
-        val conn = URL(url).openConnection() as HttpURLConnection
-        try {
-            conn.connectTimeout = 8_000
-            conn.readTimeout = 20_000
-            conn.setRequestProperty("X-API-Key", key)
-            conn.setRequestProperty("Accept", "application/json")
-            if (body != null) {
-                conn.requestMethod = "POST"
-                conn.doOutput = true
-                conn.setRequestProperty("Content-Type", "application/json")
-                conn.outputStream.use { it.write(body.toByteArray()) }
-            }
-            val code = conn.responseCode
-            if (code in 200..299) return@withContext conn.inputStream.bufferedReader().use { it.readText() }
-            throw ApiException(
-                when (code) {
-                    401, 403 -> com.riad.voyage.t("Clé LiteAPI refusée. Vérifiez-la dans Réglages.")
-                    429 -> com.riad.voyage.t("Trop de recherches en peu de temps. Réessayez dans une minute.")
-                    else -> com.riad.voyage.tf("Erreur du service d'hôtels ({0}).", code)
-                },
-                code,
-            )
-        } catch (e: IOException) {
-            throw e
-        } finally {
-            conn.disconnect()
-        }
-    }
+    private suspend fun get(url: String, key: String) = LiteHttp.call(url, key)
+    private suspend fun post(url: String, key: String, body: String) = LiteHttp.call(url, key, body)
 }
 
 /** Réservation chez les sites partenaires, avec l'hôtel, les dates et le nombre de voyageurs déjà remplis. */
 object HotelBooking {
     data class Partner(val name: String, val url: String)
 
-    private fun enc(s: String) = URLEncoder.encode(s, "UTF-8").replace("+", "%20")
+    private fun enc(s: String) = Net.enc(s)
 
     fun partners(query: String, checkIn: LocalDate, checkOut: LocalDate, adults: Int): List<Partner> {
         val q = enc(query.trim())
@@ -522,37 +486,22 @@ object LiteApiMore {
         )
     }
 
-    private fun enc(s: String) = URLEncoder.encode(s, "UTF-8").replace("+", "%20")
+    private fun enc(s: String) = Net.enc(s)
 }
 
 /** Appels LiteAPI (clé dans l'en-tête X-API-Key). */
 internal object LiteHttp {
-    suspend fun call(url: String, key: String, body: String? = null): String = withContext(Dispatchers.IO) {
-        val conn = URL(url).openConnection() as HttpURLConnection
-        try {
-            conn.connectTimeout = 8_000
-            conn.readTimeout = 25_000
-            conn.setRequestProperty("X-API-Key", key)
-            conn.setRequestProperty("Accept", "application/json")
-            if (body != null) {
-                conn.requestMethod = "POST"
-                conn.doOutput = true
-                conn.setRequestProperty("Content-Type", "application/json")
-                conn.outputStream.use { it.write(body.toByteArray()) }
-            }
-            val code = conn.responseCode
-            if (code in 200..299) return@withContext conn.inputStream.bufferedReader().use { it.readText() }
-            val err = conn.errorStream?.bufferedReader()?.use { it.readText() }.orEmpty()
-            val message = runCatching { JSONObject(err).optJSONObject("error")?.optString("message") }.getOrNull()?.ifBlank { null }
-            throw ApiException(
-                when (code) {
-                    401, 403 -> com.riad.voyage.t("Clé LiteAPI refusée. Vérifiez-la dans Réglages.")
-                    else -> message ?: com.riad.voyage.tf("Erreur du service d'hôtels ({0}).", code)
-                },
-                code,
-            )
-        } finally {
-            conn.disconnect()
-        }
+    suspend fun call(url: String, key: String, body: String? = null): String = try {
+        Net.fetch(url, mapOf("X-API-Key" to key), body, readMs = 25_000)
+    } catch (e: HttpError) {
+        val message = runCatching { JSONObject(e.body).optJSONObject("error")?.optString("message") }.getOrNull()?.ifBlank { null }
+        throw ApiException(
+            when (e.code) {
+                401, 403 -> com.riad.voyage.t("Clé LiteAPI refusée. Vérifiez-la dans Réglages.")
+                429 -> com.riad.voyage.t("Trop de recherches en peu de temps. Réessayez dans une minute.")
+                else -> message ?: com.riad.voyage.tf("Erreur du service d'hôtels ({0}).", e.code)
+            },
+            e.code,
+        )
     }
 }

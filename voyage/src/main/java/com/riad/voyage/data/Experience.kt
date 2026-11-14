@@ -244,8 +244,7 @@ object ExperienceBuilder {
         return tastesFor(a, category).mapNotNull { it.hint }.singleOrNull()
     }
 
-    private fun normalize(s: String) = java.text.Normalizer.normalize(s.lowercase(), java.text.Normalizer.Form.NFD)
-        .replace(Regex("\\p{Mn}+"), "")
+    private fun normalize(s: String) = s.plain()
 
     /**
      * Correspondance entre un lieu et des goûts : le type du lieu compte le plus, puis son nom,

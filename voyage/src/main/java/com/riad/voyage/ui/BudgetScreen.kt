@@ -1,5 +1,9 @@
 package com.riad.voyage.ui
 
+import BudgetInput
+import BudgetItem
+import BudgetLine
+import Quiz
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.riad.voyage.BudgetState
+import com.riad.voyage.data.BudgetCalculator
 import com.riad.voyage.data.BudgetInput
 import com.riad.voyage.data.BudgetItem
 import com.riad.voyage.data.BudgetLine
@@ -71,7 +76,7 @@ fun BudgetScreen(
     val lines = state.lines
     val total = state.totalEur
     val people = input.travellers.coerceAtLeast(1)
-    val days = com.riad.voyage.data.BudgetCalculator.days(input.nights)
+    val days = BudgetCalculator.days(input.nights)
 
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {

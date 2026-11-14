@@ -2,11 +2,10 @@ package com.riad.voyage.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -20,10 +19,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.riad.voyage.AppViewModel
 import com.riad.voyage.Tab
+import com.riad.voyage.data.LitePayment
+import com.riad.voyage.data.NotablePlaces
 
 @Composable
 fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
@@ -222,7 +224,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         searchArticles = vm::searchArticles,
                         wiki = vm::wikiSummary,
                         hasPersonalFilter = experience.answers.interests.isNotEmpty() ||
-                            com.riad.voyage.data.NotablePlaces.supports(activityCategory),
+                            NotablePlaces.supports(activityCategory),
                         onSaveArticle = vm::saveArticle,
                     )
                 }
@@ -234,7 +236,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         HotelDetailScreen(
                             state = hotels,
                             d = detail,
-                            sandbox = com.riad.voyage.data.LitePayment.isSandbox(settings.liteApiKey),
+                            sandbox = LitePayment.isSandbox(settings.liteApiKey),
                             onBack = vm::closeHotelDetail,
                             onBook = vm::startHotelBooking,
                             onConfirm = vm::confirmHotelBooking,

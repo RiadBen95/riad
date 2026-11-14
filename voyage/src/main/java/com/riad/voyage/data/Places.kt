@@ -3,13 +3,8 @@ package com.riad.voyage.data
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
-import java.net.URLEncoder
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
@@ -178,34 +173,17 @@ object PlacesApi {
     internal suspend fun get(url: String): String = request(url, null)
     private suspend fun post(url: String, form: String): String = request(url, form)
 
-    private suspend fun request(url: String, form: String?): String = withContext(Dispatchers.IO) {
-        val conn = URL(url).openConnection() as HttpURLConnection
-        try {
-            conn.connectTimeout = 8_000
-            conn.readTimeout = 15_000
-            conn.setRequestProperty("User-Agent", UA)
-            conn.setRequestProperty("Accept", "application/json")
-            if (form != null) {
-                conn.requestMethod = "POST"
-                conn.doOutput = true
-                conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=utf-8")
-                conn.outputStream.use { it.write(form.toByteArray()) }
-            }
-            val code = conn.responseCode
-            if (code !in 200..299) {
-                throw ApiException(
-                    if (code == 429 || code == 504) com.riad.voyage.t("Le service des lieux est très sollicité, réessayez dans un instant.")
-                    else "Erreur du service des lieux ($code).",
-                    code,
-                )
-            }
-            conn.inputStream.bufferedReader().use { it.readText() }
-        } finally {
-            conn.disconnect()
-        }
+    private suspend fun request(url: String, form: String?): String = try {
+        Net.fetch(url, mapOf("User-Agent" to UA), form, "application/x-www-form-urlencoded; charset=utf-8", 8_000, 15_000)
+    } catch (e: HttpError) {
+        throw ApiException(
+            if (e.code == 429 || e.code == 504) com.riad.voyage.t("Le service des lieux est très sollicité, réessayez dans un instant.")
+            else "Erreur du service des lieux (${e.code}).",
+            e.code,
+        )
     }
 
-    private fun enc(s: String) = URLEncoder.encode(s, "UTF-8").replace("+", "%20")
+    private fun enc(s: String) = Net.enc(s)
 }
 
 object PlacesParser {
@@ -288,8 +266,7 @@ object PlacesParser {
             .toSet()
 
     fun normalizeName(s: String): String {
-        val noAccents = java.text.Normalizer.normalize(s.lowercase(), java.text.Normalizer.Form.NFD)
-            .replace(Regex("\\p{Mn}+"), "")
+        val noAccents = s.plain()
         return noAccents.replace("[[", " ").replace("]]", " ").replace("''", " ")
             .replace(Regex("[^a-z0-9]+"), " ").trim()
             .replace(Regex("^(le|la|les|l|the|el|il)\\s+"), "")

@@ -1,6 +1,5 @@
 package com.riad.voyage.data
 
-import java.text.Normalizer
 
 /** Liste de secours quand l'autocomplétion en ligne est indisponible. */
 object PopularPlaces {
@@ -52,6 +51,5 @@ object PopularPlaces {
             all.filter { !normalize(it.name).startsWith(t) && normalize(it.name).contains(t) }
     }
 
-    private fun normalize(s: String) =
-        Normalizer.normalize(s.trim().lowercase(), Normalizer.Form.NFD).replace(Regex("\\p{Mn}+"), "")
+    private fun normalize(s: String) = s.plain()
 }

@@ -1,7 +1,8 @@
 package com.riad.voyage.ui
 
-import com.riad.voyage.tf
-import com.riad.voyage.t
+import Place
+import PopularPlaces
+import RecentSearch
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,6 +50,8 @@ import com.riad.voyage.FlightForm
 import com.riad.voyage.data.Place
 import com.riad.voyage.data.PopularPlaces
 import com.riad.voyage.data.RecentSearch
+import com.riad.voyage.t
+import com.riad.voyage.tf
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset

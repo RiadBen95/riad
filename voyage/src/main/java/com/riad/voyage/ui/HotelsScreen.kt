@@ -1,5 +1,8 @@
 package com.riad.voyage.ui
 
+import HotelBooking
+import HotelOffer
+import Place
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box

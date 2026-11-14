@@ -1,15 +1,11 @@
 package com.riad.voyage.data
 
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.FileNotFoundException
 import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
 import java.net.URLEncoder
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
@@ -106,20 +102,10 @@ object NotablePlaces {
         throw last ?: IOException("Données des lieux indisponibles")
     }
 
-    private suspend fun download(url: String): String = withContext(Dispatchers.IO) {
-        val conn = URL(url).openConnection() as HttpURLConnection
-        try {
-            conn.connectTimeout = 6_000
-            conn.readTimeout = 10_000
-            conn.setRequestProperty("User-Agent", "Envolee/1.0 (Android app)")
-            when (val code = conn.responseCode) {
-                in 200..299 -> conn.inputStream.bufferedReader().use { it.readText() }
-                404 -> throw FileNotFoundException(url)
-                else -> throw IOException("HTTP $code")
-            }
-        } finally {
-            conn.disconnect()
-        }
+    private suspend fun download(url: String): String = try {
+        Net.fetch(url, connectMs = 6_000, readMs = 10_000)
+    } catch (e: HttpError) {
+        throw if (e.code == 404) FileNotFoundException(url) else e
     }
 
     /** Pour les tests : place une zone en mémoire sans la télécharger. */

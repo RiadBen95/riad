@@ -1,12 +1,13 @@
 package com.riad.voyage.ui
 
-import com.riad.voyage.t
 import com.riad.voyage.data.parseDateTime
+import com.riad.voyage.t
 import java.text.NumberFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Currency
 import java.util.Locale
+import parseDateTime
 
 private val FR: Locale get() = com.riad.voyage.I18n.lang.locale
 

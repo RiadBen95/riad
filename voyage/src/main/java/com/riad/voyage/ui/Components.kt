@@ -1,6 +1,6 @@
 package com.riad.voyage.ui
 
-import com.riad.voyage.t
+import Place
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -39,10 +39,11 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.riad.voyage.data.Place
-import kotlinx.coroutines.delay
+import com.riad.voyage.t
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
+import kotlinx.coroutines.delay
 
 /**
  * Lien web sûr : seuls http(s) sont acceptés. Les liens viennent en partie de données ouvertes

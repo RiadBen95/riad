@@ -1,5 +1,7 @@
 package com.riad.voyage.ui
 
+import HotelBooking
+import RoomOffer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,6 +50,7 @@ import coil.compose.AsyncImage
 import com.riad.voyage.HotelDetailState
 import com.riad.voyage.HotelState
 import com.riad.voyage.data.HotelBooking
+import com.riad.voyage.data.LitePayment
 import com.riad.voyage.data.RoomOffer
 import com.riad.voyage.t
 import com.riad.voyage.tf
@@ -352,11 +355,11 @@ private fun PaymentDialog(html: String, sandbox: Boolean, onDone: () -> Unit, on
                             webViewClient = object : android.webkit.WebViewClient() {
                                 /** Vrai = navigation bloquée. Seuls LiteAPI, Stripe et l'adresse de fin sont permis. */
                                 private fun check(url: String?): Boolean {
-                                    if (url != null && url.startsWith(com.riad.voyage.data.LitePayment.RETURN_URL)) {
+                                    if (url != null && url.startsWith(LitePayment.RETURN_URL)) {
                                         if (!finished) { finished = true; onDone() }
                                         return true
                                     }
-                                    if (url == null || com.riad.voyage.data.LitePayment.allowed(url)) return false
+                                    if (url == null || LitePayment.allowed(url)) return false
                                     problem = t("Page extérieure bloquée pour votre sécurité.")
                                     return true
                                 }

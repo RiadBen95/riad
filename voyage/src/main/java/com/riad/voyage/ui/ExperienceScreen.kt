@@ -1,8 +1,10 @@
 package com.riad.voyage.ui
 
-import com.riad.voyage.tk
-import com.riad.voyage.tf
-import com.riad.voyage.t
+import ActivityLinks
+import ExperienceDay
+import ExperienceStep
+import Place
+import Quiz
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -36,11 +39,10 @@ import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -49,10 +51,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.riad.voyage.ExperienceState
 import com.riad.voyage.data.ActivityLinks
+import com.riad.voyage.data.ExperienceBuilder
 import com.riad.voyage.data.ExperienceDay
 import com.riad.voyage.data.ExperienceStep
 import com.riad.voyage.data.Place
+import com.riad.voyage.data.PointOfInterest
 import com.riad.voyage.data.Quiz
+import com.riad.voyage.data.WikiSummary
+import com.riad.voyage.t
+import com.riad.voyage.tf
+import com.riad.voyage.tk
 import java.net.URLEncoder
 
 @Composable
@@ -65,13 +73,13 @@ fun ExperienceScreen(
     onEdit: () -> Unit,
     suggestCities: suspend (String) -> List<Place>,
     onSave: () -> Unit = {},
-    alternatives: (Int, Int) -> List<Pair<ActivityLinks.Category, com.riad.voyage.data.PointOfInterest>> = { _, _ -> emptyList() },
-    onReplace: (Int, Int, Pair<ActivityLinks.Category, com.riad.voyage.data.PointOfInterest>?) -> Unit = { _, _, _ -> },
+    alternatives: (Int, Int) -> List<Pair<ActivityLinks.Category, PointOfInterest>> = { _, _ -> emptyList() },
+    onReplace: (Int, Int, Pair<ActivityLinks.Category, PointOfInterest>?) -> Unit = { _, _, _ -> },
     onHotels: () -> Unit = {},
     onBudget: () -> Unit = {},
-    wiki: suspend (String) -> com.riad.voyage.data.WikiSummary? = { null },
+    wiki: suspend (String) -> WikiSummary? = { null },
     isFavorite: (String) -> Boolean = { false },
-    onFavorite: (com.riad.voyage.data.PointOfInterest) -> Unit = {},
+    onFavorite: (PointOfInterest) -> Unit = {},
     onReadArticle: (String) -> Unit = {},
 ) {
     when {
@@ -291,13 +299,13 @@ private fun ExperienceResult(
     onRegenerate: () -> Unit,
     onEdit: () -> Unit,
     onSave: () -> Unit,
-    alternatives: (Int, Int) -> List<Pair<ActivityLinks.Category, com.riad.voyage.data.PointOfInterest>>,
-    onReplace: (Int, Int, Pair<ActivityLinks.Category, com.riad.voyage.data.PointOfInterest>?) -> Unit,
+    alternatives: (Int, Int) -> List<Pair<ActivityLinks.Category, PointOfInterest>>,
+    onReplace: (Int, Int, Pair<ActivityLinks.Category, PointOfInterest>?) -> Unit,
     onHotels: () -> Unit,
     onBudget: () -> Unit,
-    wiki: suspend (String) -> com.riad.voyage.data.WikiSummary?,
+    wiki: suspend (String) -> WikiSummary?,
     isFavorite: (String) -> Boolean,
-    onFavorite: (com.riad.voyage.data.PointOfInterest) -> Unit,
+    onFavorite: (PointOfInterest) -> Unit,
     onReadArticle: (String) -> Unit,
 ) {
     val exp = state.result ?: return
@@ -400,7 +408,7 @@ private fun StepCard(s: ExperienceStep, city: String, onOpen: () -> Unit = {}, o
                 Text(s.why, style = MaterialTheme.typography.bodySmall)
                 if (s.durationMin > 0) {
                     Text(
-                        "⏱ " + tf("{0} sur place", com.riad.voyage.data.ExperienceBuilder.formatDuration(s.durationMin)),
+                        "⏱ " + tf("{0} sur place", ExperienceBuilder.formatDuration(s.durationMin)),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Medium,
                     )
@@ -469,9 +477,9 @@ private fun tasteQuestion(i: Quiz.Interest) = when (i) {
 @Composable
 private fun ReplaceDialog(
     step: ExperienceStep,
-    options: List<Pair<ActivityLinks.Category, com.riad.voyage.data.PointOfInterest>>,
+    options: List<Pair<ActivityLinks.Category, PointOfInterest>>,
     city: String,
-    onPick: (Pair<ActivityLinks.Category, com.riad.voyage.data.PointOfInterest>?) -> Unit,
+    onPick: (Pair<ActivityLinks.Category, PointOfInterest>?) -> Unit,
     onDismiss: () -> Unit,
 ) {
     androidx.compose.material3.AlertDialog(
@@ -497,8 +505,8 @@ private fun ReplaceDialog(
                         Column(Modifier.padding(12.dp)) {
                             Text("${c.emoji} ${p.name}", fontWeight = FontWeight.Bold)
                             Text(
-                                tk(p.kind) + " · ⏱ " + com.riad.voyage.data.ExperienceBuilder.formatDuration(
-                                    com.riad.voyage.data.ExperienceBuilder.visitMinutes(p, c),
+                                tk(p.kind) + " · ⏱ " + ExperienceBuilder.formatDuration(
+                                    ExperienceBuilder.visitMinutes(p, c),
                                 ),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,

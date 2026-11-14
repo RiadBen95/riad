@@ -1,9 +1,12 @@
 package com.riad.voyage.ui
 
-import com.riad.voyage.tf
-import com.riad.voyage.t
+import Place
+import PopularPlaces
+import PriceAlert
+import RecentSearch
+import WikiSummary
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,22 +48,24 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.Image
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.riad.voyage.R
-import com.riad.voyage.ui.theme.BrandNavy
-import com.riad.voyage.ui.theme.BrandNight
 import com.riad.voyage.FlightForm
+import com.riad.voyage.R
 import com.riad.voyage.data.Place
 import com.riad.voyage.data.PopularPlaces
 import com.riad.voyage.data.PriceAlert
 import com.riad.voyage.data.RecentSearch
+import com.riad.voyage.data.Trip
 import com.riad.voyage.data.WikiSummary
+import com.riad.voyage.t
+import com.riad.voyage.tf
+import com.riad.voyage.ui.theme.BrandNavy
+import com.riad.voyage.ui.theme.BrandNight
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -83,7 +88,7 @@ fun HomeScreen(
     onOpenExperience: () -> Unit,
     onOpenBlog: () -> Unit,
     onOpenHotels: () -> Unit = {},
-    trips: List<com.riad.voyage.data.Trip> = emptyList(),
+    trips: List<Trip> = emptyList(),
     onOpenTrip: (String?) -> Unit = {},
     onOpenAlerts: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -198,7 +203,7 @@ fun HomeScreen(
         }
         // Prochain voyage (ou le dernier modifié) : accès direct au carnet.
         val next = trips.filter { !it.isEmpty }.sortedWith(
-            compareBy<com.riad.voyage.data.Trip> { tr ->
+            compareBy<Trip> { tr ->
                 tr.startDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }?.takeIf { !it.isBefore(LocalDate.now()) } ?: LocalDate.MAX
             }.thenByDescending { it.updated },
         ).firstOrNull()

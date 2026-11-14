@@ -1,5 +1,10 @@
 package com.riad.voyage.ui
 
+import ActivityLinks
+import Article
+import SavedArticle
+import Trip
+import TripText
 import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -7,7 +12,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -35,10 +39,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.riad.voyage.data.ActivityLinks
+import com.riad.voyage.data.Airlines
 import com.riad.voyage.data.Article
 import com.riad.voyage.data.SavedArticle
+import com.riad.voyage.data.SavedPlace
 import com.riad.voyage.data.Trip
 import com.riad.voyage.data.TripText
+import com.riad.voyage.data.WikiSummary
 import com.riad.voyage.t
 import com.riad.voyage.tf
 import com.riad.voyage.tk
@@ -56,7 +63,7 @@ fun TripsScreen(
     alertCount: Int,
     onHotels: (Trip) -> Unit = {},
     onBudget: (Trip) -> Unit = {},
-    wiki: suspend (String) -> com.riad.voyage.data.WikiSummary? = { null },
+    wiki: suspend (String) -> WikiSummary? = { null },
     onReadArticle2: (String) -> Unit = {},
 ) {
     val trip = trips.firstOrNull { it.id == openId }
@@ -130,11 +137,11 @@ private fun TripDetail(
     onReadArticle: (SavedArticle?) -> Unit,
     onHotels: (Trip) -> Unit,
     onBudget: (Trip) -> Unit,
-    wiki: suspend (String) -> com.riad.voyage.data.WikiSummary?,
+    wiki: suspend (String) -> WikiSummary?,
     onPlaceArticle: (String) -> Unit,
 ) {
     val context = LocalContext.current
-    var detail by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Pair<com.riad.voyage.data.SavedPlace, PlaceExtra>?>(null) }
+    var detail by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Pair<SavedPlace, PlaceExtra>?>(null) }
     detail?.let { (p, extra) ->
         PlaceDetailSheet(
             place = p.toPoi(), category = null, city = trip.city, extra = extra, wiki = wiki,
@@ -174,7 +181,7 @@ private fun TripDetail(
                             Text("${t(f.origin)} → ${t(f.destination)}", fontWeight = FontWeight.Bold)
                             Text(formatDateTime(f.departureAt) + (f.returnAt?.let { " · " + formatDateTime(it) } ?: ""),
                                 style = MaterialTheme.typography.bodySmall)
-                            Text(formatPrice(f.price, f.currency) + " · " + com.riad.voyage.data.Airlines.name(f.airline),
+                            Text(formatPrice(f.price, f.currency) + " · " + Airlines.name(f.airline),
                                 color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                         }
                         TextButton(onClick = { onRemove(trip.id, "flight", i) }) { Text("✕") }

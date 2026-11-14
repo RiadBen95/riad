@@ -1,17 +1,19 @@
 package com.riad.voyage.ui
 
-import com.riad.voyage.tk
-import com.riad.voyage.tf
-import com.riad.voyage.t
+import ActivityLinks
+import PlacesApi
+import PlacesParser
+import PointOfInterest
+import WikiSummary
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,11 +21,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -33,7 +32,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -49,17 +47,20 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.ImageLoader
 import coil.compose.AsyncImage
 import com.riad.voyage.PlacesState
 import com.riad.voyage.data.ActivityLinks
+import com.riad.voyage.data.Place
 import com.riad.voyage.data.PlacesApi
 import com.riad.voyage.data.PlacesParser
 import com.riad.voyage.data.PointOfInterest
 import com.riad.voyage.data.WikiSummary
+import com.riad.voyage.t
+import com.riad.voyage.tf
+import com.riad.voyage.tk
 import okhttp3.OkHttpClient
 
 /** Chargeur d'images avec un User-Agent explicite (demandé par Wikimedia). */
@@ -93,9 +94,9 @@ fun ActivitiesScreen(
     category: ActivityLinks.Category,
     places: PlacesState,
     onCity: (String) -> Unit,
-    selectedPlace: com.riad.voyage.data.Place?,
-    onPlace: (com.riad.voyage.data.Place) -> Unit,
-    suggestCities: suspend (String) -> List<com.riad.voyage.data.Place>,
+    selectedPlace: Place?,
+    onPlace: (Place) -> Unit,
+    suggestCities: suspend (String) -> List<Place>,
     onCategory: (ActivityLinks.Category) -> Unit,
     onSearch: () -> Unit,
     wiki: suspend (String) -> WikiSummary?,

@@ -1,18 +1,13 @@
 package com.riad.voyage.data
 
 import android.content.Context
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
-import java.net.URLEncoder
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.math.ln
@@ -76,33 +71,14 @@ data class Candidate(
 )
 
 private object Http {
-    suspend fun call(url: String, headers: Map<String, String> = emptyMap(), body: String? = null): String =
-        withContext(Dispatchers.IO) {
-            val conn = URL(url).openConnection() as HttpURLConnection
-            try {
-                conn.connectTimeout = 7_000
-                conn.readTimeout = 10_000
-                conn.setRequestProperty("Accept", "application/json")
-                headers.forEach { (k, v) -> conn.setRequestProperty(k, v) }
-                if (body != null) {
-                    conn.requestMethod = "POST"
-                    conn.doOutput = true
-                    conn.setRequestProperty("Content-Type", "application/json")
-                    conn.outputStream.use { it.write(body.toByteArray()) }
-                }
-                val code = conn.responseCode
-                if (code in 200..299) return@withContext conn.inputStream.bufferedReader().use { it.readText() }
-                val err = conn.errorStream?.bufferedReader()?.use { it.readText() }.orEmpty()
-                if (code == 429 || err.contains("RESOURCE_EXHAUSTED") || err.contains("quota", ignoreCase = true)) {
-                    throw QuotaExceeded("quota atteint")
-                }
-                throw IOException("HTTP $code ${err.take(150)}")
-            } finally {
-                conn.disconnect()
-            }
-        }
+    suspend fun call(url: String, headers: Map<String, String> = emptyMap(), body: String? = null): String = try {
+        Net.fetch(url, headers, body, connectMs = 7_000, readMs = 10_000)
+    } catch (e: HttpError) {
+        if (e.code == 429 || e.body.contains("RESOURCE_EXHAUSTED") || e.body.contains("quota", ignoreCase = true)) throw QuotaExceeded("quota atteint")
+        throw IOException("HTTP ${e.code} ${e.body.take(150)}")
+    }
 
-    fun enc(s: String): String = URLEncoder.encode(s, "UTF-8").replace("+", "%20")
+    fun enc(s: String): String = Net.enc(s)
 }
 
 private fun JSONObject.s(key: String): String? = if (isNull(key)) null else optString(key).ifBlank { null }
