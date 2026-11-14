@@ -35,6 +35,7 @@ fun SettingsScreen(
     quotas: QuotaStore,
     onQuotaLimit: (RatingSource, Int) -> Unit,
     onLanguage: (com.riad.voyage.Lang?) -> Unit,
+    onDiagnostic: (() -> java.io.File)? = null,
 ) {
     val context = LocalContext.current
     val focus = LocalFocusManager.current
@@ -218,6 +219,21 @@ fun SettingsScreen(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        // Rapport de diagnostic : discret, en bas de page, sans aucune clé.
+        onDiagnostic?.let { report ->
+            TextButton(onClick = {
+                runCatching {
+                    val uri = androidx.core.content.FileProvider.getUriForFile(context, context.packageName + ".files", report())
+                    val send = android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain")
+                        .putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                        .putExtra(android.content.Intent.EXTRA_SUBJECT, t("Rapport de diagnostic Envolée"))
+                        .addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    context.startActivity(android.content.Intent.createChooser(send, t("Envoyer le rapport")))
+                }
+            }, contentPadding = PaddingValues(0.dp)) {
+                Text(t("Envoyer un rapport de diagnostic (sans aucune clé)"), style = MaterialTheme.typography.bodySmall)
+            }
+        }
     }
 }
 

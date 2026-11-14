@@ -738,6 +738,17 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             lateDeparture = (trip.departureMin ?: 0) >= 15 * 60)
     }
 
+    /** Rapport de diagnostic (texte, sans aucune clé) : ce que l'appli a reçu, compris et composé. */
+    fun diagnosticReport(): java.io.File {
+        val st = _experience.value
+        val text = com.riad.voyage.data.Diagnostics.report(
+            app = getApplication(), settings = _settings.value, state = st, trip = linkedTrip(st),
+            pools = experiencePools.mapValues { it.value.size },
+        )
+        val dir = java.io.File(getApplication<Application>().cacheDir, "pdf").apply { mkdirs() }
+        return java.io.File(dir, "Envolee-diagnostic.txt").apply { writeText(text) }
+    }
+
     /** Carnet de voyage en PDF (charte Envolée), prêt à partager. */
     suspend fun tripPdf(trip: Trip): java.io.File {
         val rates = rates()
@@ -1873,4 +1884,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
 /** Exécute [block] avec une limite de temps : null si trop long, sinon le résultat ou l'erreur. */
 private suspend fun <T> attempt(ms: Long, block: suspend () -> T): Result<T>? =
-    withTimeoutOrNull(ms) { runCatching { block() } }
+    withTimeoutOrNull(ms) { runCatching { block() } }.also { r ->
+        if (r == null) com.riad.voyage.data.Diagnostics.log("Délai dépassé ($ms ms)")
+        else r.exceptionOrNull()?.let { com.riad.voyage.data.Diagnostics.log("${it::class.simpleName}: ${it.message}") }
+    }

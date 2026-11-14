@@ -355,7 +355,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
 
                 Tab.SETTINGS -> {
                     BackHandler { vm.selectTab(Tab.HOME) }
-                    SettingsScreen(settings, keyStatus, vm::saveSettings, vm.quotas, vm::setQuotaLimit, vm::setLanguage)
+                    SettingsScreen(settings, keyStatus, vm::saveSettings, vm.quotas, vm::setQuotaLimit, vm::setLanguage, vm::diagnosticReport)
                 }
             }
         }

@@ -75,6 +75,7 @@ object ClaudeAssistant {
             else builder.addTool(WebSearchTool20260209.builder().maxUses(3L).build())
         }
         return client(key).messages().create(builder.build()).content().mapNotNull { it.text().orElse(null)?.text() }.joinToString("")
+            .also { Diagnostics.lastAiResponse = it }
     }
 
     /** Dernier objet JSON de la réponse (Claude peut écrire du texte autour). */

@@ -945,4 +945,7 @@ ROWS = [
     ['{0} : aucun lieu ouvert trouvé ce jour-là.', '{0}: no open place found that day.'],
     ['{0} jours (au plus {1})', '{0} days (at most {1})'],
     ['Estimation : aucun hôtel choisi (chambre double, prix moyen de la ville)', 'Estimate: no hotel chosen (double room, average city price)'],
+    ['Rapport de diagnostic Envolée', 'Envolée diagnostic report'],
+    ['Envoyer le rapport', 'Send the report'],
+    ['Envoyer un rapport de diagnostic (sans aucune clé)', 'Send a diagnostic report (no keys included)'],
 ]
