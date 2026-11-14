@@ -23,11 +23,7 @@ class MainActivity : ComponentActivity() {
         PriceAlertWorker.schedule(this)
         setContent {
             VoyageTheme {
-              // L'arabe se lit de droite à gauche : on inverse toute la mise en page.
-              androidx.compose.runtime.CompositionLocalProvider(
-                  androidx.compose.ui.platform.LocalLayoutDirection provides
-                      if (I18n.lang.rtl) androidx.compose.ui.unit.LayoutDirection.Rtl else androidx.compose.ui.unit.LayoutDirection.Ltr,
-              ) {
+              run {
                 val vm: AppViewModel = viewModel()
                 val notifLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
                 VoyageApp(

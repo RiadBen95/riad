@@ -714,6 +714,28 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         return com.riad.voyage.data.Packing.generate(nights, forecast, kinds, practicalFor(trip.city, trip.country), family)
     }
 
+    /** Carnet de voyage en PDF (charte Envolée), prêt à partager. */
+    suspend fun tripPdf(trip: Trip): java.io.File {
+        val rates = rates()
+        val people = trip.travellers ?: 2
+        val totalEur = com.riad.voyage.data.BudgetCalculator.compute(
+            budgetFor(trip.city, countryOf(trip.city, trip.country), trip, rates, trip.nights ?: 3, people),
+        ).sumOf { it.amountEur }
+        val cur = _settings.value.currency.uppercase()
+        val k = if (cur == "EUR") 1.0 else rates[cur]
+        fun money(eur: Double) = if (k == null) com.riad.voyage.ui.formatPrice(eur.toInt(), "EUR") else com.riad.voyage.ui.formatPrice((eur * k).toInt(), cur)
+        val start = trip.start
+        val content = com.riad.voyage.ui.TripPdf.Content(
+            trip = trip,
+            weather = weatherFor(trip.city).filter { w -> start != null && !w.date.isBefore(start) && !w.date.isAfter(trip.end ?: start) },
+            info = practicalFor(trip.city, trip.country),
+            packing = packingFor(trip),
+            budgetTotal = money(totalEur),
+            budgetPerPerson = money(totalEur / people),
+        )
+        return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { com.riad.voyage.ui.TripPdf.write(getApplication(), content) }
+    }
+
     /** Ouvre les infos pratiques de la ville d'un voyage (page Ville). */
     fun openPractical(trip: Trip) {
         _activityCity.value = trip.city

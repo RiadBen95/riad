@@ -1,839 +1,850 @@
-# fr	en	ar	es	zh	ja	hi — généré par tools/i18n/build.py
-Accueil	Home	الرئيسية	Inicio	首页	ホーム	होम
-Vols	Flights	رحلات جوية	Vuelos	航班	フライト	उड़ानें
-Sorties	Things to do	أنشطة	Planes	玩乐	お出かけ	घूमना-फिरना
-Expérience	Experience	تجربة	Experiencia	体验	体験	अनुभव
-Blogue	Blog	مدونة	Blog	博客	ブログ	ब्लॉग
-Alertes	Alerts	تنبيهات	Alertas	提醒	アラート	अलर्ट
-Réglages	Settings	الإعدادات	Ajustes	设置	設定	सेटिंग्स
-Bonjour 👋	Hello 👋	مرحبًا 👋	Hola 👋	你好 👋	こんにちは 👋	नमस्ते 👋
-Bonsoir 👋	Good evening 👋	مساء الخير 👋	Buenas noches 👋	晚上好 👋	こんばんは 👋	शुभ संध्या 👋
-Où partez-vous ?	Where are you going?	إلى أين تسافر؟	¿A dónde vas?	你要去哪里？	どこへ行きますか？	आप कहाँ जा रहे हैं?
-Rechercher un vol	Search for a flight	ابحث عن رحلة	Buscar un vuelo	搜索航班	フライトを検索	उड़ान खोजें
-Depuis {0} · {1} passager(s)	From {0} · {1} passenger(s)	من {0} · {1} مسافر	Desde {0} · {1} pasajero(s)	从{0}出发 · {1}位乘客	{0}発 · {1}名	{0} से · {1} यात्री
-Reprendre une recherche	Resume a search	استئناف بحث	Retomar una búsqueda	继续上次搜索	検索を再開	खोज फिर से शुरू करें
-Destinations populaires	Popular destinations	وجهات شائعة	Destinos populares	热门目的地	人気の目的地	लोकप्रिय गंतव्य
-Relancer la recherche ›	Search again ›	أعد البحث ›	Buscar de nuevo ›	重新搜索 ›	再検索 ›	फिर से खोजें ›
-Relancer avec de nouvelles dates ›	Search with new dates ›	ابحث بتواريخ جديدة ›	Buscar con nuevas fechas ›	用新日期搜索 ›	新しい日付で検索 ›	नई तारीखों से खोजें ›
-Prix des vols : Aviasales · Lieux : OpenStreetMap · Photos : Wikipédia	Flight prices: Aviasales · Places: OpenStreetMap · Photos: Wikipedia	أسعار الرحلات: Aviasales · الأماكن: OpenStreetMap · الصور: ويكيبيديا	Precios de vuelos: Aviasales · Lugares: OpenStreetMap · Fotos: Wikipedia	机票价格：Aviasales · 地点：OpenStreetMap · 图片：维基百科	航空券価格: Aviasales · スポット: OpenStreetMap · 写真: ウィキペディア	उड़ान किराया: Aviasales · स्थान: OpenStreetMap · फ़ोटो: विकिपीडिया
-Trouver un vol	Find a flight	ابحث عن رحلة	Encontrar un vuelo	查找航班	フライトを探す	उड़ान खोजें
-Aller-retour	Round trip	ذهاب وعودة	Ida y vuelta	往返	往復	आना-जाना
-Aller simple	One way	ذهاب فقط	Solo ida	单程	片道	एक तरफ़ा
-Départ	From	من	Origen	出发地	出発地	प्रस्थान
-Destination	To	إلى	Destino	目的地	目的地	गंतव्य
-Ville ou aéroport	City or airport	مدينة أو مطار	Ciudad o aeropuerto	城市或机场	都市または空港	शहर या हवाई अड्डा
-Recherche…	Searching…	جارٍ البحث…	Buscando…	搜索中…	検索中…	खोज रहे हैं…
-Inverser départ et destination	Swap origin and destination	تبديل المغادرة والوجهة	Intercambiar origen y destino	交换出发地和目的地	出発地と目的地を入れ替え	प्रस्थान और गंतव्य बदलें
-Idées de destinations	Destination ideas	أفكار للوجهات	Ideas de destinos	目的地灵感	行き先のアイデア	गंतव्य के सुझाव
-Aller	Departure	الذهاب	Ida	去程	往路	जाना
-Retour	Return	العودة	Vuelta	返程	復路	वापसी
-Aller (mois)	Departure (month)	الذهاب (شهر)	Ida (mes)	去程（月份）	往路（月）	जाना (महीना)
-Retour (mois)	Return (month)	العودة (شهر)	Vuelta (mes)	返程（月份）	復路（月）	वापसी (महीना)
-Aller – retour	Departure – return	ذهاب – عودة	Ida – vuelta	去程 – 返程	往路 – 復路	जाना – वापसी
-Choisissez l'aller puis le retour	Choose departure, then return	اختر الذهاب ثم العودة	Elige la ida y luego la vuelta	先选去程，再选返程	往路、次に復路を選択	पहले जाना, फिर वापसी चुनें
-{0} nuit(s)	{0} night(s)	{0} ليلة	{0} noche(s)	{0}晚	{0}泊	{0} रात
-Passagers	Passengers	المسافرون	Pasajeros	乘客	乗客	यात्री
-Passagers (adultes)	Passengers (adults)	المسافرون (بالغون)	Pasajeros (adultos)	乘客（成人）	乗客（大人）	यात्री (वयस्क)
-Dates flexibles	Flexible dates	تواريخ مرنة	Fechas flexibles	日期灵活	日程に余裕あり	लचीली तारीखें
-Meilleur prix sur tout le mois	Best price over the whole month	أفضل سعر خلال الشهر كله	Mejor precio en todo el mes	整月最低价	1か月で最安値	पूरे महीने का सबसे अच्छा दाम
-Chercher le meilleur prix sur tout le mois	Find the best price over the whole month	ابحث عن أفضل سعر خلال الشهر كله	Buscar el mejor precio en todo el mes	搜索整月最低价	1か月の最安値を探す	पूरे महीने का सबसे अच्छा दाम खोजें
-Vols directs uniquement	Direct flights only	رحلات مباشرة فقط	Solo vuelos directos	仅直飞	直行便のみ	केवल सीधी उड़ानें
-Rechercher les meilleurs prix	Search the best prices	ابحث عن أفضل الأسعار	Buscar los mejores precios	搜索最低价	最安値を検索	सबसे अच्छे दाम खोजें
-Recherches récentes	Recent searches	عمليات البحث الأخيرة	Búsquedas recientes	最近搜索	最近の検索	हाल की खोजें
-Les prix viennent des recherches récentes des voyageurs sur Aviasales. Le prix final est confirmé sur le site du vendeur avant paiement.	Prices come from travellers' recent searches on Aviasales. The final price is confirmed on the seller's site before payment.	تأتي الأسعار من عمليات بحث المسافرين الأخيرة على Aviasales. يتم تأكيد السعر النهائي على موقع البائع قبل الدفع.	Los precios provienen de búsquedas recientes de viajeros en Aviasales. El precio final se confirma en el sitio del vendedor antes del pago.	价格来自旅客最近在 Aviasales 上的搜索。最终价格在付款前于卖家网站确认。	価格は Aviasales での旅行者の最近の検索に基づきます。最終価格は支払い前に販売サイトで確定します。	दाम Aviasales पर यात्रियों की हाल की खोजों से आते हैं। अंतिम दाम भुगतान से पहले विक्रेता की साइट पर पक्का होता है।
-Mode démo : prix fictifs	Demo mode: sample prices	الوضع التجريبي: أسعار وهمية	Modo demo: precios ficticios	演示模式：示例价格	デモモード：架空の価格	डेमो मोड: नमूना दाम
-Ajoutez votre clé API Travelpayouts (gratuite) pour afficher les vrais prix.	Add your (free) Travelpayouts API key to see real prices.	أضف مفتاح Travelpayouts API (مجاني) لعرض الأسعار الحقيقية.	Añade tu clave API de Travelpayouts (gratuita) para ver precios reales.	添加您的 Travelpayouts API 密钥（免费）以显示真实价格。	実際の価格を表示するには Travelpayouts API キー（無料）を追加してください。	असली दाम देखने के लिए अपनी (मुफ़्त) Travelpayouts API कुंजी जोड़ें।
-Configurer la clé ›	Set up the key ›	إعداد المفتاح ›	Configurar la clave ›	设置密钥 ›	キーを設定 ›	कुंजी सेट करें ›
-← Modifier	← Edit	← تعديل	← Modificar	← 修改	← 変更	← बदलें
-Recherche des meilleurs prix…	Searching for the best prices…	جارٍ البحث عن أفضل الأسعار…	Buscando los mejores precios…	正在搜索最低价…	最安値を検索中…	सबसे अच्छे दाम खोज रहे हैं…
-Réessayer	Try again	حاول مرة أخرى	Reintentar	重试	再試行	फिर से कोशिश करें
-🔔 Suivre ce prix	🔔 Track this price	🔔 تتبّع هذا السعر	🔔 Seguir este precio	🔔 追踪此价格	🔔 この価格を追跡	🔔 इस दाम पर नज़र रखें
-🎟️ Que faire sur place	🎟️ Things to do there	🎟️ ماذا تفعل هناك	🎟️ Qué hacer allí	🎟️ 当地玩乐	🎟️ 現地でやること	🎟️ वहाँ क्या करें
-Aucun prix récent trouvé pour ces dates	No recent price found for these dates	لم يُعثر على سعر حديث لهذه التواريخ	No se encontró ningún precio reciente para estas fechas	这些日期没有找到近期价格	この日程の最近の価格は見つかりません	इन तारीखों के लिए कोई हालिया दाम नहीं मिला
-Chercher en direct sur Aviasales	Search live on Aviasales	ابحث مباشرة على Aviasales	Buscar en directo en Aviasales	在 Aviasales 实时搜索	Aviasales でリアルタイム検索	Aviasales पर सीधे खोजें
-Voir toutes les offres en direct sur Aviasales ›	See all live offers on Aviasales ›	اطّلع على كل العروض مباشرة على Aviasales ›	Ver todas las ofertas en directo en Aviasales ›	在 Aviasales 查看全部实时报价 ›	Aviasales ですべてのプランを見る ›	Aviasales पर सभी ऑफ़र देखें ›
-{0} offres	{0} offers	{0} عرض	{0} ofertas	{0} 个报价	{0} 件	{0} ऑफ़र
-Prix	Price	السعر	Precio	价格	価格	दाम
-Durée	Duration	المدة	Duración	时长	所要時間	अवधि
-Escales	Stops	التوقفات	Escalas	中转	乗継	ठहराव
-Prix aller le plus bas par jour	Lowest one-way price per day	أدنى سعر ذهاب لكل يوم	Precio de ida más bajo por día	每日最低单程价	日別の最安片道価格	हर दिन का सबसे कम एक-तरफ़ा दाम
-Touchez un jour pour le choisir. En vert : le moins cher du mois.	Tap a day to choose it. In green: the cheapest of the month.	المس يومًا لاختياره. بالأخضر: الأرخص في الشهر.	Toca un día para elegirlo. En verde: el más barato del mes.	点按某天进行选择。绿色：本月最便宜。	日付をタップして選択。緑：その月の最安値。	चुनने के लिए दिन पर टैप करें। हरे में: महीने का सबसे सस्ता।
-★ Meilleur prix	★ Best price	★ أفضل سعر	★ Mejor precio	★ 最低价	★ 最安値	★ सबसे अच्छा दाम
-par personne	per person	للشخص	por persona	每人	1人あたり	प्रति व्यक्ति
-Réserver	Book	احجز	Reservar	预订	予約	बुक करें
-Direct	Direct	مباشر	Directo	直飞	直行	सीधी
-1 escale	1 stop	توقف واحد	1 escala	1次中转	乗継1回	1 ठहराव
-{0} escales	{0} stops	{0} توقفات	{0} escalas	{0}次中转	乗継{0}回	{0} ठहराव
-Choisissez le départ et la destination dans la liste proposée.	Choose the origin and destination from the list.	اختر المغادرة والوجهة من القائمة.	Elige el origen y el destino de la lista.	请从列表中选择出发地和目的地。	リストから出発地と目的地を選んでください。	सूची से प्रस्थान और गंतव्य चुनें।
-Le départ et la destination sont identiques.	Origin and destination are the same.	المغادرة والوجهة متطابقتان.	El origen y el destino son iguales.	出发地和目的地相同。	出発地と目的地が同じです。	प्रस्थान और गंतव्य एक जैसे हैं।
-Ce trajet est déjà suivi.	This route is already tracked.	هذا المسار متابَع بالفعل.	Esta ruta ya está en seguimiento.	已在追踪此航线。	このルートは追跡中です。	इस मार्ग पर पहले से नज़र रखी जा रही है।
-Trajet suivi : vous serez prévenu si le prix baisse.	Route tracked: you'll be notified if the price drops.	تمت متابعة المسار: سنُعلمك إذا انخفض السعر.	Ruta en seguimiento: te avisaremos si baja el precio.	已追踪：降价时会通知您。	追跡中：値下がりしたらお知らせします。	नज़र रखी जा रही है: दाम घटने पर आपको सूचना मिलेगी।
-Trajet suivi. Ajoutez votre clé API dans Réglages pour activer la surveillance.	Route tracked. Add your API key in Settings to enable monitoring.	تمت المتابعة. أضف مفتاح API في الإعدادات لتفعيل المراقبة.	Ruta en seguimiento. Añade tu clave API en Ajustes para activar la vigilancia.	已追踪。请在设置中添加 API 密钥以启用监控。	追跡しました。監視を有効にするには設定で API キーを追加してください。	नज़र रखी जा रही है। निगरानी चालू करने के लिए सेटिंग्स में API कुंजी जोड़ें।
-Alertes de prix	Price alerts	تنبيهات الأسعار	Alertas de precio	价格提醒	価格アラート	दाम अलर्ट
-L'application vérifie ces trajets environ toutes les 12 heures et vous envoie une notification si le prix baisse.	The app checks these routes about every 12 hours and notifies you if the price drops.	يتحقق التطبيق من هذه المسارات كل 12 ساعة تقريبًا ويرسل إشعارًا إذا انخفض السعر.	La app revisa estas rutas cada 12 horas aprox. y te avisa si baja el precio.	应用约每 12 小时检查一次这些航线，降价时通知您。	アプリは約12時間ごとにルートを確認し、値下がりしたら通知します。	ऐप लगभग हर 12 घंटे में इन मार्गों की जाँच करता है और दाम घटने पर सूचना भेजता है।
-Aucun trajet suivi. Lancez une recherche de vol, puis touchez « 🔔 Suivre ce prix ».	No routes tracked. Search for a flight, then tap "🔔 Track this price".	لا توجد مسارات متابَعة. ابحث عن رحلة ثم المس «🔔 تتبّع هذا السعر».	Ninguna ruta en seguimiento. Busca un vuelo y toca «🔔 Seguir este precio».	暂无追踪的航线。搜索航班后点按“🔔 追踪此价格”。	追跡中のルートはありません。フライトを検索し「🔔 この価格を追跡」をタップ。	कोई मार्ग नहीं। उड़ान खोजें, फिर "🔔 इस दाम पर नज़र रखें" पर टैप करें।
-Vérification…	Checking…	جارٍ التحقق…	Comprobando…	检查中…	確認中…	जाँच हो रही है…
-Vérifier les prix maintenant	Check prices now	تحقق من الأسعار الآن	Comprobar precios ahora	立即检查价格	今すぐ価格を確認	अभी दाम जाँचें
-Date passée	Date passed	تاريخ منقضٍ	Fecha pasada	日期已过	日付が過ぎています	तारीख बीत गई
-Pas encore de prix	No price yet	لا يوجد سعر بعد	Aún sin precio	暂无价格	まだ価格なし	अभी कोई दाम नहीं
-Supprimer	Delete	حذف	Eliminar	删除	削除	हटाएँ
-Prix vérifiés : pas de baisse pour le moment.	Prices checked: no drop for now.	تم التحقق: لا انخفاض حاليًا.	Precios comprobados: sin bajadas por ahora.	价格已检查：暂无降价。	価格確認済み：現在値下がりなし。	दाम जाँचे गए: अभी कोई गिरावट नहीं।
-Ajoutez votre clé API dans Réglages pour vérifier les prix.	Add your API key in Settings to check prices.	أضف مفتاح API في الإعدادات للتحقق من الأسعار.	Añade tu clave API en Ajustes para comprobar precios.	请在设置中添加 API 密钥以检查价格。	価格を確認するには設定で API キーを追加してください。	दाम जाँचने के लिए सेटिंग्स में API कुंजी जोड़ें।
-Devise des prix	Price currency	عملة الأسعار	Moneda de los precios	价格货币	価格の通貨	दाम की मुद्रा
-Langue	Language	اللغة	Idioma	语言	言語	भाषा
-Automatique (langue du téléphone)	Automatic (phone language)	تلقائي (لغة الهاتف)	Automático (idioma del teléfono)	自动（手机语言）	自動（端末の言語）	स्वचालित (फ़ोन की भाषा)
-Accès aux vrais prix	Access to real prices	الوصول إلى الأسعار الحقيقية	Acceso a precios reales	获取真实价格	実際の価格を利用	असली दामों तक पहुँच
-Clé API Travelpayouts (token)	Travelpayouts API key (token)	مفتاح Travelpayouts API (token)	Clave API de Travelpayouts (token)	Travelpayouts API 密钥（token）	Travelpayouts API キー（token）	Travelpayouts API कुंजी (token)
-Afficher	Show	إظهار	Mostrar	显示	表示	दिखाएँ
-Masquer	Hide	إخفاء	Ocultar	隐藏	非表示	छिपाएँ
-Identifiant partenaire (marker), facultatif	Partner ID (marker), optional	معرّف الشريك (marker)، اختياري	ID de socio (marker), opcional	合作伙伴 ID（marker），可选	パートナーID（marker）、任意	पार्टनर आईडी (marker), वैकल्पिक
-Permet de toucher une commission sur les réservations faites via l'app.	Lets you earn a commission on bookings made through the app.	يتيح لك كسب عمولة على الحجوزات عبر التطبيق.	Te permite ganar comisión por las reservas hechas desde la app.	通过应用预订可获得佣金。	アプリ経由の予約で手数料を得られます。	ऐप से की गई बुकिंग पर कमीशन मिलता है।
-Enregistrer	Save	حفظ	Guardar	保存	保存	सहेजें
-Enregistré ✓	Saved ✓	تم الحفظ ✓	Guardado ✓	已保存 ✓	保存済み ✓	सहेजा गया ✓
-Obtenir une clé gratuite	Get a free key	احصل على مفتاح مجاني	Obtener una clave gratuita	获取免费密钥	無料キーを取得	मुफ़्त कुंजी पाएँ
-1. Créez un compte sur travelpayouts.com.	1. Create an account on travelpayouts.com.	1. أنشئ حسابًا على travelpayouts.com.	1. Crea una cuenta en travelpayouts.com.	1. 在 travelpayouts.com 注册账号。	1. travelpayouts.com でアカウントを作成。	1. travelpayouts.com पर खाता बनाएँ।
-2. Rejoignez le programme « Aviasales ».	2. Join the "Aviasales" programme.	2. انضم إلى برنامج «Aviasales».	2. Únete al programa «Aviasales».	2. 加入“Aviasales”计划。	2. 「Aviasales」プログラムに参加。	2. "Aviasales" प्रोग्राम से जुड़ें।
-3. Dans votre profil, section API, copiez le « token » et collez-le ci-dessus. Le « marker » est votre identifiant partenaire, affiché au même endroit.	3. In your profile, API section, copy the "token" and paste it above. The "marker" is your partner ID, shown in the same place.	3. في ملفك الشخصي، قسم API، انسخ «token» والصقه أعلاه. «marker» هو معرّف الشريك ويظهر في المكان نفسه.	3. En tu perfil, sección API, copia el «token» y pégalo arriba. El «marker» es tu ID de socio, en el mismo lugar.	3. 在个人资料的 API 部分复制“token”并粘贴到上方。“marker”是您的合作伙伴 ID，位于同一处。	3. プロフィールの API 欄で「token」をコピーし上に貼り付け。「marker」はパートナーIDで同じ場所にあります。	3. अपनी प्रोफ़ाइल के API भाग में "token" कॉपी करके ऊपर चिपकाएँ। "marker" आपकी पार्टनर आईडी है, उसी जगह दिखती है।
-Ouvrir travelpayouts.com	Open travelpayouts.com	افتح travelpayouts.com	Abrir travelpayouts.com	打开 travelpayouts.com	travelpayouts.com を開く	travelpayouts.com खोलें
-La clé est enregistrée uniquement sur ce téléphone.	The key is stored only on this phone.	يُحفظ المفتاح على هذا الهاتف فقط.	La clave se guarda solo en este teléfono.	密钥仅保存在此手机上。	キーはこの端末にのみ保存されます。	कुंजी केवल इसी फ़ोन पर सहेजी जाती है।
-Aucune clé enregistrée : l'app est en mode démo (prix fictifs).	No key saved: the app is in demo mode (sample prices).	لا يوجد مفتاح محفوظ: التطبيق في الوضع التجريبي (أسعار وهمية).	Ninguna clave guardada: la app está en modo demo (precios ficticios).	未保存密钥：应用处于演示模式（示例价格）。	キー未保存：デモモード（架空の価格）です。	कोई कुंजी नहीं: ऐप डेमो मोड में है (नमूना दाम)।
-Clé enregistrée. Vérification en cours…	Key saved. Checking…	تم حفظ المفتاح. جارٍ التحقق…	Clave guardada. Comprobando…	密钥已保存。正在验证…	キーを保存しました。確認中…	कुंजी सहेजी गई। जाँच हो रही है…
-✓ Clé enregistrée et valide : les vrais prix sont activés.	✓ Key saved and valid: real prices are enabled.	✓ المفتاح محفوظ وصالح: تم تفعيل الأسعار الحقيقية.	✓ Clave guardada y válida: precios reales activados.	✓ 密钥有效：已启用真实价格。	✓ キーは有効です：実際の価格が有効になりました。	✓ कुंजी सही है: असली दाम चालू हैं।
-Clé enregistrée : les vrais prix sont activés.	Key saved: real prices are enabled.	تم حفظ المفتاح: تم تفعيل الأسعار الحقيقية.	Clave guardada: precios reales activados.	密钥已保存：已启用真实价格。	キーを保存：実際の価格が有効です。	कुंजी सहेजी गई: असली दाम चालू हैं।
-Clé enregistrée, mais le test a échoué : {0}	Key saved, but the test failed: {0}	تم حفظ المفتاح لكن الاختبار فشل: {0}	Clave guardada, pero la prueba falló: {0}	密钥已保存，但测试失败：{0}	キーは保存されましたがテストに失敗：{0}	कुंजी सहेजी गई, पर जाँच विफल रही: {0}
-Notes des restaurants, cafés et bars (facultatif)	Ratings for restaurants, cafés and bars (optional)	تقييمات المطاعم والمقاهي والحانات (اختياري)	Valoraciones de restaurantes, cafés y bares (opcional)	餐厅、咖啡馆和酒吧评分（可选）	レストラン・カフェ・バーの評価（任意）	रेस्टोरेंट, कैफ़े और बार की रेटिंग (वैकल्पिक)
-Utilisé ce mois-ci : {0}	Used this month: {0}	المستخدم هذا الشهر: {0}	Usado este mes: {0}	本月已用：{0}	今月の使用：{0}	इस महीने उपयोग: {0}
- · quota du fournisseur atteint aujourd'hui	 · provider quota reached today	 · تم بلوغ حصة المزوّد اليوم	 · cuota del proveedor alcanzada hoy	 · 今日已达服务商配额	 · 本日の上限に到達	 · आज प्रदाता का कोटा पूरा
-Limite / mois	Limit / month	الحد / شهر	Límite / mes	上限/月	上限/月	सीमा / माह
-Annuler	Cancel	إلغاء	Cancelar	取消	キャンセル	रद्द करें
-Aucun navigateur installé	No browser installed	لا يوجد متصفح مثبت	No hay navegador instalado	未安装浏览器	ブラウザがありません	कोई ब्राउज़र इंस्टॉल नहीं है
-Pas de connexion internet (ou serveur injoignable).	No internet connection (or server unreachable).	لا يوجد اتصال بالإنترنت (أو تعذّر الوصول إلى الخادم).	Sin conexión a internet (o servidor inaccesible).	无网络连接（或服务器不可达）。	インターネット接続がありません（またはサーバーに接続できません）。	इंटरनेट कनेक्शन नहीं है (या सर्वर उपलब्ध नहीं)।
-Clé API refusée. Vérifiez-la dans Réglages.	API key rejected. Check it in Settings.	تم رفض مفتاح API. تحقق منه في الإعدادات.	Clave API rechazada. Revísala en Ajustes.	API 密钥被拒绝。请在设置中检查。	API キーが拒否されました。設定で確認してください。	API कुंजी अस्वीकार हुई। सेटिंग्स में जाँचें।
-Trop de recherches en peu de temps. Réessayez dans une minute.	Too many searches in a short time. Try again in a minute.	عمليات بحث كثيرة في وقت قصير. حاول بعد دقيقة.	Demasiadas búsquedas en poco tiempo. Inténtalo en un minuto.	短时间内搜索过多，请一分钟后重试。	短時間に検索が多すぎます。1分後に再試行してください。	कम समय में बहुत खोजें। एक मिनट बाद कोशिश करें।
-Prix en baisse : {0} → {1}	Price drop: {0} → {1}	انخفاض السعر: {0} ← {1}	Bajada de precio: {0} → {1}	降价：{0} → {1}	値下がり：{0} → {1}	दाम घटा: {0} → {1}
-{0} au lieu de {1}	{0} instead of {1}	{0} بدلًا من {1}	{0} en lugar de {1}	{0}（原价 {1}）	{1} → {0}	{1} की जगह {0}
-Alertes de prix (notifications)	Price alerts	تنبيهات الأسعار	Alertas de precio	价格提醒	価格アラート	दाम अलर्ट
-{0} passager(s)	{0} passenger(s)	{0} مسافر	{0} pasajero(s)	{0} 位乘客	{0}名	{0} यात्री
-{0} / pers.	{0} / person	{0} / للشخص	{0} / persona	{0}/人	{0}/人	{0} / व्यक्ति
-Dernier prix : {0}	Last price: {0}	آخر سعر: {0}	Último precio: {0}	最新价格：{0}	最新価格：{0}	पिछला दाम: {0}
-Vérifié le {0}	Checked on {0}	تم التحقق في {0}	Comprobado el {0}	检查于 {0}	{0} に確認	{0} को जाँचा गया
-Vol {0}	Flight {0}	رحلة {0}	Vuelo {0}	航班 {0}	便 {0}	उड़ान {0}
-Lien non pris en charge	Unsupported link	رابط غير مدعوم	Enlace no compatible	不支持的链接	対応していないリンクです	असमर्थित लिंक
-Page extérieure bloquée pour votre sécurité.	External page blocked for your safety.	تم حظر صفحة خارجية حفاظًا على أمانك.	Página externa bloqueada por tu seguridad.	为了您的安全，已阻止外部页面。	安全のため外部ページをブロックしました。	आपकी सुरक्षा के लिए बाहरी पेज रोका गया।
-Paiement reçu, mais la réservation n'est pas encore confirmée. Réessayez : aucun nouveau paiement ne sera demandé.	Payment received, but the booking isn't confirmed yet. Try again: no new payment will be requested.	تم استلام الدفع، لكن الحجز لم يُؤكَّد بعد. أعد المحاولة: لن يُطلب دفع جديد.	Pago recibido, pero la reserva aún no está confirmada. Inténtalo de nuevo: no se pedirá un nuevo pago.	已收到付款，但预订尚未确认。请重试：不会再次扣款。	お支払いは完了しましたが、予約はまだ確定していません。再試行してください（再度の支払いはありません）。	भुगतान मिल गया, पर बुकिंग अभी पुष्ट नहीं हुई। फिर कोशिश करें: नया भुगतान नहीं माँगा जाएगा।
-Réessayer la réservation	Retry the booking	إعادة محاولة الحجز	Reintentar la reserva	重试预订	予約を再試行	बुकिंग फिर से करें
-Réservation payée à confirmer : {0}	Paid booking to confirm: {0}	حجز مدفوع بانتظار التأكيد: {0}	Reserva pagada por confirmar: {0}	待确认的已付款预订：{0}	確認待ちの支払い済み予約：{0}	पुष्टि के लिए भुगतान की गई बुकिंग: {0}
-Le paiement a été reçu mais la confirmation n'est pas arrivée. Finalisez-la : aucun nouveau paiement ne sera demandé.	The payment was received but the confirmation didn't arrive. Complete it: no new payment will be requested.	تم استلام الدفع لكن التأكيد لم يصل. أكمله: لن يُطلب دفع جديد.	El pago se recibió pero la confirmación no llegó. Finalízala: no se pedirá un nuevo pago.	已收到付款但未收到确认。请完成确认：不会再次扣款。	お支払いは受け付けましたが確認が届いていません。手続きを完了してください（再度の支払いはありません）。	भुगतान मिल गया पर पुष्टि नहीं आई। इसे पूरा करें: नया भुगतान नहीं माँगा जाएगा।
-Météo à {0}	Weather in {0}	الطقس في {0}	El tiempo en {0}	{0} 天气	{0}の天気	{0} का मौसम
-Prévisions disponibles 16 jours avant le départ.	Forecast available 16 days before departure.	تتوفر التوقعات قبل 16 يومًا من المغادرة.	Previsión disponible 16 días antes de la salida.	出发前 16 天可查看天气预报。	天気予報は出発の16日前から表示されます。	पूर्वानुमान प्रस्थान से 16 दिन पहले उपलब्ध होगा।
-+ Ajouter un jour	+ Add a day	+ إضافة يوم	+ Añadir un día	+ 添加一天	+ 日を追加	+ एक दिन जोड़ें
-+ Ajouter une dépense	+ Add an expense	+ إضافة مصروف	+ Añadir un gasto	+ 添加支出	+ 支出を追加	+ खर्च जोड़ें
-+ Ajouter une étape	+ Add a stop	+ إضافة محطة	+ Añadir una parada	+ 添加一站	+ 立ち寄り先を追加	+ पड़ाव जोड़ें
-+ Créer un programme	+ Create an itinerary	+ إنشاء برنامج	+ Crear un programa	+ 创建行程	+ プランを作成	+ कार्यक्रम बनाएँ
-15 à 20 % attendus au restaurant	15 to 20% expected at restaurants	يُتوقع 15 إلى 20٪ في المطاعم	Se espera un 15 a 20 % en restaurantes	餐厅通常需付 15–20% 小费	レストランでは15〜20％が期待されます	रेस्तराँ में 15 से 20% अपेक्षित
-Adaptateur de prise	Plug adapter	محوّل قابس	Adaptador de enchufe	插头转换器	変換プラグ	प्लग एडाप्टर
-Adaptateur nécessaire pour les prises françaises.	Adapter needed for French plugs.	يلزم محوّل للقوابس الفرنسية.	Se necesita adaptador para enchufes franceses.	法国插头需要转换器。	フランスのプラグには変換アダプターが必要です。	फ़्रांसीसी प्लग के लिए एडाप्टर ज़रूरी है।
-Ajouter un objet	Add an item	إضافة غرض	Añadir un objeto	添加物品	持ち物を追加	सामान जोड़ें
-Ambassade et consulat	Embassy and consulate	السفارة والقنصلية	Embajada y consulado	大使馆和领事馆	大使館・領事館	दूतावास और वाणिज्य दूतावास
-Ambulance	Ambulance	الإسعاف	Ambulancia	救护车	救急車	एम्बुलेंस
-Articles	Articles	مقالات	Artículos	文章	記事	लेख
-Assurance voyage	Travel insurance	تأمين السفر	Seguro de viaje	旅行保险	旅行保険	यात्रा बीमा
-Au secours !	Help!	النجدة!	¡Socorro!	救命！	助けて！	बचाओ!
-Aucun séjour pour l'instant.	No trips yet.	لا توجد رحلات حتى الآن.	Aún no hay viajes.	暂无行程。	まだ旅行はありません。	अभी कोई यात्रा नहीं।
-Bagages pour {0}	Packing for {0}	حقيبة السفر إلى {0}	Equipaje para {0}	{0} 行李清单	{0}の持ち物	{0} के लिए सामान
-Batterie externe	Power bank	بطارية خارجية	Batería externa	充电宝	モバイルバッテリー	पावर बैंक
-Bonjour	Hello	مرحبا	Hola	你好	こんにちは	नमस्ते
-Bonnet, gants et écharpe	Hat, gloves and scarf	قبعة وقفازات ووشاح	Gorro, guantes y bufanda	帽子、手套和围巾	ニット帽・手袋・マフラー	टोपी, दस्ताने और मफ़लर
-Carte : © contributeurs OpenStreetMap	Map: © OpenStreetMap contributors	الخريطة: © مساهمو OpenStreetMap	Mapa: © colaboradores de OpenStreetMap	地图：© OpenStreetMap 贡献者	地図：© OpenStreetMap 寄稿者	मानचित्र: © OpenStreetMap योगदानकर्ता
-Carte bancaire et un peu d'espèces	Bank card and some cash	بطاقة بنكية وبعض النقود	Tarjeta bancaria y algo de efectivo	银行卡和少量现金	クレジットカードと少しの現金	बैंक कार्ड और थोड़ी नकदी
-Chapeau ou casquette	Hat or cap	قبعة	Sombrero o gorra	帽子	帽子	टोपी
-Chaussures confortables pour marcher	Comfortable walking shoes	أحذية مريحة للمشي	Calzado cómodo para caminar	舒适的步行鞋	歩きやすい靴	चलने के लिए आरामदायक जूते
-Chaussures de marche	Hiking boots	أحذية للمشي الطويل	Botas de montaña	登山鞋	トレッキングシューズ	हाइकिंग जूते
-Cherchez une ville dans « Lieux », ou créez un séjour, pour voir ses infos pratiques.	Search for a city in "Places", or create a trip, to see its practical info.	ابحث عن مدينة في «الأماكن» أو أنشئ رحلة لرؤية معلوماتها العملية.	Busca una ciudad en «Lugares», o crea un viaje, para ver su información práctica.	在“地点”中搜索城市或创建行程，即可查看实用信息。	「スポット」で都市を検索するか旅行を作成すると、実用情報が表示されます。	व्यावहारिक जानकारी देखने के लिए "जगहें" में शहर खोजें या यात्रा बनाएँ।
-Combien ça coûte ?	How much is it?	بكم هذا؟	¿Cuánto cuesta?	多少钱？	いくらですか？	यह कितने का है?
-Convertisseur	Converter	المحوّل	Conversor	换算器	通貨換算	कन्वर्टर
-Coordonnées de l'ambassade ou du consulat de {0} sur place.	Contact details of the {0} embassy or consulate on site.	بيانات سفارة أو قنصلية {0} في الوجهة.	Datos de contacto de la embajada o el consulado de {0} en destino.	当地 {0} 大使馆或领事馆的联系方式。	現地の{0}大使館・領事館の連絡先。	वहाँ {0} के दूतावास या वाणिज्य दूतावास का पता।
-Crème solaire	Sunscreen	واقي الشمس	Protector solar	防晒霜	日焼け止め	सनस्क्रीन
-Créer mon séjour sur mesure	Create my tailor-made trip	أنشئ رحلتي حسب الطلب	Crear mi viaje a medida	定制我的行程	オーダーメイドの旅を作る	मेरी मनपसंद यात्रा बनाएँ
-Documents	Documents	المستندات	Documentos	证件	書類	दस्तावेज़
-Dépassement de {0}	Over by {0}	تجاوز بمقدار {0}	Exceso de {0}	超支 {0}	{0}オーバー	{0} ज़्यादा
-Dépenses sur place	On-site spending	المصاريف في المكان	Gastos en destino	当地支出	現地での支出	वहाँ का खर्च
-Dépensé : {0} sur {1} prévus	Spent: {0} of {1} planned	المصروف: {0} من أصل {1} مخطط	Gastado: {0} de {1} previstos	已支出：{0} / 预计 {1}	支出：予定{1}のうち{0}	खर्च: {1} में से {0}
-Enregistrez ce séjour dans « Mes voyages » pour suivre vos dépenses.	Save this trip in "My trips" to track your spending.	احفظ هذه الرحلة في «رحلاتي» لتتبع مصاريفك.	Guarda este viaje en «Mis viajes» para seguir tus gastos.	将此行程保存到“我的行程”即可记录支出。	支出を記録するには、この旅行を「マイトリップ」に保存してください。	खर्च ट्रैक करने के लिए इस यात्रा को "मेरी यात्राएँ" में सहेजें।
-Environ 10 % au restaurant	About 10% at restaurants	نحو 10٪ في المطاعم	Alrededor del 10 % en restaurantes	餐厅约 10% 小费	レストランでは約10％	रेस्तराँ में लगभग 10%
-Excusez-moi	Excuse me	عذرًا	Disculpe	对不起	すみません	माफ़ कीजिए
-Gourde	Water bottle	قارورة ماء	Cantimplora	水壶	水筒	पानी की बोतल
-Heure (HH:MM)	Time (HH:MM)	الوقت (HH:MM)	Hora (HH:MM)	时间（HH:MM）	時刻（HH:MM）	समय (HH:MM)
-Il reste {0}	{0} left	يتبقى {0}	Quedan {0}	还剩 {0}	残り{0}	{0} बचे
-Jeux et en-cas pour les enfants	Games and snacks for the kids	ألعاب ووجبات خفيفة للأطفال	Juegos y meriendas para los niños	给孩子的游戏和零食	子ども用のおもちゃとおやつ	बच्चों के लिए खेल और नाश्ता
-L'addition, s'il vous plaît	The bill, please	الحساب من فضلك	La cuenta, por favor	请结账	お会計をお願いします	बिल दीजिए
-Lessive de voyage	Travel laundry wash	منظف غسيل للسفر	Detergente de viaje	旅行洗衣液	旅行用洗剤	यात्रा डिटर्जेंट
-Libellé (facultatif)	Label (optional)	الوصف (اختياري)	Concepto (opcional)	备注（可选）	メモ（任意）	विवरण (वैकल्पिक)
-Lieu ou activité	Place or activity	مكان أو نشاط	Lugar o actividad	地点或活动	場所・アクティビティ	जगह या गतिविधि
-Lieux	Places	الأماكن	Lugares	地点	スポット	जगहें
-Lieux à visiter	Places to visit	أماكن للزيارة	Lugares que visitar	值得游览的地方	見どころ	घूमने की जगहें
-Lunettes de soleil	Sunglasses	نظارات شمسية	Gafas de sol	太阳镜	サングラス	धूप का चश्मा
-Maillot de bain	Swimsuit	ملابس سباحة	Bañador	泳衣	水着	स्विमसूट
-Manteau chaud	Warm coat	معطف دافئ	Abrigo	保暖外套	暖かいコート	गर्म कोट
-Merci	Thank you	شكرًا	Gracias	谢谢	ありがとう	धन्यवाद
-Mes ajouts	My additions	إضافاتي	Mis añadidos	我添加的	追加したもの	मेरे जोड़े हुए
-Modifier l'étape	Edit stop	تعديل المحطة	Editar la parada	编辑这一站	立ち寄り先を編集	पड़ाव बदलें
-Mon expérience à {0}	My experience in {0}	تجربتي في {0}	Mi experiencia en {0}	我在 {0} 的体验	{0}での体験	{0} में मेरा अनुभव
-Monnaie et convertisseur	Currency and converter	العملة والمحوّل	Moneda y conversor	货币与换算	通貨と換算	मुद्रा और कन्वर्टर
-Montant	Amount	المبلغ	Importe	金额	金額	राशि
-Médicaments personnels	Personal medication	الأدوية الشخصية	Medicamentos personales	个人药品	常備薬	निजी दवाइयाँ
-Note (facultatif)	Note (optional)	ملاحظة (اختياري)	Nota (opcional)	备注（可选）	メモ（任意）	नोट (वैकल्पिक)
-Nouvelle dépense	New expense	مصروف جديد	Nuevo gasto	新支出	新しい支出	नया खर्च
-Nouvelle étape	New stop	محطة جديدة	Nueva parada	新的一站	新しい立ち寄り先	नया पड़ाव
-Numéros d'urgence	Emergency numbers	أرقام الطوارئ	Números de emergencia	紧急电话	緊急連絡先	आपातकालीन नंबर
-On arrondit ou on laisse 5 à 10 %	Round up or leave 5 to 10%	يُقرَّب المبلغ أو يُترك 5 إلى 10٪	Se redondea o se deja un 5 a 10 %	凑整或给 5–10%	端数を切り上げるか5〜10％	राशि पूरी कर दें या 5 से 10% दें
-Où est… ?	Where is…?	أين…؟	¿Dónde está…?	…在哪里？	…はどこですか？	… कहाँ है?
-Parapluie ou imperméable	Umbrella or raincoat	مظلة أو معطف مطر	Paraguas o impermeable	雨伞或雨衣	傘またはレインコート	छाता या रेनकोट
-Pas de pourboire : il peut même vexer	No tipping: it can even offend	لا بقشيش: قد يُعدّ إهانة	Sin propina: puede incluso ofender	不给小费：甚至可能冒犯对方	チップは不要：失礼になることも	टिप नहीं: इससे बुरा भी लग सकता है
-Pas encore d'infos pratiques pour ce pays.	No practical info for this country yet.	لا توجد معلومات عملية لهذا البلد بعد.	Aún no hay información práctica para este país.	暂无该国家的实用信息。	この国の実用情報はまだありません。	इस देश की व्यावहारिक जानकारी अभी नहीं है।
-Passeport ou carte d'identité	Passport or ID card	جواز السفر أو بطاقة الهوية	Pasaporte o DNI	护照或身份证	パスポートまたは身分証	पासपोर्ट या पहचान पत्र
-Petit sac à dos	Small backpack	حقيبة ظهر صغيرة	Mochila pequeña	小背包	小さめのリュック	छोटा बैग
-Petite trousse de premiers secours	Small first-aid kit	حقيبة إسعافات أولية صغيرة	Pequeño botiquín	小型急救包	簡易救急セット	छोटी प्राथमिक चिकित्सा किट
-Phrases utiles ({0})	Useful phrases ({0})	عبارات مفيدة ({0})	Frases útiles ({0})	实用短语（{0}）	便利なフレーズ（{0}）	उपयोगी वाक्य ({0})
-Police	Police	الشرطة	Policía	警察	警察	पुलिस
-Pompiers	Fire brigade	الإطفاء	Bomberos	消防	消防	दमकल
-Pourboire	Tipping	البقشيش	Propina	小费	チップ	टिप
-Prises françaises compatibles.	French plugs fit.	القوابس الفرنسية متوافقة.	Los enchufes franceses son compatibles.	法国插头可直接使用。	フランスのプラグがそのまま使えます。	फ़्रांसीसी प्लग चल जाएँगे।
-Prises {0} · {1} V	Plugs {0} · {1} V	القوابس {0} · {1} فولت	Enchufes {0} · {1} V	插头 {0} · {1} 伏	プラグ {0} · {1} V	प्लग {0} · {1} V
-Programme jour par jour selon vos goûts, la météo et votre budget	Day-by-day plan based on your tastes, the weather and your budget	برنامج يومي حسب أذواقك والطقس وميزانيتك	Programa día a día según tus gustos, el tiempo y tu presupuesto	根据您的喜好、天气和预算逐日安排	好み・天気・予算に合わせた日ごとのプラン	आपकी पसंद, मौसम और बजट के अनुसार दिन-ब-दिन कार्यक्रम
-Prévoyez le coût de votre séjour, puis suivez vos dépenses sur place.	Plan the cost of your trip, then track your spending there.	خطط لتكلفة رحلتك ثم تابع مصاريفك هناك.	Planifica el coste de tu viaje y luego sigue tus gastos allí.	规划行程费用，并在当地记录支出。	旅の費用を見積もり、現地では支出を記録しましょう。	यात्रा का खर्च तय करें, फिर वहाँ खर्च ट्रैक करें।
-Pull ou veste	Sweater or jacket	كنزة أو سترة	Jersey o chaqueta	毛衣或外套	セーターまたは上着	स्वेटर या जैकेट
-Pyjama	Pyjamas	ملابس النوم	Pijama	睡衣	パジャマ	पजामा
-Quel séjour préparez-vous ?	What trip are you planning?	ما الرحلة التي تخطط لها؟	¿Qué viaje estás preparando?	您在计划什么旅行？	どんな旅を計画中ですか？	आप कौन सी यात्रा की योजना बना रहे हैं?
-Rechercher l'ambassade ›	Find the embassy ›	ابحث عن السفارة ›	Buscar la embajada ›	查找大使馆 ›	大使館を検索 ›	दूतावास खोजें ›
-Réservations enregistrées hors connexion	Bookings saved offline	الحجوزات محفوظة بلا اتصال	Reservas guardadas sin conexión	离线保存预订信息	予約をオフライン保存	बुकिंग ऑफ़लाइन सहेजी हुई
-S'il vous plaît	Please	من فضلك	Por favor	请	お願いします	कृपया
-Sandales ou tongs	Sandals or flip-flops	صنادل أو شبشب	Sandalias o chanclas	凉鞋或人字拖	サンダル	सैंडल या चप्पल
-Selon la météo	Depending on the weather	حسب الطقس	Según el tiempo	根据天气	天気に合わせて	मौसम के अनुसार
-Selon vos activités	Depending on your activities	حسب أنشطتك	Según tus actividades	根据您的活动	アクティビティに合わせて	आपकी गतिविधियों के अनुसार
-Service compris ; on laisse la petite monnaie si on est satisfait	Service included; leave small change if you're happy	الخدمة مشمولة؛ تُترك الفكة عند الرضا	Servicio incluido; se deja el cambio si se está satisfecho	已含服务费；满意可留些零钱	サービス料込み。満足なら小銭を置く程度	सेवा शामिल; संतुष्ट हों तो छुट्टे पैसे छोड़ दें
-Serviette de plage	Beach towel	منشفة شاطئ	Toalla de playa	沙滩巾	ビーチタオル	बीच तौलिया
-Sous-vêtements et chaussettes	Underwear and socks	ملابس داخلية وجوارب	Ropa interior y calcetines	内衣和袜子	下着と靴下	अंडरवियर और मोज़े
-Tenue couvrant épaules et genoux (lieux de culte)	Outfit covering shoulders and knees (places of worship)	ملابس تغطي الكتفين والركبتين (دور العبادة)	Ropa que cubra hombros y rodillas (lugares de culto)	遮住肩膀和膝盖的衣服（宗教场所）	肩と膝が隠れる服（宗教施設）	कंधे और घुटने ढकने वाले कपड़े (धार्मिक स्थल)
-Tenues de jour	Day outfits	ملابس النهار	Ropa de día	日常衣物	日中の服	दिन के कपड़े
-Toilette et santé	Toiletries and health	النظافة والصحة	Aseo y salud	洗漱与健康	洗面用具・健康	प्रसाधन और स्वास्थ्य
-Trousse de toilette	Toiletry bag	حقيبة أدوات النظافة	Neceser	洗漱包	洗面ポーチ	प्रसाधन किट
-Téléphone et chargeur	Phone and charger	الهاتف والشاحن	Teléfono y cargador	手机和充电器	スマホと充電器	फ़ोन और चार्जर
-Une tenue pour sortir le soir	An outfit for evenings out	ملابس للسهر	Ropa para salir de noche	一套晚上外出的衣服	夜のお出かけ用の服	शाम को बाहर जाने के कपड़े
-Urgences	Emergency	الطوارئ	Emergencias	紧急	緊急	आपातकाल
-Veste légère	Light jacket	سترة خفيفة	Chaqueta ligera	薄外套	薄手の上着	हल्की जैकेट
-Vêtements	Clothes	الملابس	Ropa	衣物	衣類	कपड़े
-ambassade	embassy	سفارة	embajada	大使馆	大使館	दूतावास
-{0} / {1} prêts	{0} / {1} packed	{0} / {1} جاهزة	{0} / {1} listos	已备 {0} / {1}	{0} / {1} 準備済み	{0} / {1} तैयार
-{0} dépense(s) notée(s)	{0} expense(s) recorded	{0} مصروف مسجل	{0} gasto(s) anotado(s)	已记录 {0} 笔支出	{0}件の支出	{0} खर्च दर्ज
-Écouteurs	Earphones	سماعات	Auriculares	耳机	イヤホン	इयरफ़ोन
-Électricité	Electricity	الكهرباء	Electricidad	电源	電源	बिजली
-Électronique	Electronics	الإلكترونيات	Electrónica	电子产品	電子機器	इलेक्ट्रॉनिक्स
-ℹ️ Infos pratiques	ℹ️ Practical info	ℹ️ معلومات عملية	ℹ️ Información práctica	ℹ️ 实用信息	ℹ️ 実用情報	ℹ️ व्यावहारिक जानकारी
-↑ Monter	↑ Move up	↑ للأعلى	↑ Subir	↑ 上移	↑ 上へ	↑ ऊपर
-↓ Descendre	↓ Move down	↓ للأسفل	↓ Bajar	↓ 下移	↓ 下へ	↓ नीचे
-✎ Modifier	✎ Edit	✎ تعديل	✎ Editar	✎ 编辑	✎ 編集	✎ बदलें
-✕ Supprimer	✕ Delete	✕ حذف	✕ Eliminar	✕ 删除	✕ 削除	✕ हटाएँ
-✨ Créer mon séjour	✨ Create my trip	✨ أنشئ رحلتي	✨ Crear mi viaje	✨ 创建我的行程	✨ 旅を作る	✨ मेरी यात्रा बनाएँ
-💰 Budget et dépenses	💰 Budget and spending	💰 الميزانية والمصاريف	💰 Presupuesto y gastos	💰 预算与支出	💰 予算と支出	💰 बजट और खर्च
-🧳 Bagages	🧳 Packing	🧳 الأمتعة	🧳 Equipaje	🧳 行李	🧳 持ち物	🧳 सामान
-Libanais et oriental	Lebanese and Middle Eastern	لبناني وشرقي	Libanés y oriental	黎巴嫩及中东菜	レバノン・中東料理	लेबनानी और मध्य-पूर्वी
-cuisine orientale	Middle Eastern food	المطبخ الشرقي	cocina oriental	中东菜	中東料理	मध्य-पूर्वी खाना
-Plages animées	Lively beaches	شواطئ نابضة بالحياة	Playas animadas	热闹的海滩	にぎやかなビーチ	चहल-पहल वाले समुद्र तट
-plages animées	lively beaches	شواطئ نابضة بالحياة	playas animadas	热闹的海滩	にぎやかなビーチ	चहल-पहल वाले समुद्र तट
-Criques et plages calmes	Coves and quiet beaches	خلجان وشواطئ هادئة	Calas y playas tranquilas	小海湾和安静的海滩	入り江と静かなビーチ	खाड़ियाँ और शांत समुद्र तट
-criques	coves	خلجان	calas	小海湾	入り江	खाड़ियाँ
-+ Nouveau voyage	+ New trip	+ رحلة جديدة	+ Nuevo viaje	+ 新建行程	+ 新しい旅行	+ नई यात्रा
-Ajouter	Add	إضافة	Añadir	添加	追加	जोड़ें
-Dates et voyageurs	Dates and travellers	التواريخ والمسافرون	Fechas y viajeros	日期和旅客	日程と人数	तारीखें और यात्री
-Dates à préciser	Dates to be set	التواريخ غير محددة	Fechas por definir	日期待定	日程未定	तारीखें तय करनी हैं
-Informations indicatives, à vérifier avant le départ. Taux de change du jour : open.er-api.com.	Indicative information, to be checked before departure. Today's exchange rates: open.er-api.com.	معلومات إرشادية يجب التحقق منها قبل السفر. أسعار الصرف اليوم: open.er-api.com.	Información orientativa, a verificar antes de salir. Tipos de cambio del día: open.er-api.com.	信息仅供参考，出发前请核实。当日汇率：open.er-api.com。	参考情報です。出発前にご確認ください。本日の為替レート：open.er-api.com。	जानकारी अनुमानित है, यात्रा से पहले जाँच लें। आज की विनिमय दरें: open.er-api.com।
-Nouveau voyage	New trip	رحلة جديدة	Nuevo viaje	新建行程	新しい旅行	नई यात्रा
-Personnaliser en détail ›	Customise in detail ›	تخصيص بالتفصيل ›	Personalizar en detalle ›	详细定制 ›	詳しく設定 ›	विस्तार से चुनें ›
-Prix indicatifs vus récemment (Travelpayouts) : le prix final est confirmé sur le site de réservation.	Indicative prices seen recently (Travelpayouts): the final price is confirmed on the booking site.	أسعار إرشادية شوهدت مؤخرًا (Travelpayouts): يُؤكَّد السعر النهائي على موقع الحجز.	Precios orientativos vistos recientemente (Travelpayouts): el precio final se confirma en el sitio de reserva.	近期参考价格（Travelpayouts）：最终价格以预订网站为准。	最近の参考価格（Travelpayouts）。最終価格は予約サイトで確定します。	हाल में दिखी अनुमानित कीमतें (Travelpayouts): अंतिम कीमत बुकिंग साइट पर तय होगी।
-Suggestions selon la durée, la météo prévue et vos activités.	Suggestions based on the length of stay, the forecast and your activities.	اقتراحات حسب المدة والطقس المتوقع وأنشطتك.	Sugerencias según la duración, la previsión y tus actividades.	根据行程长短、天气预报和活动给出的建议。	日数・天気予報・アクティビティに合わせた提案です。	अवधि, मौसम पूर्वानुमान और गतिविधियों के आधार पर सुझाव।
-Version rapide ›	Quick version ›	النسخة السريعة ›	Versión rápida ›	快速版 ›	かんたん版 ›	छोटा संस्करण ›
-Voyage créé : {0}	Trip created: {0}	تم إنشاء الرحلة: {0}	Viaje creado: {0}	已创建行程：{0}	旅行を作成しました：{0}	यात्रा बनाई गई: {0}
-durée estimée	estimated time	مدة تقديرية	duración estimada	预计时长	所要時間の目安	अनुमानित समय
-prévisions Open-Meteo	Open-Meteo forecast	توقعات Open-Meteo	previsión de Open-Meteo	Open-Meteo 预报	Open-Meteo の予報	Open-Meteo पूर्वानुमान
-Étape ajoutée	Added stop	محطة مضافة	Parada añadida	自行添加的一站	追加した立ち寄り先	जोड़ा गया पड़ाव
-✓ Enregistré dans votre voyage, mis à jour à chaque changement ›	✓ Saved in your trip, updated with every change ›	✓ محفوظ في رحلتك ويُحدَّث مع كل تغيير ›	✓ Guardado en tu viaje, actualizado con cada cambio ›	✓ 已保存到行程，每次修改自动更新 ›	✓ 旅行に保存済み。変更のたびに更新されます ›	✓ आपकी यात्रा में सहेजा गया, हर बदलाव पर अपडेट ›
-✨ Créer le programme sur mesure	✨ Create a tailor-made itinerary	✨ إنشاء برنامج حسب الطلب	✨ Crear el programa a medida	✨ 创建定制行程	✨ オーダーメイドのプランを作る	✨ मनपसंद कार्यक्रम बनाएँ
-✨ Refaire le programme sur mesure	✨ Redo the tailor-made itinerary	✨ إعادة إنشاء البرنامج	✨ Rehacer el programa a medida	✨ 重新定制行程	✨ プランを作り直す	✨ कार्यक्रम दोबारा बनाएँ
-Musées	Museums	متاحف	Museos	博物馆	美術館・博物館	संग्रहालय
-Monuments	Monuments	معالم	Monumentos	古迹	名所・史跡	स्मारक
-Attractions	Attractions	معالم سياحية	Atracciones	景点	アトラクション	आकर्षण
-Parcs & jardins	Parks & gardens	حدائق ومنتزهات	Parques y jardines	公园与花园	公園・庭園	पार्क और बगीचे
-Plages	Beaches	شواطئ	Playas	海滩	ビーチ	समुद्र तट
-Restaurants	Restaurants	مطاعم	Restaurantes	餐厅	レストラン	रेस्टोरेंट
-Cafés	Cafés	مقاهٍ	Cafeterías	咖啡馆	カフェ	कैफ़े
-Bars	Bars	حانات	Bares	酒吧	バー	बार
-Boîtes de nuit	Nightclubs	نوادٍ ليلية	Discotecas	夜店	ナイトクラブ	नाइटक्लब
-Shopping & marchés	Shopping & markets	تسوّق وأسواق	Compras y mercados	购物与市场	ショッピング・市場	शॉपिंग और बाज़ार
-Visites & excursions	Tours & trips	جولات ورحلات	Visitas y excursiones	导览与短途游	ツアー・小旅行	टूर और सैर
-Musées, attractions et restaurants de la ville. Réservez vos billets à l'avance pour éviter la file d'attente.	Museums, attractions and restaurants in the city. Book tickets ahead to skip the line.	متاحف ومعالم ومطاعم المدينة. احجز تذاكرك مسبقًا لتجنب الطوابير.	Museos, atracciones y restaurantes de la ciudad. Reserva con antelación para evitar colas.	城市里的博物馆、景点和餐厅。提前订票免排队。	街の美術館、観光地、レストラン。事前予約で行列を回避。	शहर के संग्रहालय, आकर्षण और रेस्टोरेंट। कतार से बचने के लिए पहले टिकट बुक करें।
-Ville	City	المدينة	Ciudad	城市	都市	शहर
-Ex. Paris, Alger, Rome…	E.g. Paris, Algiers, Rome…	مثال: باريس، الجزائر، روما…	Ej. París, Argel, Roma…	例如：巴黎、阿尔及尔、罗马…	例：パリ、アルジェ、ローマ…	जैसे पेरिस, अल्जीयर्स, रोम…
-Indiquez une ville.	Enter a city.	أدخل مدينة.	Indica una ciudad.	请输入城市。	都市を入力してください。	एक शहर लिखें।
-Les visites guidées et excursions sont proposées par des organisateurs : comparez-les ici.	Guided tours and trips are offered by organisers: compare them here.	يقدّم المنظمون الجولات المصحوبة بمرشد والرحلات: قارن بينها هنا.	Las visitas guiadas y excursiones las ofrecen organizadores: compáralas aquí.	导览和短途游由组织方提供：在此比较。	ガイドツアーや小旅行は主催者が提供：ここで比較できます。	गाइडेड टूर और सैर आयोजक देते हैं: यहाँ तुलना करें।
-Recherche des lieux…	Finding places…	جارٍ البحث عن الأماكن…	Buscando lugares…	正在查找地点…	スポットを検索中…	जगहें खोज रहे हैं…
-Recherche de la ville…	Finding the city…	جارٍ البحث عن المدينة…	Buscando la ciudad…	正在查找城市…	都市を検索中…	शहर खोज रहे हैं…
-Recherche des meilleurs lieux…	Finding the best places…	جارٍ البحث عن أفضل الأماكن…	Buscando los mejores lugares…	正在查找最佳地点…	おすすめスポットを検索中…	सबसे अच्छी जगहें खोज रहे हैं…
-Recherche sur la carte…	Searching the map…	جارٍ البحث في الخريطة…	Buscando en el mapa…	正在地图上搜索…	地図で検索中…	नक्शे पर खोज रहे हैं…
-Récupération des notes…	Fetching ratings…	جارٍ جلب التقييمات…	Obteniendo valoraciones…	正在获取评分…	評価を取得中…	रेटिंग ला रहे हैं…
-Afficher les lieux	Show places	اعرض الأماكن	Mostrar lugares	显示地点	スポットを表示	जगहें दिखाएँ
-Classés par notoriété : nombre de langues dans lesquelles Wikipédia consacre un article au lieu.	Ranked by fame: the number of languages in which Wikipedia has an article about the place.	مرتبة حسب الشهرة: عدد اللغات التي تخصص فيها ويكيبيديا مقالًا للمكان.	Ordenados por fama: número de idiomas en los que Wikipedia dedica un artículo al lugar.	按知名度排序：维基百科以多少种语言介绍该地点。	知名度順：その場所の記事があるウィキペディアの言語数。	प्रसिद्धि के क्रम में: कितनी भाषाओं में विकिपीडिया पर इस जगह का लेख है।
-Les adresses sélectionnées par le guide de voyage Wikivoyage, dans l'ordre du guide.	Places selected by the Wikivoyage travel guide, in the guide's order.	عناوين اختارها دليل السفر ويكي رحلات، بترتيب الدليل.	Direcciones seleccionadas por la guía Wikivoyage, en el orden de la guía.	由维基导游精选的地点，按指南顺序排列。	旅行ガイド Wikivoyage が選んだスポット（ガイド掲載順）。	विकियात्रा गाइड द्वारा चुनी जगहें, गाइड के क्रम में।
-Classés selon les notes et avis {0}	Ranked by ratings and reviews from {0}	مرتبة حسب تقييمات ومراجعات {0}	Ordenados por valoraciones y opiniones de {0}	按 {0} 的评分和评论排序	{0} の評価・口コミ順	{0} की रेटिंग और समीक्षाओं के क्रम में
- et les recommandations du guide Wikivoyage.	 and Wikivoyage guide recommendations.	 وتوصيات دليل ويكي رحلات.	 y las recomendaciones de la guía Wikivoyage.	以及维基导游的推荐。	と Wikivoyage のおすすめ。	 और विकियात्रा गाइड की सिफ़ारिशें।
-Adresses du guide Wikivoyage, complétées par la carte OpenStreetMap.	Wikivoyage guide places, completed with the OpenStreetMap map.	عناوين دليل ويكي رحلات، مكمّلة بخريطة OpenStreetMap.	Direcciones de la guía Wikivoyage, completadas con el mapa de OpenStreetMap.	维基导游的地点，并以 OpenStreetMap 地图补充。	Wikivoyage のスポットに OpenStreetMap の地図情報を追加。	विकियात्रा की जगहें, OpenStreetMap नक्शे से पूरी की गईं।
-Le guide ne couvre pas assez cette ville : adresses trouvées sur la carte OpenStreetMap.	The guide doesn't cover this city enough: places found on the OpenStreetMap map.	لا يغطي الدليل هذه المدينة بما يكفي: عناوين من خريطة OpenStreetMap.	La guía no cubre bien esta ciudad: direcciones encontradas en el mapa de OpenStreetMap.	指南对该城市覆盖不足：地点来自 OpenStreetMap 地图。	ガイドの情報が少ないため OpenStreetMap の地図から表示しています。	गाइड में इस शहर की जानकारी कम है: जगहें OpenStreetMap नक्शे से।
-Limite gratuite atteinte pour {0} : relais pris par {1}.	Free limit reached for {0}: {1} has taken over.	تم بلوغ الحد المجاني لـ {0}: تولّى {1} المهمة.	Límite gratuito alcanzado para {0}: {1} toma el relevo.	{0} 免费额度已用完：已切换至 {1}。	{0} の無料枠に到達：{1} に切り替えました。	{0} की मुफ़्त सीमा पूरी: अब {1} उपयोग हो रहा है।
-Limite gratuite atteinte pour {0}.	Free limit reached for {0}.	تم بلوغ الحد المجاني لـ {0}.	Límite gratuito alcanzado para {0}.	{0} 免费额度已用完。	{0} の無料枠に到達しました。	{0} की मुफ़्त सीमा पूरी हुई।
-Données © les contributeurs d'OpenStreetMap, Wikipédia, Wikidata et Wikivoyage.	Data © OpenStreetMap, Wikipedia, Wikidata and Wikivoyage contributors.	البيانات © مساهمو OpenStreetMap وويكيبيديا وويكي بيانات وويكي رحلات.	Datos © colaboradores de OpenStreetMap, Wikipedia, Wikidata y Wikivoyage.	数据 © OpenStreetMap、维基百科、维基数据和维基导游贡献者。	データ © OpenStreetMap、ウィキペディア、ウィキデータ、Wikivoyage の貢献者。	डेटा © OpenStreetMap, विकिपीडिया, विकिडेटा और विकियात्रा योगदानकर्ता।
-Aucun lieu trouvé pour cette ville.	No places found for this city.	لم يُعثر على أماكن لهذه المدينة.	No se encontraron lugares para esta ciudad.	该城市未找到地点。	この都市のスポットは見つかりません。	इस शहर के लिए कोई जगह नहीं मिली।
-Recherche impossible : {0}	Search failed: {0}	تعذّر البحث: {0}	Búsqueda imposible: {0}	无法搜索：{0}	検索できません：{0}	खोज नहीं हो सकी: {0}
-Les serveurs de carte ne répondent pas (plus de 20 s). Réessayez dans un instant.	Map servers aren't responding (over 20 s). Try again in a moment.	خوادم الخرائط لا تستجيب (أكثر من 20 ثانية). حاول بعد قليل.	Los servidores de mapas no responden (más de 20 s). Inténtalo en un momento.	地图服务器无响应（超过 20 秒），请稍后重试。	地図サーバーが応答しません（20秒超）。しばらくして再試行してください。	नक्शा सर्वर जवाब नहीं दे रहे (20 सेकंड से ज़्यादा)। थोड़ी देर में कोशिश करें।
-Ville introuvable ou connexion indisponible. Choisissez la ville dans la liste proposée.	City not found or no connection. Choose the city from the list.	المدينة غير موجودة أو لا يوجد اتصال. اختر المدينة من القائمة.	Ciudad no encontrada o sin conexión. Elige la ciudad de la lista.	未找到城市或无网络。请从列表中选择城市。	都市が見つからないか接続できません。リストから選んでください。	शहर नहीं मिला या कनेक्शन नहीं। सूची से शहर चुनें।
-à {0} du centre	{0} from the centre	على بعد {0} من المركز	a {0} del centro	距市中心 {0}	中心から {0}	केंद्र से {0}
-Ouvert en ce moment	Open now	مفتوح الآن	Abierto ahora	营业中	営業中	अभी खुला
-Fermé en ce moment	Closed now	مغلق الآن	Cerrado ahora	已打烊	営業時間外	अभी बंद
-Réserver des billets	Book tickets	احجز التذاكر	Reservar entradas	预订门票	チケットを予約	टिकट बुक करें
-Billets sur {0}	Tickets on {0}	تذاكر على {0}	Entradas en {0}	在 {0} 购票	{0} でチケット	{0} पर टिकट
-Site officiel du lieu	Official site	الموقع الرسمي	Sitio oficial	官方网站	公式サイト	आधिकारिक साइट
-Voir	View	عرض	Ver	查看	見る	देखें
-Appeler	Call	اتصال	Llamar	致电	電話	कॉल करें
-Accès libre	Free entry	دخول مجاني	Acceso libre	免费进入	入場無料	मुफ़्त प्रवेश
-Itinéraire	Directions	الاتجاهات	Cómo llegar	路线	ルート	रास्ता
-En savoir plus (Wikipédia) ›	Learn more (Wikipedia) ›	اعرف المزيد (ويكيبيديا) ›	Más información (Wikipedia) ›	了解更多（维基百科）›	詳しく（ウィキペディア）›	और जानें (विकिपीडिया) ›
-Site officiel ›	Official site ›	الموقع الرسمي ›	Sitio oficial ›	官方网站 ›	公式サイト ›	आधिकारिक साइट ›
-★ Incontournable	★ Must-see	★ لا يُفوَّت	★ Imprescindible	★ 必去	★ 必見	★ ज़रूर देखें
-📘 Recommandé par le guide	📘 Recommended by the guide	📘 يوصي به الدليل	📘 Recomendado por la guía	📘 指南推荐	📘 ガイドおすすめ	📘 गाइड की सिफ़ारिश
-{0} avis	{0} reviews	{0} مراجعة	{0} opiniones	{0} 条评论	口コミ{0}件	{0} समीक्षाएँ
-Voir ›	View ›	عرض ›	Ver ›	查看 ›	見る ›	देखें ›
-Musée	Museum	متحف	Museo	博物馆	博物館	संग्रहालय
-Musée d'art	Art museum	متحف فني	Museo de arte	美术馆	美術館	कला संग्रहालय
-Musée national	National museum	متحف وطني	Museo nacional	国家博物馆	国立博物館	राष्ट्रीय संग्रहालय
-Galerie d'art	Art gallery	معرض فني	Galería de arte	画廊	ギャラリー	कला दीर्घा
-Musée militaire	Military museum	متحف عسكري	Museo militar	军事博物馆	軍事博物館	सैन्य संग्रहालय
-Musée des sciences	Science museum	متحف العلوم	Museo de ciencias	科学馆	科学館	विज्ञान संग्रहालय
-Musée d'histoire	History museum	متحف التاريخ	Museo de historia	历史博物馆	歴史博物館	इतिहास संग्रहालय
-Écomusée	Ecomuseum	متحف بيئي	Ecomuseo	生态博物馆	エコミュージアム	इको संग्रहालय
-Maison-musée	House museum	منزل متحف	Casa museo	故居博物馆	記念館	गृह संग्रहालय
-Château	Castle	قلعة	Castillo	城堡	城	किला
-Palais	Palace	قصر	Palacio	宫殿	宮殿	महल
-Cathédrale	Cathedral	كاتدرائية	Catedral	大教堂	大聖堂	कैथेड्रल
-Basilique	Basilica	بازيليكا	Basílica	圣殿	バシリカ	बेसिलिका
-Mosquée	Mosque	مسجد	Mezquita	清真寺	モスク	मस्जिद
-Synagogue	Synagogue	كنيس	Sinagoga	犹太教堂	シナゴーグ	सिनेगॉग
-Temple	Temple	معبد	Templo	寺庙	寺院	मंदिर
-Monastère	Monastery	دير	Monasterio	修道院	修道院	मठ
-Abbaye	Abbey	دير	Abadía	修道院	修道院	मठ
-Église	Church	كنيسة	Iglesia	教堂	教会	चर्च
-Monument	Monument	نصب	Monumento	纪念碑	記念碑	स्मारक
-Mémorial	Memorial	نصب تذكاري	Memorial	纪念馆	記念碑	स्मारक
-Site archéologique	Archaeological site	موقع أثري	Sitio arqueológico	考古遗址	遺跡	पुरातात्विक स्थल
-Fortification	Fortification	تحصين	Fortificación	要塞	要塞	किलेबंदी
-Fort	Fort	حصن	Fuerte	堡垒	砦	दुर्ग
-Tour	Tower	برج	Torre	塔	塔	मीनार
-Arc de triomphe	Triumphal arch	قوس النصر	Arco de triunfo	凯旋门	凱旋門	विजय द्वार
-Pont	Bridge	جسر	Puente	桥	橋	पुल
-Place	Square	ساحة	Plaza	广场	広場	चौक
-Attraction	Attraction	معلم سياحي	Atracción	景点	観光名所	आकर्षण
-Zoo	Zoo	حديقة حيوانات	Zoológico	动物园	動物園	चिड़ियाघर
-Parc d'attractions	Amusement park	مدينة ملاهٍ	Parque de atracciones	游乐园	遊園地	मनोरंजन पार्क
-Aquarium	Aquarium	حوض أسماك	Acuario	水族馆	水族館	मछलीघर
-Tour d'observation	Observation tower	برج مراقبة	Torre mirador	观景塔	展望塔	अवलोकन मीनार
-Lieu emblématique	Landmark	معلم بارز	Lugar emblemático	地标	ランドマーク	प्रसिद्ध स्थल
-Opéra	Opera house	دار أوبرا	Ópera	歌剧院	オペラハウス	ओपेरा हाउस
-Théâtre	Theatre	مسرح	Teatro	剧院	劇場	रंगमंच
-Salle de concert	Concert hall	قاعة حفلات	Sala de conciertos	音乐厅	コンサートホール	संगीत सभागार
-Stade	Stadium	ملعب	Estadio	体育场	スタジアム	स्टेडियम
-Parc	Park	حديقة	Parque	公园	公園	पार्क
-Parc urbain	City park	حديقة عامة	Parque urbano	城市公园	都市公園	शहरी पार्क
-Jardin botanique	Botanical garden	حديقة نباتية	Jardín botánico	植物园	植物園	वनस्पति उद्यान
-Jardin	Garden	حديقة	Jardín	花园	庭園	बगीचा
-Parc national	National park	حديقة وطنية	Parque nacional	国家公园	国立公園	राष्ट्रीय उद्यान
-Plage	Beach	شاطئ	Playa	海滩	ビーチ	समुद्र तट
-Restaurant	Restaurant	مطعم	Restaurante	餐厅	レストラン	रेस्टोरेंट
-Café	Café	مقهى	Café	咖啡馆	カフェ	कैफ़े
-Bar	Bar	حانة	Bar	酒吧	バー	बार
-Sortie de nuit	Night out	سهرة	Salida nocturna	夜生活	夜遊び	रात की सैर
-Boutique	Shop	متجر	Tienda	商店	ショップ	दुकान
-Shopping	Shopping	تسوّق	Compras	购物	ショッピング	शॉपिंग
-Marché	Market	سوق	Mercado	市场	市場	बाज़ार
-Centre commercial	Shopping centre	مركز تجاري	Centro comercial	购物中心	ショッピングセンター	शॉपिंग सेंटर
-Grand magasin	Department store	متجر كبير	Gran almacén	百货商店	百貨店	डिपार्टमेंट स्टोर
-Boîte de nuit	Nightclub	نادٍ ليلي	Discoteca	夜店	ナイトクラブ	नाइटक्लब
-Pub	Pub	حانة	Pub	酒馆	パブ	पब
-Lieu de culte	Place of worship	دار عبادة	Lugar de culto	宗教场所	礼拝所	पूजा स्थल
-Lieu à visiter	Place to visit	مكان للزيارة	Lugar para visitar	值得一去	見どころ	देखने लायक जगह
-Lieu	Place	مكان	Lugar	地点	スポット	जगह
-Point de vue	Viewpoint	إطلالة	Mirador	观景点	展望スポット	दृश्य बिंदु
-Ruines	Ruins	أطلال	Ruinas	遗迹	遺跡	खंडहर
-Porte de ville	City gate	باب المدينة	Puerta de la ciudad	城门	城門	नगर द्वार
-Manoir	Manor	قصر ريفي	Mansión	庄园	邸宅	हवेली
-Réserve naturelle	Nature reserve	محمية طبيعية	Reserva natural	自然保护区	自然保護区	प्राकृतिक अभयारण्य
-Temple bouddhiste	Buddhist temple	معبد بوذي	Templo budista	佛寺	仏教寺院	बौद्ध मंदिर
-Temple hindou	Hindu temple	معبد هندوسي	Templo hindú	印度教寺庙	ヒンドゥー寺院	हिंदू मंदिर
-Brasserie en plein air	Beer garden	حديقة بيرة	Cervecería al aire libre	露天啤酒园	ビアガーデン	बियर गार्डन
-Votre expérience sur mesure	Your tailor-made experience	تجربتك المصممة لك	Tu experiencia a medida	为您定制的体验	あなただけの体験	आपका ख़ास अनुभव
-Quelques questions sur vos envies et vos goûts : nous composons un programme qui mêle visites, balades, restaurants et sorties.	A few questions about your wishes and tastes: we put together a plan mixing visits, walks, restaurants and nights out.	بعض الأسئلة عن رغباتك وأذواقك: نعدّ لك برنامجًا يجمع الزيارات والنزهات والمطاعم والسهرات.	Unas preguntas sobre tus deseos y gustos: creamos un plan que mezcla visitas, paseos, restaurantes y salidas.	回答几个关于喜好的问题：我们为您安排游览、散步、餐厅和夜生活相结合的行程。	好みについていくつか質問します。観光、散策、レストラン、夜のお出かけを組み合わせたプランを作ります。	आपकी पसंद के बारे में कुछ सवाल: हम घूमना, सैर, रेस्टोरेंट और रात की मस्ती मिलाकर कार्यक्रम बनाते हैं।
-Question {0} sur {1}	Question {0} of {1}	السؤال {0} من {1}	Pregunta {0} de {1}	第 {0} 题，共 {1} 题	質問 {0} / {1}	प्रश्न {0} / {1}
-Où voulez-vous vivre l'expérience ?	Where do you want to live the experience?	أين تريد أن تعيش التجربة؟	¿Dónde quieres vivir la experiencia?	您想在哪里体验？	どこで体験しますか？	आप अनुभव कहाँ लेना चाहते हैं?
-Combien de temps avez-vous ?	How much time do you have?	كم من الوقت لديك؟	¿Cuánto tiempo tienes?	您有多少时间？	時間はどのくらいありますか？	आपके पास कितना समय है?
-Avec qui partez-vous ?	Who are you travelling with?	مع من تسافر؟	¿Con quién viajas?	您和谁一起出行？	誰と行きますか？	आप किसके साथ जा रहे हैं?
-Qu'est-ce qui vous fait envie ?	What are you in the mood for?	ما الذي يستهويك؟	¿Qué te apetece?	您想做什么？	何に興味がありますか？	आपका किस चीज़ का मन है?
-Plusieurs choix possibles.	Several choices possible.	يمكن اختيار عدة إجابات.	Puedes elegir varias opciones.	可多选。	複数選択できます。	एक से ज़्यादा चुन सकते हैं।
-Plusieurs choix possibles, ou aucun si tout vous va.	Choose several, or none if anything suits you.	اختر عدة إجابات، أو لا شيء إن كان كل شيء يناسبك.	Elige varias, o ninguna si todo te va bien.	可多选；都可以的话也可不选。	複数選択可。こだわりがなければ選ばなくてもOK。	कई चुनें, या कोई नहीं अगर सब ठीक है।
-Plutôt incontournables ou pépites ?	Must-sees or hidden gems?	معالم لا تُفوَّت أم جواهر خفية؟	¿Imprescindibles o joyas escondidas?	必去景点还是小众宝地？	定番？それとも穴場？	प्रसिद्ध जगहें या छुपे रत्न?
-Combien de temps aimez-vous passer dans chaque lieu ?	How long do you like to spend at each place?	كم من الوقت تحب أن تقضي في كل مكان؟	¿Cuánto tiempo te gusta pasar en cada lugar?	您喜欢在每个地方停留多久？	1か所にどのくらい滞在したいですか？	हर जगह आप कितना समय बिताना पसंद करते हैं?
-À quelle heure aimez-vous commencer la journée ?	What time do you like to start the day?	متى تحب أن تبدأ يومك؟	¿A qué hora te gusta empezar el día?	您喜欢几点开始一天？	何時に1日を始めたいですか？	आप दिन कितने बजे शुरू करना पसंद करते हैं?
-Comment vous déplacez-vous ?	How do you get around?	كيف تتنقّل؟	¿Cómo te desplazas?	您如何出行？	移動手段は？	आप कैसे घूमते हैं?
-Des préférences pour les repas et les soirées ?	Any preferences for meals and evenings?	هل لديك تفضيلات للوجبات والسهرات؟	¿Preferencias para comidas y noches?	对用餐和夜晚有偏好吗？	食事や夜の過ごし方の希望は？	खाने और शाम के लिए कोई पसंद?
-Quel rythme préférez-vous ?	What pace do you prefer?	ما الإيقاع الذي تفضّله؟	¿Qué ritmo prefieres?	您喜欢什么节奏？	どんなペースが好みですか？	आपको कौन-सी रफ़्तार पसंद है?
-Quel budget pour les repas et les sorties ?	What budget for meals and nights out?	ما الميزانية للوجبات والسهرات؟	¿Qué presupuesto para comidas y salidas?	用餐和夜生活预算是多少？	食事やお出かけの予算は？	खाने और घूमने का बजट क्या है?
-Quels musées vous attirent ?	Which museums appeal to you?	ما المتاحف التي تجذبك؟	¿Qué museos te atraen?	您对哪些博物馆感兴趣？	どんな美術館・博物館に惹かれますか？	कौन-से संग्रहालय आपको पसंद हैं?
-Quel genre de patrimoine ?	What kind of heritage?	أي نوع من التراث؟	¿Qué tipo de patrimonio?	哪类古迹？	どんな歴史遺産？	किस तरह की विरासत?
-Quelle nature vous fait envie ?	What kind of nature?	أي طبيعة تستهويك؟	¿Qué naturaleza te apetece?	想去什么样的自然环境？	どんな自然がいいですか？	कैसी प्रकृति पसंद है?
-Quelles activités de loisirs ?	Which leisure activities?	أي أنشطة ترفيهية؟	¿Qué actividades de ocio?	哪些休闲活动？	どんなレジャー？	कौन-सी मनोरंजक गतिविधियाँ?
-Quelle cuisine vous tente ?	What food tempts you?	أي مطبخ يغريك؟	¿Qué cocina te apetece?	想吃什么菜？	どんな料理がいいですか？	कौन-सा खाना पसंद है?
-Quelle ambiance pour vos soirées ?	What vibe for your evenings?	أي أجواء لسهراتك؟	¿Qué ambiente para tus noches?	晚上想要什么氛围？	夜はどんな雰囲気がいいですか？	शाम का माहौल कैसा हो?
-Quel shopping ?	What kind of shopping?	أي نوع من التسوّق؟	¿Qué tipo de compras?	想怎么购物？	どんな買い物？	किस तरह की शॉपिंग?
-Quelles plages ?	Which beaches?	أي شواطئ؟	¿Qué playas?	哪些海滩？	どんなビーチ？	कौन-से समुद्र तट?
-Suivant	Next	التالي	Siguiente	下一步	次へ	आगे
-Créer mon expérience	Create my experience	أنشئ تجربتي	Crear mi experiencia	生成我的体验	体験を作成	मेरा अनुभव बनाएँ
-Création de votre expérience…	Creating your experience…	جارٍ إنشاء تجربتك…	Creando tu experiencia…	正在生成您的体验…	体験を作成中…	आपका अनुभव बन रहा है…
-Sélection des meilleurs lieux de {0}…	Selecting the best places in {0}…	جارٍ اختيار أفضل أماكن {0}…	Seleccionando los mejores lugares de {0}…	正在挑选{0}的最佳地点…	{0}のおすすめスポットを選定中…	{0} की सबसे अच्छी जगहें चुन रहे हैं…
-Analyse des lieux selon vos goûts…	Analysing places against your tastes…	جارٍ تحليل الأماكن حسب أذواقك…	Analizando lugares según tus gustos…	正在根据您的喜好分析地点…	好みに合わせてスポットを分析中…	आपकी पसंद के अनुसार जगहों का विश्लेषण…
-Composition du programme…	Building the plan…	جارٍ إعداد البرنامج…	Componiendo el plan…	正在安排行程…	プランを作成中…	कार्यक्रम बना रहे हैं…
-Ville introuvable : choisissez-la dans la liste proposée.	City not found: choose it from the list.	المدينة غير موجودة: اخترها من القائمة.	Ciudad no encontrada: elígela de la lista.	未找到城市：请从列表中选择。	都市が見つかりません：リストから選んでください。	शहर नहीं मिला: सूची से चुनें।
-Pas assez de lieux trouvés pour {0}. Essayez d'autres envies ou une grande ville proche.	Not enough places found for {0}. Try other interests or a nearby big city.	لم يُعثر على أماكن كافية في {0}. جرّب اهتمامات أخرى أو مدينة كبيرة قريبة.	No hay suficientes lugares en {0}. Prueba otros intereses o una gran ciudad cercana.	{0}的地点不足。请尝试其他兴趣或附近的大城市。	{0}では十分なスポットが見つかりません。別の興味や近くの大都市でお試しください。	{0} में पर्याप्त जगहें नहीं मिलीं। दूसरी रुचियाँ या पास का बड़ा शहर आज़माएँ।
-Votre expérience	Your experience	تجربتك	Tu experiencia	您的体验	あなたの体験	आपका अनुभव
-Autre proposition	Another option	اقتراح آخر	Otra propuesta	换一个方案	別のプラン	दूसरा सुझाव
-Modifier	Edit	تعديل	Modificar	修改	変更	बदलें
-Parcours sur la carte ›	Route on the map ›	المسار على الخريطة ›	Ruta en el mapa ›	在地图上查看路线 ›	地図でルートを見る ›	नक्शे पर रास्ता ›
-Billets	Tickets	التذاكر	Entradas	门票	チケット	टिकट
-Infos	Info	معلومات	Info	信息	情報	जानकारी
-Réserver / voir	Book / view	احجز / اعرض	Reservar / ver	预订/查看	予約・詳細	बुक करें / देखें
-{0} sur place	{0} on site	{0} في المكان	{0} en el lugar	停留 {0}	滞在 {0}	वहाँ {0}
-🚶 {0} · ~{1} min à pied depuis l'étape précédente	🚶 {0} · ~{1} min walk from the previous stop	🚶 {0} · ~{1} دقيقة سيرًا من المحطة السابقة	🚶 {0} · ~{1} min a pie desde la parada anterior	🚶 {0} · 距上一站步行约 {1} 分钟	🚶 {0} · 前の地点から徒歩約{1}分	🚶 {0} · पिछली जगह से ~{1} मिनट पैदल
-🚇 {0} · ~{1} min en transports depuis l'étape précédente	🚇 {0} · ~{1} min by transit from the previous stop	🚇 {0} · ~{1} دقيقة بالمواصلات من المحطة السابقة	🚇 {0} · ~{1} min en transporte desde la parada anterior	🚇 {0} · 距上一站乘公共交通约 {1} 分钟	🚇 {0} · 前の地点から交通機関で約{1}分	🚇 {0} · पिछली जगह से ~{1} मिनट सार्वजनिक परिवहन से
-Trajet d'environ {0} min depuis l'étape précédente	About {0} min from the previous stop	حوالي {0} دقيقة من المحطة السابقة	Unos {0} min desde la parada anterior	距上一站约 {0} 分钟	前の地点から約{0}分	पिछली जगह से लगभग {0} मिनट
-Lieux : Wikidata, Wikivoyage, OpenStreetMap	Places: Wikidata, Wikivoyage, OpenStreetMap	الأماكن: ويكي بيانات، ويكي رحلات، OpenStreetMap	Lugares: Wikidata, Wikivoyage, OpenStreetMap	地点：维基数据、维基导游、OpenStreetMap	スポット：ウィキデータ、Wikivoyage、OpenStreetMap	जगहें: विकिडेटा, विकियात्रा, OpenStreetMap
-Jour {0}	Day {0}	اليوم {0}	Día {0}	第 {0} 天	{0}日目	दिन {0}
-{0} {1} à {2}	{0} of {1} in {2}	{0} {1} في {2}	{0} de {1} en {2}	{2}{0}{1}之旅	{2}で{0}の{1}	{2} में {0} {1}
-Pour votre envie « {0} » · {1}	For your interest "{0}" · {1}	لاهتمامك «{0}» · {1}	Para tu gusto «{0}» · {1}	符合您的喜好“{0}” · {1}	ご希望「{0}」に合わせて · {1}	आपकी पसंद "{0}" के लिए · {1}
-Noté {0} sur {1} ({2} avis)	Rated {0} on {1} ({2} reviews)	تقييم {0} على {1} ({2} مراجعة)	Valorado {0} en {1} ({2} opiniones)	{1} 评分 {0}（{2} 条评论）	{1}で評価{0}（口コミ{2}件）	{1} पर {0} रेटिंग ({2} समीक्षाएँ)
-L'un des lieux les plus célèbres de {0}	One of the most famous places in {0}	من أشهر الأماكن في {0}	Uno de los lugares más famosos de {0}	{0}最著名的地方之一	{0}屈指の有名スポット	{0} की सबसे प्रसिद्ध जगहों में से एक
-Un incontournable de {0}	A must-see in {0}	من معالم {0} التي لا تُفوَّت	Un imprescindible de {0}	{0}必去之地	{0}の必見スポット	{0} की ज़रूर देखने वाली जगह
-Recommandé par le guide Wikivoyage	Recommended by the Wikivoyage guide	يوصي به دليل ويكي رحلات	Recomendado por la guía Wikivoyage	维基导游推荐	Wikivoyage おすすめ	विकियात्रा गाइड की सिफ़ारिश
-Pour souffler au grand air	To breathe some fresh air	لاستنشاق الهواء الطلق	Para respirar aire libre	呼吸新鲜空气	外の空気でひと休み	खुली हवा में साँस लेने के लिए
-Parmi les lieux les plus réputés de la ville	Among the city's best-known places	من أشهر أماكن المدينة	Entre los lugares más conocidos de la ciudad	城中知名去处之一	街の人気スポットのひとつ	शहर की जानी-मानी जगहों में से
-Matin	Morning	صباحًا	Mañana	上午	朝	सुबह
-Fin de matinée	Late morning	آخر الصباح	Media mañana	上午稍晚	昼前	देर सुबह
-Déjeuner	Lunch	الغداء	Almuerzo	午餐	ランチ	दोपहर का खाना
-Après-midi	Afternoon	بعد الظهر	Tarde	下午	午後	दोपहर
-Pause gourmande	Sweet break	استراحة حلوة	Pausa golosa	甜点时光	おやつ休憩	मीठा ब्रेक
-Fin d'après-midi	Late afternoon	آخر النهار	Última hora de la tarde	傍晚	夕方	शाम से पहले
-Dîner	Dinner	العشاء	Cena	晚餐	ディナー	रात का खाना
-Verre en soirée	Evening drink	مشروب مسائي	Copa por la noche	晚间小酌	夜の一杯	शाम का ड्रिंक
-Pour finir la nuit	To end the night	لإنهاء السهرة	Para acabar la noche	夜晚收尾	締めくくりに	रात ख़त्म करने के लिए
-Une demi-journée	Half a day	نصف يوم	Medio día	半天	半日	आधा दिन
-Une journée	One day	يوم واحد	Un día	一天	1日	एक दिन
-Deux jours	Two days	يومان	Dos días	两天	2日	दो दिन
-Trois jours	Three days	ثلاثة أيام	Tres días	三天	3日	तीन दिन
-Seul	Alone	بمفردي	Solo	独自	ひとり	अकेले
-En couple	As a couple	مع الشريك	En pareja	情侣	カップル	जोड़े में
-Entre amis	With friends	مع الأصدقاء	Con amigos	和朋友	友達と	दोस्तों के साथ
-En famille	With family	مع العائلة	En familia	家庭	家族と	परिवार के साथ
-Art et musées	Art and museums	الفن والمتاحف	Arte y museos	艺术与博物馆	アートと美術館	कला और संग्रहालय
-Histoire et monuments	History and monuments	التاريخ والمعالم	Historia y monumentos	历史与古迹	歴史と名所	इतिहास और स्मारक
-Nature et parcs	Nature and parks	الطبيعة والحدائق	Naturaleza y parques	自然与公园	自然と公園	प्रकृति और पार्क
-Plage et mer	Beach and sea	الشاطئ والبحر	Playa y mar	海滩与大海	ビーチと海	समुद्र तट और सागर
-Attractions et loisirs	Attractions and leisure	معالم وترفيه	Atracciones y ocio	景点与休闲	アトラクションとレジャー	आकर्षण और मनोरंजन
-Shopping et marchés	Shopping and markets	تسوّق وأسواق	Compras y mercados	购物与市场	ショッピングと市場	शॉपिंग और बाज़ार
-Gastronomie	Food	فن الطهي	Gastronomía	美食	グルメ	खान-पान
-Vie nocturne	Nightlife	الحياة الليلية	Vida nocturna	夜生活	ナイトライフ	नाइटलाइफ़
-art	art	الفن	arte	艺术	アート	कला
-histoire	history	التاريخ	historia	历史	歴史	इतिहास
-nature	nature	الطبيعة	naturaleza	自然	自然	प्रकृति
-plage	beach	الشاطئ	playa	海滩	ビーチ	समुद्र तट
-loisirs	leisure	الترفيه	ocio	休闲	レジャー	मनोरंजन
-shopping	shopping	التسوّق	compras	购物	ショッピング	शॉपिंग
-gastronomie	food	الطعام	gastronomía	美食	グルメ	खान-पान
-sorties	nights out	السهرات	salidas	夜生活	夜遊び	रात की मस्ती
-découverte	discovery	الاستكشاف	descubrimiento	探索	発見	खोज
-Peinture et beaux-arts	Painting and fine arts	الرسم والفنون الجميلة	Pintura y bellas artes	绘画与美术	絵画・美術	चित्रकला और ललित कला
-Art moderne et contemporain	Modern and contemporary art	الفن الحديث والمعاصر	Arte moderno y contemporáneo	现当代艺术	近現代アート	आधुनिक और समकालीन कला
-Sciences et techniques	Science and technology	العلوم والتقنيات	Ciencia y técnica	科学与技术	科学技術	विज्ञान और तकनीक
-Histoire et civilisations	History and civilisations	التاريخ والحضارات	Historia y civilizaciones	历史与文明	歴史と文明	इतिहास और सभ्यताएँ
-Châteaux et palais	Castles and palaces	القلاع والقصور	Castillos y palacios	城堡与宫殿	城と宮殿	किले और महल
-Lieux de culte	Places of worship	دور العبادة	Lugares de culto	宗教场所	宗教施設	पूजा स्थल
-Sites antiques et archéologiques	Ancient and archaeological sites	المواقع القديمة والأثرية	Sitios antiguos y arqueológicos	古代与考古遗址	古代遺跡	प्राचीन और पुरातात्विक स्थल
-Monuments et places célèbres	Famous monuments and squares	معالم وساحات شهيرة	Monumentos y plazas célebres	著名古迹与广场	有名な名所と広場	प्रसिद्ध स्मारक और चौक
-Jardins et jardins botaniques	Gardens and botanical gardens	الحدائق والحدائق النباتية	Jardines y jardines botánicos	花园与植物园	庭園と植物園	बगीचे और वनस्पति उद्यान
-Grands parcs pour se balader	Large parks for a stroll	حدائق كبيرة للتنزّه	Grandes parques para pasear	适合散步的大公园	散歩できる大きな公園	टहलने के लिए बड़े पार्क
-Nature sauvage	Wild nature	الطبيعة البرية	Naturaleza salvaje	原生自然	手つかずの自然	जंगली प्रकृति
-Zoos et aquariums	Zoos and aquariums	حدائق الحيوان والأحواض المائية	Zoológicos y acuarios	动物园与水族馆	動物園と水族館	चिड़ियाघर और मछलीघर
-Parcs d'attractions	Amusement parks	مدن الملاهي	Parques de atracciones	游乐园	遊園地	मनोरंजन पार्क
-Points de vue et panoramas	Viewpoints and panoramas	إطلالات ومناظر بانورامية	Miradores y panoramas	观景点与全景	展望スポットと絶景	दृश्य बिंदु और नज़ारे
-Spectacles et stades	Shows and stadiums	عروض وملاعب	Espectáculos y estadios	演出与体育场	ショーとスタジアム	शो और स्टेडियम
-Cuisine locale et traditionnelle	Local and traditional food	المطبخ المحلي والتقليدي	Cocina local y tradicional	地道传统菜	郷土料理	स्थानीय और पारंपरिक खाना
-Italien et pizza	Italian and pizza	إيطالي وبيتزا	Italiano y pizza	意大利菜与披萨	イタリアンとピザ	इटैलियन और पिज़्ज़ा
-Cuisine asiatique	Asian food	المطبخ الآسيوي	Cocina asiática	亚洲菜	アジア料理	एशियाई खाना
-Street food et sur le pouce	Street food and quick bites	طعام الشارع والوجبات السريعة	Comida callejera y para picar	街头小吃与快餐	屋台・軽食	स्ट्रीट फ़ूड और झटपट खाना
-Végétarien et vegan	Vegetarian and vegan	نباتي ونباتي صرف	Vegetariano y vegano	素食与纯素	ベジタリアン・ヴィーガン	शाकाहारी और वीगन
-Gastronomique	Fine dining	مطاعم راقية	Alta cocina	高级餐饮	高級料理	फ़ाइन डाइनिंग
-Poissons et fruits de mer	Fish and seafood	الأسماك والمأكولات البحرية	Pescado y marisco	鱼类与海鲜	魚介料理	मछली और समुद्री भोजन
-Bars à cocktails	Cocktail bars	حانات الكوكتيل	Bares de cócteles	鸡尾酒吧	カクテルバー	कॉकटेल बार
-Bars à vin	Wine bars	حانات النبيذ	Bares de vinos	葡萄酒吧	ワインバー	वाइन बार
-Pubs et bières	Pubs and beer	حانات وبيرة	Pubs y cervezas	酒馆与啤酒	パブとビール	पब और बियर
-Musique live et jazz	Live music and jazz	موسيقى حية وجاز	Música en directo y jazz	现场音乐与爵士	ライブ音楽とジャズ	लाइव संगीत और जैज़
-Marchés et produits locaux	Markets and local produce	الأسواق والمنتجات المحلية	Mercados y productos locales	市场与本地特产	市場と地元の品	बाज़ार और स्थानीय उत्पाद
-Centres commerciaux	Shopping centres	مراكز تجارية	Centros comerciales	购物中心	ショッピングセンター	शॉपिंग सेंटर
-Mode et créateurs	Fashion and designers	الموضة والمصممون	Moda y diseñadores	时尚与设计师	ファッションとデザイナー	फ़ैशन और डिज़ाइनर
-beaux-arts	fine arts	الفنون الجميلة	bellas artes	美术	美術	ललित कला
-art moderne	modern art	الفن الحديث	arte moderno	现代艺术	近代アート	आधुनिक कला
-sciences	science	العلوم	ciencia	科学	科学	विज्ञान
-musées d'histoire	history museums	متاحف التاريخ	museos de historia	历史博物馆	歴史博物館	इतिहास संग्रहालय
-châteaux	castles	القلاع	castillos	城堡	城めぐり	किले
-lieux de culte	places of worship	دور العبادة	lugares de culto	宗教场所	宗教施設	पूजा स्थल
-sites antiques	ancient sites	المواقع القديمة	sitios antiguos	古迹	古代遺跡	प्राचीन स्थल
-monuments	monuments	المعالم	monumentos	古迹	名所	स्मारक
-jardins	gardens	الحدائق	jardines	花园	庭園	बगीचे
-grands parcs	big parks	الحدائق الكبيرة	grandes parques	大公园	大きな公園	बड़े पार्क
-nature sauvage	wild nature	الطبيعة البرية	naturaleza salvaje	原生自然	大自然	जंगली प्रकृति
-zoos et aquariums	zoos and aquariums	حدائق الحيوان والأحواض	zoológicos y acuarios	动物园与水族馆	動物園と水族館	चिड़ियाघर और मछलीघर
-parcs d'attractions	amusement parks	مدن الملاهي	parques de atracciones	游乐园	遊園地	मनोरंजन पार्क
-panoramas	panoramas	المناظر البانورامية	panoramas	全景	絶景	नज़ारे
-spectacles	shows	العروض	espectáculos	演出	ショー	शो
-cuisine locale	local food	المطبخ المحلي	cocina local	地道美食	郷土料理	स्थानीय खाना
-cuisine italienne	Italian food	المطبخ الإيطالي	cocina italiana	意大利菜	イタリアン	इटैलियन खाना
-cuisine asiatique	Asian food	المطبخ الآسيوي	cocina asiática	亚洲菜	アジア料理	एशियाई खाना
-street food	street food	طعام الشارع	comida callejera	街头小吃	屋台グルメ	स्ट्रीट फ़ूड
-cuisine végétarienne	vegetarian food	المطبخ النباتي	cocina vegetariana	素食	ベジ料理	शाकाहारी खाना
-fruits de mer	seafood	المأكولات البحرية	marisco	海鲜	シーフード	समुद्री भोजन
-cocktails	cocktails	الكوكتيلات	cócteles	鸡尾酒	カクテル	कॉकटेल
-bars à vin	wine bars	حانات النبيذ	bares de vinos	葡萄酒吧	ワインバー	वाइन बार
-pubs	pubs	الحانات	pubs	酒馆	パブ	पब
-musique live	live music	الموسيقى الحية	música en directo	现场音乐	ライブ音楽	लाइव संगीत
-boîtes de nuit	nightclubs	النوادي الليلية	discotecas	夜店	クラブ	नाइटक्लब
-marchés	markets	الأسواق	mercados	市场	市場	बाज़ार
-centres commerciaux	shopping centres	المراكز التجارية	centros comerciales	购物中心	ショッピングセンター	शॉपिंग सेंटर
-mode	fashion	الموضة	moda	时尚	ファッション	फ़ैशन
-Les incontournables	The must-sees	المعالم التي لا تُفوَّت	Los imprescindibles	必去景点	定番スポット	ज़रूर देखने वाली जगहें
-Les lieux les plus célèbres, à ne pas manquer	The most famous places, not to be missed	أشهر الأماكن التي لا يجب تفويتها	Los lugares más famosos, para no perdérselos	最著名、不容错过的地方	見逃せない有名スポット	सबसे मशहूर जगहें, जिन्हें छोड़ना नहीं चाहिए
-Un mélange	A mix	مزيج	Una mezcla	兼而有之	ミックス	मिला-जुला
-Quelques classiques et des lieux moins connus	Some classics and lesser-known places	بعض الكلاسيكيات وأماكن أقل شهرة	Algunos clásicos y lugares menos conocidos	经典与小众兼顾	定番と知る人ぞ知る場所	कुछ मशहूर और कुछ कम जानी जगहें
-Hors des sentiers battus	Off the beaten path	بعيدًا عن المسارات المألوفة	Fuera de lo común	小众路线	穴場めぐり	भीड़ से हटकर
-Des pépites appréciées des connaisseurs	Hidden gems loved by insiders	جواهر يقدّرها العارفون	Joyas apreciadas por los entendidos	行家喜爱的小众宝地	通好みの穴場	जानकारों के पसंदीदा छुपे रत्न
-Tranquille	Relaxed	هادئ	Tranquilo	悠闲	ゆったり	आराम से
-Peu de visites, du temps pour flâner	Few visits, time to wander	زيارات قليلة ووقت للتجوّل	Pocas visitas, tiempo para pasear	少量游览，留出闲逛时间	見学は少なめ、ぶらぶらする時間も	कम जगहें, घूमने का समय
-Équilibré	Balanced	متوازن	Equilibrado	均衡	バランス良く	संतुलित
-Un bon mélange visites et pauses	A good mix of visits and breaks	مزيج جيد من الزيارات والاستراحات	Una buena mezcla de visitas y pausas	游览与休息兼顾	観光と休憩をバランスよく	घूमने और आराम का अच्छा मेल
-Intense	Intense	مكثّف	Intenso	紧凑	盛りだくさん	भरपूर
-Voir un maximum de choses	See as much as possible	رؤية أكبر قدر ممكن	Ver el máximo de cosas	尽可能多看	できるだけ多く見る	ज़्यादा से ज़्यादा देखें
-Survoler	Quick look	نظرة سريعة	Vistazo rápido	走马观花	さっと見る	झलक भर
-Voir l'essentiel de chaque lieu	See the highlights of each place	رؤية أهم ما في كل مكان	Ver lo esencial de cada lugar	看每处的精华	各所の見どころだけ	हर जगह की ख़ास बातें देखें
-Visite classique	Standard visit	زيارة عادية	Visita clásica	常规游览	標準的な見学	सामान्य यात्रा
-Le temps habituel de visite	The usual visiting time	مدة الزيارة المعتادة	El tiempo habitual de visita	常规游览时长	通常の見学時間	आमतौर पर लगने वाला समय
-Prendre mon temps	Take my time	على مهلي	Tomarme mi tiempo	慢慢逛	じっくり	आराम से समय लेकर
-Visiter en détail, lire, s'imprégner	Visit in depth, read, soak it in	زيارة مفصّلة وقراءة واستمتاع	Visitar en detalle, leer, empaparse	细细游览，慢慢品味	じっくり見て、読んで、味わう	विस्तार से देखें, पढ़ें, महसूस करें
-Tôt (8h30)	Early (8:30)	مبكرًا (8:30)	Temprano (8:30)	早（8:30）	早め（8:30）	जल्दी (8:30)
-Vers 9h30	Around 9:30	حوالي 9:30	Hacia las 9:30	9:30 左右	9:30頃	लगभग 9:30
-Grasse matinée (11h)	Sleep in (11:00)	نوم متأخر (11:00)	Levantarse tarde (11:00)	睡个懒觉（11:00）	ゆっくり起床（11:00）	देर से उठना (11:00)
-Tout à pied	All on foot	سيرًا على الأقدام	Todo a pie	全程步行	すべて徒歩	सब पैदल
-Des lieux proches les uns des autres	Places close to one another	أماكن قريبة من بعضها	Lugares cercanos entre sí	地点彼此相近	近いスポット同士	एक-दूसरे के पास की जगहें
-Transports en commun	Public transport	المواصلات العامة	Transporte público	公共交通	公共交通機関	सार्वजनिक परिवहन
-On peut aller plus loin entre deux étapes	We can go further between two stops	يمكن الذهاب أبعد بين محطتين	Se puede ir más lejos entre dos paradas	两站之间可以走得更远	スポット間の移動距離が長くてもOK	दो जगहों के बीच दूर जा सकते हैं
-Pas de préférence	No preference	لا تفضيل	Sin preferencia	无偏好	特になし	कोई पसंद नहीं
-Halal	Halal	حلال	Halal	清真	ハラール	हलाल
-Végétarien	Vegetarian	نباتي	Vegetariano	素食	ベジタリアン	शाकाहारी
-Sans alcool (pas de bars)	No alcohol (no bars)	بدون كحول (بلا حانات)	Sin alcohol (sin bares)	不喝酒（不去酒吧）	アルコールなし（バーなし）	बिना शराब (बार नहीं)
-Petit budget	Small budget	ميزانية صغيرة	Presupuesto ajustado	预算有限	低予算	कम बजट
-Adresses abordables	Affordable places	أماكن بأسعار معقولة	Sitios asequibles	实惠的地方	手頃なお店	किफ़ायती जगहें
-Budget moyen	Medium budget	ميزانية متوسطة	Presupuesto medio	中等预算	中予算	मध्यम बजट
-Bon rapport qualité-prix	Good value for money	قيمة جيدة مقابل المال	Buena relación calidad-precio	性价比高	コスパ重視	पैसे के हिसाब से अच्छा
-Confort	Comfort	راحة	Confort	舒适	ゆとり	आराम
-Se faire plaisir	Treat yourself	دلّل نفسك	Darse un capricho	犒劳自己	ちょっと贅沢に	ख़ुद को ख़ुश करें
-rythme {0}	{0} pace	إيقاع {0}	ritmo {0}	{0}节奏	{0}ペース	{0} रफ़्तार
-Récits et histoire des lieux les plus emblématiques, choisis selon vos voyages et vos envies.	Stories and history of the most iconic places, chosen for your trips and interests.	قصص وتاريخ أشهر الأماكن، مختارة حسب رحلاتك واهتماماتك.	Relatos e historia de los lugares más emblemáticos, elegidos según tus viajes y gustos.	根据您的旅行和兴趣精选的标志性地点故事与历史。	旅行や好みに合わせて選んだ名所の物語と歴史。	आपकी यात्राओं और पसंद के अनुसार चुनी गई प्रसिद्ध जगहों की कहानियाँ और इतिहास।
-Une ville, un monument, un lieu…	A city, a monument, a place…	مدينة، معلم، مكان…	Una ciudad, un monumento, un lugar…	城市、古迹、地点…	都市、名所、スポット…	शहर, स्मारक, जगह…
-Article	Article	مقال	Artículo	文章	記事	लेख
-Selon vos recherches	Based on your searches	حسب عمليات بحثك	Según tus búsquedas	根据您的搜索	あなたの検索から	आपकी खोजों के आधार पर
-Les villes emblématiques du monde	The world's iconic cities	أشهر مدن العالم	Las ciudades emblemáticas del mundo	世界标志性城市	世界の名だたる都市	दुनिया के प्रसिद्ध शहर
-Toutes les villes	All cities	كل المدن	Todas las ciudades	所有城市	すべての都市	सभी शहर
-D'après votre vol	Based on your flight	حسب رحلتك	Según tu vuelo	根据您的航班	フライトから	आपकी उड़ान के आधार पर
-D'après vos sorties	Based on your things to do	حسب أنشطتك	Según tus planes	根据您的玩乐搜索	お出かけ検索から	आपकी घूमने की खोज के आधार पर
-D'après votre expérience	Based on your experience	حسب تجربتك	Según tu experiencia	根据您的体验	体験から	आपके अनुभव के आधार पर
-Pour vous	For you	لك	Para ti	为你推荐	おすすめ	आपके लिए
-Tout	All	الكل	Todo	全部	すべて	सभी
-Nature et plages	Nature and beaches	الطبيعة والشواطئ	Naturaleza y playas	自然与海滩	自然とビーチ	प्रकृति और समुद्र तट
-Loisirs	Leisure	الترفيه	Ocio	休闲	レジャー	मनोरंजन
-Découvrir {0}	Discover {0}	اكتشف {0}	Descubrir {0}	探索{0}	{0}を知る	{0} की खोज करें
-Ville · {0}	City · {0}	مدينة · {0}	Ciudad · {0}	城市 · {0}	都市 · {0}	शहर · {0}
-✨ Selon vos goûts	✨ Matches your tastes	✨ حسب أذواقك	✨ Según tus gustos	✨ 符合您的喜好	✨ あなた好み	✨ आपकी पसंद के अनुसार
-Chargement…	Loading…	جارٍ التحميل…	Cargando…	加载中…	読み込み中…	लोड हो रहा है…
-Lire l'article ›	Read the article ›	اقرأ المقال ›	Leer el artículo ›	阅读文章 ›	記事を読む ›	लेख पढ़ें ›
-Peu d'articles pour ce filtre : essayez « Tout ».	Few articles for this filter: try "All".	مقالات قليلة لهذا الفلتر: جرّب «الكل».	Pocos artículos con este filtro: prueba «Todo».	此筛选下文章较少：试试“全部”。	この条件の記事は少なめです。「すべて」をお試しください。	इस फ़िल्टर में कम लेख: "सभी" आज़माएँ।
-Textes : Wikipédia, licence CC BY-SA. Photos : Wikimedia Commons.	Texts: Wikipedia, CC BY-SA licence. Photos: Wikimedia Commons.	النصوص: ويكيبيديا، رخصة CC BY-SA. الصور: ويكيميديا كومنز.	Textos: Wikipedia, licencia CC BY-SA. Fotos: Wikimedia Commons.	文字：维基百科，CC BY-SA 许可。图片：维基共享资源。	本文：ウィキペディア（CC BY-SA）。写真：ウィキメディア・コモンズ。	पाठ: विकिपीडिया, CC BY-SA लाइसेंस। फ़ोटो: विकिमीडिया कॉमन्स।
-← Retour	← Back	← رجوع	← Volver	← 返回	← 戻る	← वापस
-{0} min de lecture	{0} min read	قراءة {0} دقيقة	{0} min de lectura	阅读约 {0} 分钟	{0}分で読めます	{0} मिनट का पाठ
-Lire sur Wikipédia	Read on Wikipedia	اقرأ على ويكيبيديا	Leer en Wikipedia	在维基百科阅读	ウィキペディアで読む	विकिपीडिया पर पढ़ें
-Texte issu de l'article Wikipédia « {0} », licence CC BY-SA 4.0.	Text from the Wikipedia article "{0}", CC BY-SA 4.0 licence.	نص مأخوذ من مقال ويكيبيديا «{0}»، رخصة CC BY-SA 4.0.	Texto del artículo de Wikipedia «{0}», licencia CC BY-SA 4.0.	文字来自维基百科条目“{0}”，CC BY-SA 4.0 许可。	ウィキペディアの記事「{0}」より（CC BY-SA 4.0）。	विकिपीडिया लेख "{0}" से लिया गया पाठ, CC BY-SA 4.0 लाइसेंस।
-Les articles ne se chargent pas. Vérifiez la connexion.	Articles won't load. Check your connection.	تعذّر تحميل المقالات. تحقّق من الاتصال.	Los artículos no cargan. Revisa la conexión.	文章无法加载，请检查网络。	記事を読み込めません。接続を確認してください。	लेख लोड नहीं हो रहे। कनेक्शन जाँचें।
-Article indisponible pour le moment.	Article unavailable right now.	المقال غير متاح حاليًا.	Artículo no disponible por ahora.	文章暂时无法查看。	記事は現在利用できません。	लेख अभी उपलब्ध नहीं है।
-Lieu introuvable.	Place not found.	المكان غير موجود.	Lugar no encontrado.	未找到地点。	スポットが見つかりません。	जगह नहीं मिली।
-Paris	Paris	باريس	París	巴黎	パリ	पेरिस
-Rome	Rome	روما	Roma	罗马	ローマ	रोम
-Londres	London	لندن	Londres	伦敦	ロンドン	लंदन
-New York	New York	نيويورك	Nueva York	纽约	ニューヨーク	न्यूयॉर्क
-Istanbul	Istanbul	إسطنبول	Estambul	伊斯坦布尔	イスタンブール	इस्तांबुल
-Barcelone	Barcelona	برشلونة	Barcelona	巴塞罗那	バルセロナ	बार्सिलोना
-Marrakech	Marrakesh	مراكش	Marrakech	马拉喀什	マラケシュ	माराकेश
-Alger	Algiers	الجزائر	Argel	阿尔及尔	アルジェ	अल्जीयर्स
-Le Caire	Cairo	القاهرة	El Cairo	开罗	カイロ	काहिरा
-Dubaï	Dubai	دبي	Dubái	迪拜	ドバイ	दुबई
-Tokyo	Tokyo	طوكيو	Tokio	东京	東京	टोक्यो
-Kyoto	Kyoto	كيوتو	Kioto	京都	京都	क्योटो
-Bangkok	Bangkok	بانكوك	Bangkok	曼谷	バンコク	बैंकॉक
-Venise	Venice	البندقية	Venecia	威尼斯	ヴェネツィア	वेनिस
-Lisbonne	Lisbon	لشبونة	Lisboa	里斯本	リスボン	लिस्बन
-Amsterdam	Amsterdam	أمستردام	Ámsterdam	阿姆斯特丹	アムステルダム	एम्स्टर्डम
-Prague	Prague	براغ	Praga	布拉格	プラハ	प्राग
-Athènes	Athens	أثينا	Atenas	雅典	アテネ	एथेंस
-Rio de Janeiro	Rio de Janeiro	ريو دي جانيرو	Río de Janeiro	里约热内卢	リオデジャネイロ	रियो डी जनेरियो
-Sydney	Sydney	سيدني	Sídney	悉尼	シドニー	सिडनी
-Séville	Seville	إشبيلية	Sevilla	塞维利亚	セビリア	सेविल
-Tunis	Tunis	تونس	Túnez	突尼斯	チュニス	ट्यूनिस
-Marseille	Marseille	مرسيليا	Marsella	马赛	マルセイユ	मार्सेय
-Oran	Oran	وهران	Orán	奥兰	オラン	ओरान
-Madrid	Madrid	مدريد	Madrid	马德里	マドリード	मैड्रिड
-Casablanca	Casablanca	الدار البيضاء	Casablanca	卡萨布兰卡	カサブランカ	कैसाब्लांका
-France	France	فرنسا	Francia	法国	フランス	फ़्रांस
-Italie	Italy	إيطاليا	Italia	意大利	イタリア	इटली
-Royaume-Uni	United Kingdom	المملكة المتحدة	Reino Unido	英国	イギリス	यूनाइटेड किंगडम
-États-Unis	United States	الولايات المتحدة	Estados Unidos	美国	アメリカ	संयुक्त राज्य
-Turquie	Turkey	تركيا	Turquía	土耳其	トルコ	तुर्की
-Espagne	Spain	إسبانيا	España	西班牙	スペイン	स्पेन
-Maroc	Morocco	المغرب	Marruecos	摩洛哥	モロッコ	मोरक्को
-Algérie	Algeria	الجزائر	Argelia	阿尔及利亚	アルジェリア	अल्जीरिया
-Égypte	Egypt	مصر	Egipto	埃及	エジプト	मिस्र
-Émirats arabes unis	United Arab Emirates	الإمارات العربية المتحدة	Emiratos Árabes Unidos	阿联酋	アラブ首長国連邦	संयुक्त अरब अमीरात
-Japon	Japan	اليابان	Japón	日本	日本	जापान
-Thaïlande	Thailand	تايلاند	Tailandia	泰国	タイ	थाईलैंड
-Portugal	Portugal	البرتغال	Portugal	葡萄牙	ポルトガル	पुर्तगाल
-Pays-Bas	Netherlands	هولندا	Países Bajos	荷兰	オランダ	नीदरलैंड
-Tchéquie	Czechia	التشيك	Chequia	捷克	チェコ	चेकिया
-Grèce	Greece	اليونان	Grecia	希腊	ギリシャ	यूनान
-Brésil	Brazil	البرازيل	Brasil	巴西	ブラジル	ब्राज़ील
-Australie	Australia	أستراليا	Australia	澳大利亚	オーストラリア	ऑस्ट्रेलिया
-Tunisie	Tunisia	تونس	Túnez	突尼斯	チュニジア	ट्यूनीशिया
-Billets coupe-file pour musées et monuments	Skip-the-line tickets for museums and monuments	تذاكر بلا طوابير للمتاحف والمعالم	Entradas sin colas para museos y monumentos	博物馆和古迹免排队门票	美術館・名所の優先入場チケット	संग्रहालयों और स्मारकों के लिए बिना कतार टिकट
-Billets et visites guidées de musées	Museum tickets and guided tours	تذاكر وجولات مصحوبة بمرشد في المتاحف	Entradas y visitas guiadas a museos	博物馆门票与导览	美術館チケットとガイドツアー	संग्रहालय टिकट और गाइडेड टूर
-Horaires, avis et sites officiels	Opening hours, reviews and official sites	مواعيد ومراجعات ومواقع رسمية	Horarios, opiniones y sitios oficiales	营业时间、评论和官网	営業時間・口コミ・公式サイト	समय, समीक्षाएँ और आधिकारिक साइटें
-Attractions et activités, annulation gratuite fréquente	Attractions and activities, often free cancellation	معالم وأنشطة، إلغاء مجاني غالبًا	Atracciones y actividades, a menudo cancelación gratuita	景点与活动，常可免费取消	観光・アクティビティ、無料キャンセル多数	आकर्षण और गतिविधियाँ, अक्सर मुफ़्त रद्दीकरण
-Billets d'entrée instantanés sur mobile	Instant mobile entry tickets	تذاكر دخول فورية على الهاتف	Entradas instantáneas en el móvil	即时手机门票	スマホで即時入場チケット	मोबाइल पर तुरंत प्रवेश टिकट
-Parcs d'attractions et pass, fort en Asie	Theme parks and passes, strong in Asia	مدن ملاهٍ وتذاكر شاملة، قوي في آسيا	Parques temáticos y pases, fuerte en Asia	主题乐园与通票，亚洲资源丰富	テーマパークやパス、アジアに強い	थीम पार्क और पास, एशिया में मज़बूत
-Large choix d'activités (groupe Tripadvisor)	Wide choice of activities (Tripadvisor group)	خيارات واسعة من الأنشطة (مجموعة Tripadvisor)	Amplia oferta de actividades (grupo Tripadvisor)	活动选择丰富（Tripadvisor 旗下）	豊富なアクティビティ（Tripadvisor グループ）	गतिविधियों का बड़ा विकल्प (Tripadvisor समूह)
-Visites guidées et excursions d'une journée	Guided tours and day trips	جولات مصحوبة بمرشد ورحلات ليوم واحد	Visitas guiadas y excursiones de un día	导览与一日游	ガイドツアーと日帰り旅行	गाइडेड टूर और एक दिन की सैर
-Excursions, croisières, visites privées	Trips, cruises, private tours	رحلات وجولات بحرية وجولات خاصة	Excursiones, cruceros, visitas privadas	短途游、游船、私人导览	小旅行・クルーズ・プライベートツアー	सैर, क्रूज़, निजी टूर
-Excursions et transferts	Trips and transfers	رحلات وتنقلات	Excursiones y traslados	短途游与接送	小旅行と送迎	सैर और ट्रांसफ़र
-Restaurants autour de vous, avis et réservation	Restaurants around you, reviews and booking	مطاعم حولك، مراجعات وحجز	Restaurantes cerca de ti, opiniones y reservas	附近餐厅、评论与预订	周辺のレストラン・口コミ・予約	आपके आस-पास के रेस्टोरेंट, समीक्षाएँ और बुकिंग
-Classements et avis de voyageurs	Rankings and traveller reviews	تصنيفات ومراجعات المسافرين	Rankings y opiniones de viajeros	排名与旅客评论	ランキングと旅行者の口コミ	रैंकिंग और यात्रियों की समीक्षाएँ
-Visites gastronomiques et cours de cuisine	Food tours and cooking classes	جولات تذوق ودروس طبخ	Rutas gastronómicas y clases de cocina	美食之旅与烹饪课	フードツアーと料理教室	फ़ूड टूर और कुकिंग क्लास
-{0} : carte et avis	{0}: map and reviews	{0}: الخريطة والمراجعات	{0}: mapa y opiniones	{0}：地图与评论	{0}：地図と口コミ	{0}: नक्शा और समीक्षाएँ
-Langue de l'application	App language	لغة التطبيق	Idioma de la app	应用语言	アプリの言語	ऐप की भाषा
- et 	 and 	 و	 y 	和	と	 और 
-Essayez « Dates flexibles », un autre jour du calendrier, ou lancez la recherche complète en direct sur Aviasales.	Try "Flexible dates", another day on the calendar, or run the full live search on Aviasales.	جرّب «تواريخ مرنة» أو يومًا آخر في التقويم، أو ابحث مباشرة على Aviasales.	Prueba «Fechas flexibles», otro día del calendario o la búsqueda completa en directo en Aviasales.	试试“日期灵活”、日历上的其他日期，或在 Aviasales 上进行完整的实时搜索。	「日程に余裕あり」や別の日を試すか、Aviasales で直接検索してください。	"लचीली तारीखें" या कैलेंडर का कोई और दिन आज़माएँ, या Aviasales पर पूरी खोज करें।
-L'app utilise Google tant que sa limite gratuite du mois n'est pas atteinte, puis Tripadvisor, puis Foursquare. Quand toutes sont épuisées, elle revient au guide Wikivoyage et à la carte.	The app uses Google until its monthly free limit is reached, then Tripadvisor, then Foursquare. When all are used up, it goes back to the Wikivoyage guide and the map.	يستخدم التطبيق Google حتى بلوغ حده المجاني الشهري، ثم Tripadvisor، ثم Foursquare. وعند نفادها جميعًا يعود إلى دليل ويكي رحلات والخريطة.	La app usa Google hasta alcanzar su límite gratuito mensual, luego Tripadvisor y después Foursquare. Cuando se agotan, vuelve a la guía Wikivoyage y al mapa.	应用先使用 Google，直到本月免费额度用完，然后是 Tripadvisor，再是 Foursquare。全部用完后改用维基导游和地图。	アプリは月の無料枠まで Google を使い、その後 Tripadvisor、Foursquare の順に切り替えます。すべて使い切ると Wikivoyage と地図に戻ります。	ऐप पहले Google का उपयोग करता है जब तक उसकी मासिक मुफ़्त सीमा पूरी न हो, फिर Tripadvisor, फिर Foursquare। सब ख़त्म होने पर विकियात्रा गाइड और नक्शे पर लौटता है।
-Mes voyages	My trips	رحلاتي	Mis viajes	我的行程	マイトリップ	मेरी यात्राएँ
-Voyages	Trips	الرحلات	Viajes	行程	旅行	यात्राएँ
-← Mes voyages	← My trips	← رحلاتي	← Mis viajes	← 我的行程	← マイトリップ	← मेरी यात्राएँ
-Mon voyage : {0}	My trip: {0}	رحلتي: {0}	Mi viaje: {0}	我的行程：{0}	マイトリップ：{0}	मेरी यात्रा: {0}
-Vos vols, programmes, lieux et articles gardés, disponibles même sans connexion.	Your saved flights, plans, places and articles, available even offline.	رحلاتك وبرامجك وأماكنك ومقالاتك المحفوظة، متاحة حتى دون اتصال.	Tus vuelos, planes, lugares y artículos guardados, disponibles incluso sin conexión.	已保存的航班、行程、地点和文章，离线也能查看。	保存したフライト、プラン、スポット、記事をオフラインでも確認できます。	आपकी सहेजी उड़ानें, कार्यक्रम, जगहें और लेख, बिना इंटरनेट भी उपलब्ध।
-Aucun voyage pour l'instant. Gardez un vol (♡), un programme Expérience, un lieu ou un article : il apparaîtra ici.	No trips yet. Save a flight (♡), an Experience plan, a place or an article: it will appear here.	لا توجد رحلات بعد. احفظ رحلة (♡) أو برنامج تجربة أو مكانًا أو مقالًا وسيظهر هنا.	Aún no hay viajes. Guarda un vuelo (♡), un plan de Experiencia, un lugar o un artículo: aparecerá aquí.	还没有行程。保存航班（♡）、体验行程、地点或文章后会显示在这里。	まだ旅行はありません。フライト（♡）、体験プラン、スポット、記事を保存するとここに表示されます。	अभी कोई यात्रा नहीं। कोई उड़ान (♡), अनुभव कार्यक्रम, जगह या लेख सहेजें: वह यहाँ दिखेगा।
-Ce voyage est vide.	This trip is empty.	هذه الرحلة فارغة.	Este viaje está vacío.	此行程为空。	この旅行は空です。	यह यात्रा खाली है।
-Vide	Empty	فارغ	Vacío	空	空	खाली
-Programme	Plan	البرنامج	Plan	行程安排	プラン	कार्यक्रम
-Lieux favoris	Favourite places	الأماكن المفضلة	Lugares favoritos	收藏的地点	お気に入りスポット	पसंदीदा जगहें
-Articles (lecture hors connexion)	Articles (offline reading)	مقالات (قراءة دون اتصال)	Artículos (lectura sin conexión)	文章（离线阅读）	記事（オフラインで読める）	लेख (बिना इंटरनेट पढ़ें)
-Partager	Share	مشاركة	Compartir	分享	共有	साझा करें
-Partager mon voyage	Share my trip	مشاركة رحلتي	Compartir mi viaje	分享我的行程	旅行を共有	मेरी यात्रा साझा करें
-{0} vol(s)	{0} flight(s)	{0} رحلة	{0} vuelo(s)	{0} 个航班	フライト{0}件	{0} उड़ान
-{0} lieu(x)	{0} place(s)	{0} مكان	{0} lugar(es)	{0} 个地点	スポット{0}件	{0} जगह
-{0} article(s)	{0} article(s)	{0} مقال	{0} artículo(s)	{0} 篇文章	記事{0}件	{0} लेख
-{0} nuits	{0} nights	{0} ليالٍ	{0} noches	{0}晚	{0}泊	{0} रातें
-♡ Garder ce vol	♡ Save this flight	♡ احفظ هذه الرحلة	♡ Guardar este vuelo	♡ 保存此航班	♡ このフライトを保存	♡ यह उड़ान सहेजें
-Ce vol est déjà dans votre voyage.	This flight is already in your trip.	هذه الرحلة موجودة بالفعل في رحلتك.	Este vuelo ya está en tu viaje.	该航班已在您的行程中。	このフライトは保存済みです。	यह उड़ान पहले से आपकी यात्रा में है।
-Vol ajouté à votre voyage : {0}	Flight added to your trip: {0}	تمت إضافة الرحلة إلى رحلتك: {0}	Vuelo añadido a tu viaje: {0}	航班已加入行程：{0}	フライトを旅行に追加：{0}	उड़ान आपकी यात्रा में जोड़ी गई: {0}
-Programme enregistré dans votre voyage : {0}	Plan saved to your trip: {0}	تم حفظ البرنامج في رحلتك: {0}	Plan guardado en tu viaje: {0}	行程已保存：{0}	プランを旅行に保存：{0}	कार्यक्रम आपकी यात्रा में सहेजा गया: {0}
-Ajouté à votre voyage : {0}	Added to your trip: {0}	أُضيف إلى رحلتك: {0}	Añadido a tu viaje: {0}	已加入行程：{0}	旅行に追加：{0}	आपकी यात्रा में जोड़ा गया: {0}
-Article déjà gardé.	Article already saved.	المقال محفوظ بالفعل.	Artículo ya guardado.	文章已保存。	記事は保存済みです。	लेख पहले से सहेजा है।
-Article gardé pour la lecture hors connexion : {0}	Article saved for offline reading: {0}	تم حفظ المقال للقراءة دون اتصال: {0}	Artículo guardado para leer sin conexión: {0}	文章已保存，可离线阅读：{0}	記事をオフライン用に保存：{0}	लेख बिना इंटरनेट पढ़ने के लिए सहेजा गया: {0}
-♡ Garder l'article (lecture hors connexion)	♡ Save the article (offline reading)	♡ احفظ المقال (قراءة دون اتصال)	♡ Guardar el artículo (lectura sin conexión)	♡ 保存文章（离线阅读）	♡ 記事を保存（オフラインで読む）	♡ लेख सहेजें (बिना इंटरनेट पढ़ें)
-Mes lectures	My reading	قراءاتي	Mis lecturas	我的阅读	読みもの	मेरा पठन
-💾 Enregistrer dans mon voyage	💾 Save to my trip	💾 احفظ في رحلتي	💾 Guardar en mi viaje	💾 保存到我的行程	💾 旅行に保存	💾 मेरी यात्रा में सहेजें
-✨ Planifier mon séjour à {0}	✨ Plan my stay in {0}	✨ خطّط لإقامتي في {0}	✨ Planificar mi estancia en {0}	✨ 规划我的{0}之旅	✨ {0}での滞在を計画	✨ {0} में मेरा प्रवास योजना बनाएँ
-Quand commence votre séjour ?	When does your stay start?	متى تبدأ إقامتك؟	¿Cuándo empieza tu estancia?	您的行程何时开始？	滞在はいつからですか？	आपका प्रवास कब शुरू होता है?
-Premier jour	First day	اليوم الأول	Primer día	第一天	初日	पहला दिन
-La météo prévue est prise en compte jusqu'à 16 jours à l'avance : musées s'il pleut, parcs et plages au soleil, point de vue au coucher du soleil.	The forecast is taken into account up to 16 days ahead: museums if it rains, parks and beaches in the sun, a viewpoint at sunset.	تؤخذ توقعات الطقس بالحسبان حتى 16 يومًا مسبقًا: متاحف عند المطر، وحدائق وشواطئ في الشمس، وإطلالة عند الغروب.	La previsión se tiene en cuenta hasta 16 días antes: museos si llueve, parques y playas con sol, un mirador al atardecer.	最多提前 16 天参考天气预报：下雨去博物馆，晴天去公园和海滩，日落时去观景点。	16日先までの天気予報を考慮：雨なら美術館、晴れなら公園やビーチ、夕暮れには展望スポット。	16 दिन पहले तक का मौसम ध्यान में रखा जाता है: बारिश में संग्रहालय, धूप में पार्क और समुद्र तट, सूर्यास्त पर दृश्य बिंदु।
-Idéal par temps de pluie	Ideal on a rainy day	مثالي في يوم ممطر	Ideal si llueve	雨天的理想选择	雨の日にぴったり	बारिश के दिन के लिए बढ़िया
-Parfait sous le soleil prévu	Perfect in the forecast sunshine	مثالي مع الشمس المتوقعة	Perfecto con el sol previsto	晴天正合适	晴れ予報にぴったり	अनुमानित धूप में बढ़िया
-journée plutôt à l'abri	a mostly indoor day	يوم في الأماكن المغلقة غالبًا	día más bien a cubierto	以室内为主的一天	屋内中心の1日	ज़्यादातर अंदर का दिन
-météo Open-Meteo	weather by Open-Meteo	الطقس من Open-Meteo	tiempo de Open-Meteo	天气：Open-Meteo	天気：Open-Meteo	मौसम: Open-Meteo
-Clé Google Places API	Google Places API key	مفتاح Google Places API	Clave de Google Places API	Google Places API 密钥	Google Places API キー	Google Places API कुंजी
-Clé Tripadvisor Content API	Tripadvisor Content API key	مفتاح Tripadvisor Content API	Clave de Tripadvisor Content API	Tripadvisor Content API 密钥	Tripadvisor Content API キー	Tripadvisor Content API कुंजी
-Clé Foursquare Places API	Foursquare Places API key	مفتاح Foursquare Places API	Clave de Foursquare Places API	Foursquare Places API 密钥	Foursquare Places API キー	Foursquare Places API कुंजी
-Erreur inconnue	Unknown error	خطأ غير معروف	Error desconocido	未知错误	不明なエラー	अज्ञात त्रुटि
-Le service des lieux est très sollicité, réessayez dans un instant.	The places service is very busy, try again in a moment.	خدمة الأماكن مزدحمة جدًا، حاول بعد قليل.	El servicio de lugares está muy solicitado, inténtalo en un momento.	地点服务繁忙，请稍后重试。	スポット検索が混雑しています。しばらくして再試行してください。	जगहों की सेवा बहुत व्यस्त है, थोड़ी देर में कोशिश करें।
-Hôtels	Hotels	فنادق	Hoteles	酒店	ホテル	होटल
-Comparez les hôtels de la ville pour vos dates, puis réservez au meilleur prix.	Compare the city's hotels for your dates, then book at the best price.	قارن فنادق المدينة لتواريخك، ثم احجز بأفضل سعر.	Compara los hoteles de la ciudad para tus fechas y reserva al mejor precio.	比较该城市在您日期内的酒店，以最优价格预订。	日程に合わせて街のホテルを比較し、最安値で予約。	अपनी तारीखों के लिए शहर के होटलों की तुलना करें, फिर सबसे अच्छे दाम पर बुक करें।
-Arrivée	Check-in	الوصول	Llegada	入住	チェックイン	चेक-इन
-Voyageurs (adultes)	Travellers (adults)	المسافرون (بالغون)	Viajeros (adultos)	旅客（成人）	宿泊者（大人）	यात्री (वयस्क)
-Rechercher les hôtels	Search hotels	ابحث عن فنادق	Buscar hoteles	搜索酒店	ホテルを検索	होटल खोजें
-Prix en direct désactivés	Live prices turned off	الأسعار المباشرة معطّلة	Precios en directo desactivados	实时价格未启用	リアルタイム価格はオフです	लाइव दाम बंद हैं
-Ajoutez une clé LiteAPI (gratuite) dans Réglages pour voir ici les hôtels disponibles avec leur prix. En attendant, réservez chez nos partenaires :	Add a (free) LiteAPI key in Settings to see available hotels with their prices here. Meanwhile, book with our partners:	أضف مفتاح LiteAPI (مجاني) في الإعدادات لرؤية الفنادق المتاحة وأسعارها هنا. وفي الأثناء، احجز لدى شركائنا:	Añade una clave LiteAPI (gratuita) en Ajustes para ver aquí los hoteles disponibles con su precio. Mientras tanto, reserva con nuestros socios:	在设置中添加 LiteAPI 密钥（免费），即可在此查看可订酒店及价格。在此之前，可通过合作伙伴预订：	設定で LiteAPI キー（無料）を追加すると、空室と料金をここに表示できます。それまではパートナーサイトで予約できます：	उपलब्ध होटल और उनके दाम यहाँ देखने के लिए सेटिंग्स में (मुफ़्त) LiteAPI कुंजी जोड़ें। तब तक हमारे साझेदारों के साथ बुक करें:
-Hôtels : prix en direct (facultatif)	Hotels: live prices (optional)	الفنادق: أسعار مباشرة (اختياري)	Hoteles: precios en directo (opcional)	酒店：实时价格（可选）	ホテル：リアルタイム価格（任意）	होटल: लाइव दाम (वैकल्पिक)
-Avec une clé LiteAPI (gratuite sur liteapi.travel), l'onglet Hôtels affiche les prix réels pour vos dates. Sans clé, il propose les sites de réservation.	With a LiteAPI key (free on liteapi.travel), the Hotels section shows real prices for your dates. Without a key, it suggests booking sites.	مع مفتاح LiteAPI (مجاني على liteapi.travel) يعرض قسم الفنادق الأسعار الحقيقية لتواريخك. ودون مفتاح يقترح مواقع الحجز.	Con una clave LiteAPI (gratuita en liteapi.travel), la sección Hoteles muestra precios reales para tus fechas. Sin clave, propone sitios de reserva.	有了 LiteAPI 密钥（在 liteapi.travel 免费获取），酒店页面会显示您日期的真实价格；没有密钥时会推荐预订网站。	LiteAPI キー（liteapi.travel で無料）があれば、ホテル画面に日程の実際の料金を表示します。キーがない場合は予約サイトを案内します。	LiteAPI कुंजी (liteapi.travel पर मुफ़्त) होने पर होटल भाग आपकी तारीखों के असली दाम दिखाता है। बिना कुंजी के बुकिंग साइटें सुझाता है।
-Clé LiteAPI	LiteAPI key	مفتاح LiteAPI	Clave LiteAPI	LiteAPI 密钥	LiteAPI キー	LiteAPI कुंजी
-Clé LiteAPI refusée. Vérifiez-la dans Réglages.	LiteAPI key rejected. Check it in Settings.	تم رفض مفتاح LiteAPI. تحقّق منه في الإعدادات.	Clave LiteAPI rechazada. Revísala en Ajustes.	LiteAPI 密钥被拒绝，请在设置中检查。	LiteAPI キーが拒否されました。設定で確認してください。	LiteAPI कुंजी अस्वीकार हुई। सेटिंग्स में जाँचें।
-Erreur du service d'hôtels ({0}).	Hotel service error ({0}).	خطأ في خدمة الفنادق ({0}).	Error del servicio de hoteles ({0}).	酒店服务出错（{0}）。	ホテル検索のエラー（{0}）。	होटल सेवा में त्रुटि ({0})।
-Le service d'hôtels ne répond pas. Réessayez dans un instant.	The hotel service isn't responding. Try again in a moment.	خدمة الفنادق لا تستجيب. حاول بعد قليل.	El servicio de hoteles no responde. Inténtalo en un momento.	酒店服务无响应，请稍后重试。	ホテル検索が応答しません。しばらくして再試行してください。	होटल सेवा जवाब नहीं दे रही। थोड़ी देर में कोशिश करें।
-Aucun hôtel disponible pour ces dates.	No hotels available for these dates.	لا توجد فنادق متاحة لهذه التواريخ.	No hay hoteles disponibles para estas fechas.	这些日期没有可订酒店。	この日程で空室のあるホテルはありません。	इन तारीखों के लिए कोई होटल उपलब्ध नहीं।
-{0} hôtels disponibles	{0} hotels available	{0} فندق متاح	{0} hoteles disponibles	{0} 家可订酒店	空室のあるホテル {0} 件	{0} होटल उपलब्ध
-Recommandés	Recommended	موصى بها	Recomendados	推荐	おすすめ	सुझाए गए
-Note	Rating	التقييم	Valoración	评分	評価	रेटिंग
-Distance	Distance	المسافة	Distancia	距离	距離	दूरी
-Annulation gratuite	Free cancellation	إلغاء مجاني	Cancelación gratuita	免费取消	無料キャンセル	मुफ़्त रद्दीकरण
-{0} / nuit	{0} / night	{0} / ليلة	{0} / noche	{0}/晚	{0}/泊	{0} / रात
-Réserver sur {0}	Book on {0}	احجز على {0}	Reservar en {0}	在 {0} 预订	{0} で予約	{0} पर बुक करें
-Prix et disponibilités : LiteAPI. La réservation se finalise chez le partenaire choisi, au prix affiché par celui-ci.	Prices and availability: LiteAPI. Booking is completed with the chosen partner, at the price it shows.	الأسعار والتوفر: LiteAPI. يكتمل الحجز لدى الشريك المختار وبالسعر الذي يعرضه.	Precios y disponibilidad: LiteAPI. La reserva se completa con el socio elegido, al precio que muestre.	价格与空房：LiteAPI。预订在所选合作伙伴处完成，以其显示价格为准。	料金と空室：LiteAPI。予約は選んだパートナーサイトで、表示価格にて完了します。	दाम और उपलब्धता: LiteAPI। बुकिंग चुने गए साझेदार के यहाँ उसके दिखाए दाम पर पूरी होती है।
-🏨 Hôtels à {0}	🏨 Hotels in {0}	🏨 فنادق في {0}	🏨 Hoteles en {0}	🏨 {0}的酒店	🏨 {0}のホテル	🏨 {0} में होटल
-🏨 Où dormir ?	🏨 Where to stay?	🏨 أين تقيم؟	🏨 ¿Dónde dormir?	🏨 住哪里？	🏨 どこに泊まる？	🏨 कहाँ ठहरें?
-🏨 Trouver un hôtel	🏨 Find a hotel	🏨 ابحث عن فندق	🏨 Buscar un hotel	🏨 查找酒店	🏨 ホテルを探す	🏨 होटल खोजें
-Une ou plusieurs journées	One or more days	يوم أو أكثر	Uno o varios días	一天或多天	1日以上	एक या कई दिन
-Le programme couvre tout votre séjour	The plan covers your whole stay	يغطي البرنامج إقامتك بالكامل	El plan cubre toda tu estancia	行程覆盖您的整个停留期	プランは滞在全体をカバーします	कार्यक्रम आपके पूरे प्रवास को शामिल करता है
-Du {0} au {1}	From {0} to {1}	من {0} إلى {1}	Del {0} al {1}	{0} 至 {1}	{0}〜{1}	{0} से {1} तक
-Nombre de jours	Number of days	عدد الأيام	Número de días	天数	日数	दिनों की संख्या
-{0} jours	{0} days	{0} أيام	{0} días	{0}天	{0}日間	{0} दिन
-Changer	Change	تغيير	Cambiar	更换	変更	बदलें
-Remplacer « {0} »	Replace "{0}"	استبدال «{0}»	Reemplazar «{0}»	替换“{0}”	「{0}」を入れ替え	"{0}" बदलें
-Retirer sans remplacer	Remove without replacing	إزالة دون استبدال	Quitar sin reemplazar	删除且不替换	入れ替えずに削除	बिना बदले हटाएँ
-Ou choisissez un autre lieu :	Or choose another place:	أو اختر مكانًا آخر:	O elige otro lugar:	或选择其他地点：	または別のスポットを選択：	या कोई और जगह चुनें:
-Pas d'autre lieu disponible pour cette étape.	No other place available for this stop.	لا يوجد مكان آخر متاح لهذه المحطة.	No hay otro lugar disponible para esta parada.	此站没有其他可选地点。	この行程に代わりのスポットはありません。	इस पड़ाव के लिए कोई और जगह उपलब्ध नहीं।
-Description	Description	الوصف	Descripción	简介	概要	विवरण
-Pourquoi ce lieu	Why this place	لماذا هذا المكان	Por qué este lugar	推荐理由	おすすめの理由	यह जगह क्यों
-Infos pratiques	Practical info	معلومات عملية	Información práctica	实用信息	基本情報	व्यावहारिक जानकारी
-Aucune description disponible pour ce lieu.	No description available for this place.	لا يتوفر وصف لهذا المكان.	No hay descripción disponible para este lugar.	暂无此地点的简介。	このスポットの説明はありません。	इस जगह का कोई विवरण उपलब्ध नहीं है।
-Lire l'article complet ›	Read the full article ›	اقرأ المقال كاملًا ›	Leer el artículo completo ›	阅读全文 ›	記事全文を読む ›	पूरा लेख पढ़ें ›
-Temps de visite conseillé : {0}	Suggested visit time: {0}	مدة الزيارة المقترحة: {0}	Tiempo de visita recomendado: {0}	建议游览时间：{0}	おすすめ滞在時間：{0}	सुझाया गया समय: {0}
-Prévu à {0}	Planned at {0}	مقرر في {0}	Previsto a las {0}	计划于 {0}	{0} の予定	{0} बजे तय
-Identifiant partenaire Tiqets (facultatif)	Tiqets partner ID (optional)	معرّف شريك Tiqets (اختياري)	ID de socio de Tiqets (opcional)	Tiqets 合作伙伴 ID（可选）	Tiqets パートナーID（任意）	Tiqets पार्टनर आईडी (वैकल्पिक)
-Ajouté aux liens de billets Tiqets pour toucher une commission.	Added to Tiqets ticket links so you earn a commission.	يُضاف إلى روابط تذاكر Tiqets لتحصل على عمولة.	Se añade a los enlaces de entradas de Tiqets para ganar comisión.	添加到 Tiqets 门票链接中以获得佣金。	Tiqets のチケットリンクに追加され、手数料を得られます。	कमीशन पाने के लिए Tiqets टिकट लिंक में जोड़ा जाता है।
-Chambres disponibles	Available rooms	الغرف المتاحة	Habitaciones disponibles	可订房型	空室	उपलब्ध कमरे
-Aucune chambre disponible pour ces dates.	No rooms available for these dates.	لا توجد غرف متاحة لهذه التواريخ.	No hay habitaciones disponibles para estas fechas.	这些日期没有可订房间。	この日程の空室はありません。	इन तारीखों के लिए कोई कमरा उपलब्ध नहीं।
-Chambre	Room	غرفة	Habitación	客房	客室	कमरा
-Non remboursable	Non-refundable	غير قابل للاسترداد	No reembolsable	不可退款	返金不可	वापसी योग्य नहीं
-Annulation gratuite jusqu'au {0}	Free cancellation until {0}	إلغاء مجاني حتى {0}	Cancelación gratuita hasta el {0}	{0} 前可免费取消	{0} まで無料キャンセル	{0} तक मुफ़्त रद्दीकरण
-L'hôtel	The hotel	الفندق	El hotel	酒店介绍	ホテルについて	होटल
-Lire la suite	Read more	اقرأ المزيد	Leer más	展开	続きを読む	और पढ़ें
-Voir moins	Show less	عرض أقل	Ver menos	收起	閉じる	कम दिखाएँ
-Équipements	Amenities	المرافق	Servicios	设施	設備	सुविधाएँ
-Avis des clients	Guest reviews	آراء النزلاء	Opiniones de clientes	住客评价	宿泊者の口コミ	मेहमानों की समीक्षाएँ
-À savoir	Good to know	معلومات مهمة	A tener en cuenta	须知	ご注意	जानने योग्य
-Données hôtels, avis et prix : LiteAPI.	Hotel data, reviews and prices: LiteAPI.	بيانات الفنادق والآراء والأسعار: LiteAPI.	Datos de hoteles, opiniones y precios: LiteAPI.	酒店数据、评价和价格：LiteAPI。	ホテル情報・口コミ・料金：LiteAPI。	होटल डेटा, समीक्षाएँ और दाम: LiteAPI।
-Arrivée dès {0}	Check-in from {0}	الوصول من {0}	Entrada desde las {0}	{0} 起入住	チェックイン {0}〜	{0} से चेक-इन
-Départ avant {0}	Check-out by {0}	المغادرة قبل {0}	Salida antes de las {0}	{0} 前退房	チェックアウト 〜{0}	{0} तक चेक-आउट
-{0} voyageur(s)	{0} traveller(s)	{0} مسافر	{0} viajero(s)	{0} 位旅客	{0}名	{0} यात्री
-Note 8+	Rating 8+	تقييم 8+	Nota 8+	评分 8+	評価8以上	रेटिंग 8+
-Petit-déjeuner	Breakfast	فطور	Desayuno	含早餐	朝食付き	नाश्ता
-Réserver dans l'app (mode test)	Book in the app (test mode)	احجز في التطبيق (وضع تجريبي)	Reservar en la app (modo prueba)	在应用内预订（测试模式）	アプリで予約（テストモード）	ऐप में बुक करें (टेस्ट मोड)
-Réserver cette chambre	Book this room	احجز هذه الغرفة	Reservar esta habitación	预订此房间	この部屋を予約	यह कमरा बुक करें
-Réservation confirmée ✓	Booking confirmed ✓	تم تأكيد الحجز ✓	Reserva confirmada ✓	预订已确认 ✓	予約が確定しました ✓	बुकिंग पक्की ✓
-Vérification de la disponibilité…	Checking availability…	جارٍ التحقق من التوفر…	Comprobando disponibilidad…	正在确认空房…	空室を確認中…	उपलब्धता जाँच रहे हैं…
-Prix confirmé : {0}	Confirmed price: {0}	السعر المؤكد: {0}	Precio confirmado: {0}	确认价格：{0}	確定料金：{0}	पक्का दाम: {0}
-Prénom	First name	الاسم الأول	Nombre	名	名	पहला नाम
-Nom	Last name	اسم العائلة	Apellido	姓	姓	उपनाम
-E-mail	Email	البريد الإلكتروني	Correo electrónico	电子邮箱	メールアドレス	ईमेल
-Confirmer la réservation	Confirm booking	تأكيد الحجز	Confirmar la reserva	确认预订	予約を確定	बुकिंग पक्की करें
-Fermer	Close	إغلاق	Cerrar	关闭	閉じる	बंद करें
-Mode test : aucune vraie réservation n'est faite et rien n'est payé.	Test mode: no real booking is made and nothing is charged.	وضع تجريبي: لا يتم إجراء حجز حقيقي ولا يُدفع أي مبلغ.	Modo prueba: no se hace ninguna reserva real ni se cobra nada.	测试模式：不会真正预订，也不会扣款。	テストモード：実際の予約や支払いは行われません。	टेस्ट मोड: कोई असली बुकिंग नहीं होती और कोई भुगतान नहीं होता।
-Numéro de réservation : {0}	Booking number: {0}	رقم الحجز: {0}	Número de reserva: {0}	预订号：{0}	予約番号：{0}	बुकिंग नंबर: {0}
-Statut : {0}	Status: {0}	الحالة: {0}	Estado: {0}	状态：{0}	ステータス：{0}	स्थिति: {0}
-La réservation a été ajoutée à « Mes voyages ».	The booking has been added to "My trips".	تمت إضافة الحجز إلى «رحلاتي».	La reserva se ha añadido a «Mis viajes».	预订已加入“我的行程”。	予約を「マイトリップ」に追加しました。	बुकिंग "मेरी यात्राएँ" में जोड़ दी गई।
-Réservation ajoutée à votre voyage : {0}	Booking added to your trip: {0}	تمت إضافة الحجز إلى رحلتك: {0}	Reserva añadida a tu viaje: {0}	预订已加入行程：{0}	予約を旅行に追加：{0}	बुकिंग आपकी यात्रा में जोड़ी गई: {0}
-Cette offre n'est plus disponible. Choisissez-en une autre.	This offer is no longer available. Choose another one.	هذا العرض لم يعد متاحًا. اختر عرضًا آخر.	Esta oferta ya no está disponible. Elige otra.	该报价已不可用，请另选。	このプランは予約できなくなりました。別のプランを選んでください。	यह ऑफ़र अब उपलब्ध नहीं है। कोई और चुनें।
-La réservation n'a pas abouti.	The booking didn't go through.	لم يكتمل الحجز.	La reserva no se ha completado.	预订未成功。	予約できませんでした。	बुकिंग पूरी नहीं हुई।
-Budget	Budget	الميزانية	Presupuesto	预算	予算	बजट
-Hébergement	Accommodation	الإقامة	Alojamiento	住宿	宿泊	ठहरना
-Repas	Meals	الوجبات	Comidas	餐饮	食事	भोजन
-Visites et sorties	Sights and outings	الزيارات والخرجات	Visitas y salidas	参观与游玩	観光・お出かけ	घूमना और सैर
-Transports sur place	Local transport	التنقل المحلي	Transporte local	当地交通	現地の交通	स्थानीय परिवहन
-Imprévus et souvenirs	Extras and souvenirs	مصاريف طارئة وهدايا	Imprevistos y recuerdos	意外开支与纪念品	予備費・お土産	अनपेक्षित खर्च और स्मृति-चिह्न
-Vols gardés dans votre voyage	Flights saved in your trip	الرحلات المحفوظة في رحلتك	Vuelos guardados en tu viaje	行程中保存的航班	旅行に保存したフライト	आपकी यात्रा में सहेजी गई उड़ानें
-Pas de nuit sur place	No night on site	لا مبيت في المكان	Sin noche en destino	不在当地过夜	宿泊なし	वहाँ कोई रात नहीं
-Hôtel réservé	Booked hotel	فندق محجوز	Hotel reservado	已预订酒店	予約済みホテル	बुक किया गया होटल
-Estimation : 3 repas par jour et par personne	Estimate: 3 meals per day per person	تقدير: 3 وجبات يوميًا للشخص	Estimación: 3 comidas al día por persona	估算：每人每天3餐	概算：1人1日3食	अनुमान: प्रति व्यक्ति प्रतिदिन 3 भोजन
-Estimation : surtout à pied	Estimate: mostly on foot	تقدير: غالبًا سيرًا على الأقدام	Estimación: sobre todo a pie	估算：以步行为主	概算：主に徒歩	अनुमान: ज़्यादातर पैदल
-Estimation : métro, bus, taxis occasionnels	Estimate: metro, bus, occasional taxis	تقدير: مترو وحافلات وسيارات أجرة أحيانًا	Estimación: metro, autobús, taxis ocasionales	估算：地铁、公交，偶尔打车	概算：地下鉄・バス・時々タクシー	अनुमान: मेट्रो, बस, कभी-कभी टैक्सी
-Montant saisi	Amount entered	المبلغ المُدخل	Importe introducido	已输入金额	入力した金額	दर्ज की गई राशि
-10 % des dépenses sur place	10% of on-site spending	10٪ من المصاريف في المكان	10 % del gasto en destino	当地开支的10%	現地費用の10％	स्थानीय खर्च का 10%
-💰 Budget du séjour	💰 Trip budget	💰 ميزانية الإقامة	💰 Presupuesto del viaje	💰 行程预算	💰 旅の予算	💰 यात्रा बजट
-Budget du séjour	Trip budget	ميزانية الإقامة	Presupuesto del viaje	行程预算	旅の予算	यात्रा बजट
-Total estimé	Estimated total	المجموع التقديري	Total estimado	预计总额	合計（概算）	अनुमानित कुल
-{0} par personne	{0} per person	{0} للشخص	{0} por persona	每人 {0}	1人あたり {0}	प्रति व्यक्ति {0}
-{0} par jour	{0} per day	{0} يوميًا	{0} al día	每天 {0}	1日あたり {0}	प्रतिदिन {0}
-Dans votre budget : il reste {0}	Within your budget: {0} left	ضمن ميزانيتك: يتبقى {0}	Dentro de tu presupuesto: quedan {0}	在预算内：还剩 {0}	予算内：残り {0}	आपके बजट में: {0} बचे
-Au-dessus de votre budget de {0}	Over your budget by {0}	يتجاوز ميزانيتك بـ {0}	Supera tu presupuesto en {0}	超出预算 {0}	予算を {0} オーバー	आपके बजट से {0} ज़्यादा
-Fixer un budget maximum ›	Set a maximum budget ›	حدد ميزانية قصوى ›	Fijar un presupuesto máximo ›	设定预算上限 ›	予算の上限を設定 ›	अधिकतम बजट तय करें ›
-Modifier le budget maximum ›	Change the maximum budget ›	عدّل الميزانية القصوى ›	Cambiar el presupuesto máximo ›	修改预算上限 ›	予算の上限を変更 ›	अधिकतम बजट बदलें ›
-Voyageurs	Travellers	المسافرون	Viajeros	旅客	人数	यात्री
-Nuits	Nights	الليالي	Noches	晚数	泊数	रातें
-Détail par poste	Breakdown	التفاصيل حسب البند	Desglose por partida	分项明细	項目別の内訳	मद-वार विवरण
-Budget maximum	Maximum budget	الميزانية القصوى	Presupuesto máximo	预算上限	予算の上限	अधिकतम बजट
-Montant ({0})	Amount ({0})	المبلغ ({0})	Importe ({0})	金额（{0}）	金額（{0}）	राशि ({0})
-Réinitialiser	Reset	إعادة الضبط	Restablecer	重置	リセット	रीसेट करें
-Aucun vol choisi	No flight chosen	لم يتم اختيار رحلة	Ningún vuelo elegido	尚未选择航班	フライト未選択	कोई उड़ान नहीं चुनी
-Hôtel choisi	Chosen hotel	الفندق المختار	Hotel elegido	已选酒店	選んだホテル	चुना गया होटल
-Aucun hôtel choisi	No hotel chosen	لم يتم اختيار فندق	Ningún hotel elegido	尚未选择酒店	ホテル未選択	कोई होटल नहीं चुना
-Aucune activité choisie	No activity chosen	لم يتم اختيار أي نشاط	Ninguna actividad elegida	尚未选择活动	アクティビティ未選択	कोई गतिविधि नहीं चुनी
-Prix d'entrée habituels pour vos activités	Usual admission prices for your activities	أسعار الدخول المعتادة لأنشطتك	Precios de entrada habituales de tus actividades	您所选活动的常规门票价格	選んだアクティビティの一般的な入場料	आपकी गतिविधियों के सामान्य प्रवेश शुल्क
-Ajouter repas, transports et imprévus (estimation)	Add meals, transport and extras (estimate)	إضافة الوجبات والتنقل والطوارئ (تقدير)	Añadir comidas, transporte e imprevistos (estimación)	加入餐饮、交通和意外开支（估算）	食事・交通・予備費を追加（概算）	भोजन, परिवहन और अनपेक्षित खर्च जोड़ें (अनुमान)
-Le budget additionne ce que vous avez choisi : vols gardés, hôtel réservé ou mis en favori, activités de votre programme ou ajoutées au voyage. Touchez un poste pour saisir votre propre montant.	The budget adds up what you've chosen: saved flights, booked or favourite hotel, activities from your itinerary or added to the trip. Tap a line to enter your own amount.	تجمع الميزانية ما اخترته: الرحلات المحفوظة، والفندق المحجوز أو المفضل، والأنشطة في برنامجك أو المضافة إلى الرحلة. المس بندًا لإدخال مبلغك الخاص.	El presupuesto suma lo que has elegido: vuelos guardados, hotel reservado o favorito, actividades de tu programa o añadidas al viaje. Toca una partida para introducir tu propio importe.	预算汇总您的选择：已保存的航班、已预订或收藏的酒店、行程中或加入旅行的活动。点按某项可输入您自己的金额。	予算は選んだものの合計です：保存したフライト、予約またはお気に入りのホテル、プランや旅行に追加したアクティビティ。項目をタップすると金額を入力できます。	बजट आपकी चुनी चीज़ों को जोड़ता है: सहेजी गई उड़ानें, बुक या पसंदीदा होटल, आपके कार्यक्रम की या यात्रा में जोड़ी गई गतिविधियाँ। अपनी राशि दर्ज करने के लिए किसी मद को टैप करें।
-Gratuit	Free	مجاني	Gratis	免费	無料	मुफ़्त
-+ {0} autres	+ {0} more	+ {0} أخرى	+ {0} más	另有 {0} 项	ほか {0} 件	+ {0} और
-Choisir un vol ›	Choose a flight ›	اختر رحلة ›	Elegir un vuelo ›	选择航班 ›	フライトを選ぶ ›	उड़ान चुनें ›
-Choisir un hôtel ›	Choose a hotel ›	اختر فندقًا ›	Elegir un hotel ›	选择酒店 ›	ホテルを選ぶ ›	होटल चुनें ›
-Choisir des activités ›	Choose activities ›	اختر أنشطة ›	Elegir actividades ›	选择活动 ›	アクティビティを選ぶ ›	गतिविधियाँ चुनें ›
-💰 Retour au budget	💰 Back to budget	💰 العودة إلى الميزانية	💰 Volver al presupuesto	💰 返回预算	💰 予算に戻る	💰 बजट पर लौटें
-Estimation : vol le moins cher de votre recherche	Estimate: cheapest flight from your search	تقدير: أرخص رحلة في بحثك	Estimación: vuelo más barato de tu búsqueda	估算：您搜索到的最便宜航班	概算：検索結果の最安フライト	अनुमान: आपकी खोज की सबसे सस्ती उड़ान
-Estimation selon la distance depuis votre ville de départ	Estimate based on distance from your departure city	تقدير حسب المسافة من مدينة المغادرة	Estimación según la distancia desde tu ciudad de salida	根据与出发城市的距离估算	出発都市からの距離による概算	आपके प्रस्थान शहर से दूरी के अनुसार अनुमान
-Estimation : prix moyen des hôtels trouvés pour vos dates	Estimate: average price of hotels found for your dates	تقدير: متوسط أسعار الفنادق المتاحة في تواريخك	Estimación: precio medio de los hoteles encontrados para tus fechas	估算：您日期内酒店的平均价格	概算：ご希望日程のホテルの平均料金	अनुमान: आपकी तारीखों के होटलों का औसत दाम
-Estimation selon le pays et votre niveau de budget	Estimate based on the country and your budget level	تقدير حسب البلد ومستوى ميزانيتك	Estimación según el país y tu nivel de presupuesto	根据国家和预算档次估算	国と予算レベルからの概算	देश और आपके बजट स्तर के अनुसार अनुमान
-Estimation : environ 1 à 2 visites payantes par jour	Estimate: about 1 to 2 paid visits per day	تقدير: نحو زيارة أو زيارتين مدفوعتين يوميًا	Estimación: unas 1 o 2 visitas de pago al día	估算：每天约1–2个收费景点	概算：1日1〜2か所の有料施設	अनुमान: प्रतिदिन लगभग 1–2 सशुल्क स्थल
-Effacer l'historique	Clear history	مسح السجل	Borrar historial	清除记录	履歴を消去	इतिहास मिटाएँ
-Le budget additionne ce que vous avez choisi ; sans choix, une estimation est affichée. Touchez un poste pour saisir votre propre montant.	The budget adds up what you've chosen; where nothing is chosen, an estimate is shown. Tap a line to enter your own amount.	تجمع الميزانية ما اخترته؛ وعند عدم الاختيار يُعرض تقدير. المس بندًا لإدخال مبلغك الخاص.	El presupuesto suma lo que has elegido; si no hay elección, se muestra una estimación. Toca una partida para introducir tu propio importe.	预算汇总您的选择；未选择的项目显示估算。点按某项可输入您自己的金额。	予算は選んだものの合計です。未選択の項目は概算を表示します。項目をタップすると金額を入力できます。	बजट आपकी चुनी चीज़ों को जोड़ता है; जहाँ कुछ नहीं चुना, वहाँ अनुमान दिखता है। अपनी राशि दर्ज करने के लिए किसी मद को टैप करें।
-Entrées payantes de votre programme	Paid admissions in your itinerary	تذاكر الدخول المدفوعة في برنامجك	Entradas de pago de tu programa	行程中的收费门票	プラン内の有料入場	आपके कार्यक्रम के सशुल्क प्रवेश
-Autres repas (estimation)	Other meals (estimate)	وجبات أخرى (تقدير)	Otras comidas (estimación)	其他餐食（估算）	その他の食事（概算）	अन्य भोजन (अनुमान)
-Restaurants et cafés choisis + autres repas estimés	Chosen restaurants and cafés + other meals estimated	المطاعم والمقاهي المختارة + وجبات أخرى تقديرية	Restaurantes y cafés elegidos + otras comidas estimadas	所选餐厅和咖啡馆 + 其他餐食估算	選んだレストラン・カフェ＋その他の食事（概算）	चुने गए रेस्तराँ और कैफ़े + अन्य भोजन का अनुमान
-Restaurants et cafés de votre programme	Restaurants and cafés in your itinerary	المطاعم والمقاهي في برنامجك	Restaurantes y cafés de tu programa	行程中的餐厅和咖啡馆	プラン内のレストラン・カフェ	आपके कार्यक्रम के रेस्तराँ और कैफ़े
-+ {0} lieu(x) en accès libre (places, ponts, jardins…)	+ {0} free-access place(s) (squares, bridges, gardens…)	+ {0} مكان مجاني (ساحات، جسور، حدائق…)	+ {0} lugar(es) de acceso libre (plazas, puentes, jardines…)	另有 {0} 个免费景点（广场、桥梁、花园…）	ほか無料スポット {0} か所（広場・橋・庭園など）	+ {0} मुफ़्त स्थान (चौक, पुल, बाग़…)
-Pas encore dans votre voyage (non compté) :	Not in your trip yet (not counted):	غير موجود في رحلتك بعد (غير محسوب):	Aún no está en tu viaje (no se cuenta):	尚未加入行程（不计入）：	まだ旅行に含まれていません（計上なし）：	अभी आपकी यात्रा में नहीं (गिना नहीं गया):
-+ Vol	+ Flight	+ رحلة	+ Vuelo	+ 航班	+ フライト	+ उड़ान
-+ Hôtel	+ Hotel	+ فندق	+ Hotel	+ 酒店	+ ホテル	+ होटल
-+ Activités	+ Activities	+ أنشطة	+ Actividades	+ 活动	+ アクティビティ	+ गतिविधियाँ
-Le budget ne compte que ce qui est dans votre voyage : vols gardés, hôtel choisi, activités. Les lieux en accès libre sont gratuits ; les restaurants comptent dans les repas. Touchez un poste pour saisir votre propre montant.	The budget only counts what's in your trip: saved flights, chosen hotel, activities. Free-access places cost nothing; restaurants count as meals. Tap a line to enter your own amount.	لا تحسب الميزانية إلا ما في رحلتك: الرحلات المحفوظة، والفندق المختار، والأنشطة. الأماكن المفتوحة مجانية؛ والمطاعم تُحسب ضمن الوجبات. المس بندًا لإدخال مبلغك الخاص.	El presupuesto solo cuenta lo que está en tu viaje: vuelos guardados, hotel elegido, actividades. Los lugares de acceso libre son gratis; los restaurantes cuentan como comidas. Toca una partida para introducir tu propio importe.	预算只计算行程中的内容：已保存航班、所选酒店、活动。免费景点不计费；餐厅计入餐饮。点按某项可输入您自己的金额。	予算は旅行に含まれるものだけを計上します：保存したフライト、選んだホテル、アクティビティ。無料スポットは0円、レストランは食事に含めます。項目をタップすると金額を入力できます。	बजट केवल आपकी यात्रा में शामिल चीज़ें गिनता है: सहेजी गई उड़ानें, चुना गया होटल, गतिविधियाँ। मुफ़्त स्थानों का कोई खर्च नहीं; रेस्तराँ भोजन में गिने जाते हैं। अपनी राशि दर्ज करने के लिए किसी मद को टैप करें।
-Réserver dans l'app	Book in the app	احجز في التطبيق	Reservar en la app	在应用内预订	アプリで予約	ऐप में बुक करें
-Continuer vers le paiement	Continue to payment	المتابعة إلى الدفع	Continuar al pago	继续付款	お支払いへ進む	भुगतान पर जाएँ
-Paiement sécurisé	Secure payment	دفع آمن	Pago seguro	安全支付	安全なお支払い	सुरक्षित भुगतान
-Paiement sécurisé par LiteAPI : votre carte est saisie sur leur page, jamais dans l'app.	Secure payment by LiteAPI: your card is entered on their page, never in the app.	دفع آمن عبر LiteAPI: تُدخل بطاقتك في صفحتهم، وليس في التطبيق أبدًا.	Pago seguro con LiteAPI: tu tarjeta se introduce en su página, nunca en la app.	由 LiteAPI 提供安全支付：银行卡信息在其页面输入，绝不经过本应用。	LiteAPI による安全な決済：カード情報は LiteAPI のページで入力し、アプリには保存されません。	LiteAPI द्वारा सुरक्षित भुगतान: आपका कार्ड उनके पेज पर डाला जाता है, ऐप में कभी नहीं।
-Mode test : utilisez la carte 4242 4242 4242 4242, une date future et n'importe quel code.	Test mode: use card 4242 4242 4242 4242, any future date and any code.	وضع تجريبي: استخدم البطاقة 4242 4242 4242 4242 وأي تاريخ مستقبلي وأي رمز.	Modo prueba: usa la tarjeta 4242 4242 4242 4242, una fecha futura y cualquier código.	测试模式：使用卡号 4242 4242 4242 4242、任意未来日期和任意安全码。	テストモード：カード番号 4242 4242 4242 4242、未来の日付、任意のコードを使用してください。	टेस्ट मोड: कार्ड 4242 4242 4242 4242, कोई भी भविष्य की तारीख और कोई भी कोड इस्तेमाल करें।
-Le paiement sécurisé n'est pas disponible pour cette offre. Réservez chez un partenaire.	Secure payment isn't available for this offer. Book with a partner.	الدفع الآمن غير متاح لهذا العرض. احجز لدى أحد الشركاء.	El pago seguro no está disponible para esta oferta. Reserva con un socio.	此报价不支持安全支付，请通过合作网站预订。	このプランは安全な決済に対応していません。提携サイトで予約してください。	इस ऑफ़र के लिए सुरक्षित भुगतान उपलब्ध नहीं है। किसी पार्टनर पर बुक करें।
-✨ Décrivez votre hôtel idéal (facultatif)	✨ Describe your ideal hotel (optional)	✨ صف فندقك المثالي (اختياري)	✨ Describe tu hotel ideal (opcional)	✨ 描述您理想的酒店（可选）	✨ 理想のホテルを言葉で（任意）	✨ अपने आदर्श होटल का वर्णन करें (वैकल्पिक)
-Ex. calme avec piscine, romantique, près de la plage…	E.g. quiet with a pool, romantic, near the beach…	مثال: هادئ مع مسبح، رومانسي، قريب من الشاطئ…	Ej. tranquilo con piscina, romántico, cerca de la playa…	例如：安静、带泳池、浪漫、靠近海滩…	例：静かでプール付き、ロマンチック、ビーチの近く…	उदा. शांत, पूल वाला, रोमांटिक, समुद्र तट के पास…
-Classés selon votre description	Ranked by your description	مرتبة حسب وصفك	Ordenados según tu descripción	按您的描述排序	ご希望の内容に合う順	आपके वर्णन के अनुसार क्रम
-🧪 Clé de test : réservations et paiements fictifs.	🧪 Test key: bookings and payments are simulated.	🧪 مفتاح تجريبي: الحجوزات والمدفوعات وهمية.	🧪 Clave de prueba: reservas y pagos ficticios.	🧪 测试密钥：预订和付款均为模拟。	🧪 テスト用キー：予約・決済はテストです。	🧪 टेस्ट कुंजी: बुकिंग और भुगतान नकली हैं।
-✅ Clé réelle : réservations et paiements réels.	✅ Live key: real bookings and payments.	✅ مفتاح حقيقي: حجوزات ومدفوعات حقيقية.	✅ Clave real: reservas y pagos reales.	✅ 正式密钥：真实预订和付款。	✅ 本番キー：実際の予約・決済です。	✅ असली कुंजी: असली बुकिंग और भुगतान।
-Type de clé non reconnu : elle devrait commencer par « sand_ » ou « prod_ ».	Unrecognised key type: it should start with "sand_" or "prod_".	نوع المفتاح غير معروف: يجب أن يبدأ بـ «sand_» أو «prod_».	Tipo de clave no reconocido: debería empezar por «sand_» o «prod_».	无法识别的密钥类型：应以“sand_”或“prod_”开头。	キーの種類を判別できません：「sand_」または「prod_」で始まるはずです。	कुंजी का प्रकार पहचाना नहीं गया: यह "sand_" या "prod_" से शुरू होनी चाहिए।
+# fr	en — généré par tools/i18n/build.py
+Accueil	Home
+Vols	Flights
+Sorties	Things to do
+Expérience	Experience
+Blogue	Blog
+Alertes	Alerts
+Réglages	Settings
+Bonjour 👋	Hello 👋
+Bonsoir 👋	Good evening 👋
+Où partez-vous ?	Where are you going?
+Rechercher un vol	Search for a flight
+Depuis {0} · {1} passager(s)	From {0} · {1} passenger(s)
+Reprendre une recherche	Resume a search
+Destinations populaires	Popular destinations
+Relancer la recherche ›	Search again ›
+Relancer avec de nouvelles dates ›	Search with new dates ›
+Prix des vols : Aviasales · Lieux : OpenStreetMap · Photos : Wikipédia	Flight prices: Aviasales · Places: OpenStreetMap · Photos: Wikipedia
+Trouver un vol	Find a flight
+Aller-retour	Round trip
+Aller simple	One way
+Départ	From
+Destination	To
+Ville ou aéroport	City or airport
+Recherche…	Searching…
+Inverser départ et destination	Swap origin and destination
+Idées de destinations	Destination ideas
+Aller	Departure
+Retour	Return
+Aller (mois)	Departure (month)
+Retour (mois)	Return (month)
+Aller – retour	Departure – return
+Choisissez l'aller puis le retour	Choose departure, then return
+{0} nuit(s)	{0} night(s)
+Passagers	Passengers
+Passagers (adultes)	Passengers (adults)
+Dates flexibles	Flexible dates
+Meilleur prix sur tout le mois	Best price over the whole month
+Chercher le meilleur prix sur tout le mois	Find the best price over the whole month
+Vols directs uniquement	Direct flights only
+Rechercher les meilleurs prix	Search the best prices
+Recherches récentes	Recent searches
+Les prix viennent des recherches récentes des voyageurs sur Aviasales. Le prix final est confirmé sur le site du vendeur avant paiement.	Prices come from travellers' recent searches on Aviasales. The final price is confirmed on the seller's site before payment.
+Mode démo : prix fictifs	Demo mode: sample prices
+Ajoutez votre clé API Travelpayouts (gratuite) pour afficher les vrais prix.	Add your (free) Travelpayouts API key to see real prices.
+Configurer la clé ›	Set up the key ›
+← Modifier	← Edit
+Recherche des meilleurs prix…	Searching for the best prices…
+Réessayer	Try again
+🔔 Suivre ce prix	🔔 Track this price
+🎟️ Que faire sur place	🎟️ Things to do there
+Aucun prix récent trouvé pour ces dates	No recent price found for these dates
+Chercher en direct sur Aviasales	Search live on Aviasales
+Voir toutes les offres en direct sur Aviasales ›	See all live offers on Aviasales ›
+{0} offres	{0} offers
+Prix	Price
+Durée	Duration
+Escales	Stops
+Prix aller le plus bas par jour	Lowest one-way price per day
+Touchez un jour pour le choisir. En vert : le moins cher du mois.	Tap a day to choose it. In green: the cheapest of the month.
+★ Meilleur prix	★ Best price
+par personne	per person
+Réserver	Book
+Direct	Direct
+1 escale	1 stop
+{0} escales	{0} stops
+Choisissez le départ et la destination dans la liste proposée.	Choose the origin and destination from the list.
+Le départ et la destination sont identiques.	Origin and destination are the same.
+Ce trajet est déjà suivi.	This route is already tracked.
+Trajet suivi : vous serez prévenu si le prix baisse.	Route tracked: you'll be notified if the price drops.
+Trajet suivi. Ajoutez votre clé API dans Réglages pour activer la surveillance.	Route tracked. Add your API key in Settings to enable monitoring.
+Alertes de prix	Price alerts
+L'application vérifie ces trajets environ toutes les 12 heures et vous envoie une notification si le prix baisse.	The app checks these routes about every 12 hours and notifies you if the price drops.
+Aucun trajet suivi. Lancez une recherche de vol, puis touchez « 🔔 Suivre ce prix ».	No routes tracked. Search for a flight, then tap "🔔 Track this price".
+Vérification…	Checking…
+Vérifier les prix maintenant	Check prices now
+Date passée	Date passed
+Pas encore de prix	No price yet
+Supprimer	Delete
+Prix vérifiés : pas de baisse pour le moment.	Prices checked: no drop for now.
+Ajoutez votre clé API dans Réglages pour vérifier les prix.	Add your API key in Settings to check prices.
+Devise des prix	Price currency
+Langue	Language
+Automatique (langue du téléphone)	Automatic (phone language)
+Accès aux vrais prix	Access to real prices
+Clé API Travelpayouts (token)	Travelpayouts API key (token)
+Afficher	Show
+Masquer	Hide
+Identifiant partenaire (marker), facultatif	Partner ID (marker), optional
+Permet de toucher une commission sur les réservations faites via l'app.	Lets you earn a commission on bookings made through the app.
+Enregistrer	Save
+Enregistré ✓	Saved ✓
+Obtenir une clé gratuite	Get a free key
+1. Créez un compte sur travelpayouts.com.	1. Create an account on travelpayouts.com.
+2. Rejoignez le programme « Aviasales ».	2. Join the "Aviasales" programme.
+3. Dans votre profil, section API, copiez le « token » et collez-le ci-dessus. Le « marker » est votre identifiant partenaire, affiché au même endroit.	3. In your profile, API section, copy the "token" and paste it above. The "marker" is your partner ID, shown in the same place.
+Ouvrir travelpayouts.com	Open travelpayouts.com
+La clé est enregistrée uniquement sur ce téléphone.	The key is stored only on this phone.
+Aucune clé enregistrée : l'app est en mode démo (prix fictifs).	No key saved: the app is in demo mode (sample prices).
+Clé enregistrée. Vérification en cours…	Key saved. Checking…
+✓ Clé enregistrée et valide : les vrais prix sont activés.	✓ Key saved and valid: real prices are enabled.
+Clé enregistrée : les vrais prix sont activés.	Key saved: real prices are enabled.
+Clé enregistrée, mais le test a échoué : {0}	Key saved, but the test failed: {0}
+Notes des restaurants, cafés et bars (facultatif)	Ratings for restaurants, cafés and bars (optional)
+Utilisé ce mois-ci : {0}	Used this month: {0}
+ · quota du fournisseur atteint aujourd'hui	 · provider quota reached today
+Limite / mois	Limit / month
+Annuler	Cancel
+Aucun navigateur installé	No browser installed
+Pas de connexion internet (ou serveur injoignable).	No internet connection (or server unreachable).
+Clé API refusée. Vérifiez-la dans Réglages.	API key rejected. Check it in Settings.
+Trop de recherches en peu de temps. Réessayez dans une minute.	Too many searches in a short time. Try again in a minute.
+Prix en baisse : {0} → {1}	Price drop: {0} → {1}
+{0} au lieu de {1}	{0} instead of {1}
+Alertes de prix (notifications)	Price alerts
+{0} passager(s)	{0} passenger(s)
+{0} / pers.	{0} / person
+Dernier prix : {0}	Last price: {0}
+Vérifié le {0}	Checked on {0}
+Vol {0}	Flight {0}
+Lien non pris en charge	Unsupported link
+Page extérieure bloquée pour votre sécurité.	External page blocked for your safety.
+Paiement reçu, mais la réservation n'est pas encore confirmée. Réessayez : aucun nouveau paiement ne sera demandé.	Payment received, but the booking isn't confirmed yet. Try again: no new payment will be requested.
+Réessayer la réservation	Retry the booking
+Réservation payée à confirmer : {0}	Paid booking to confirm: {0}
+Le paiement a été reçu mais la confirmation n'est pas arrivée. Finalisez-la : aucun nouveau paiement ne sera demandé.	The payment was received but the confirmation didn't arrive. Complete it: no new payment will be requested.
+Météo à {0}	Weather in {0}
+Prévisions disponibles 16 jours avant le départ.	Forecast available 16 days before departure.
++ Ajouter un jour	+ Add a day
++ Ajouter une dépense	+ Add an expense
++ Ajouter une étape	+ Add a stop
++ Créer un programme	+ Create an itinerary
+15 à 20 % attendus au restaurant	15 to 20% expected at restaurants
+Adaptateur de prise	Plug adapter
+Adaptateur nécessaire pour les prises françaises.	Adapter needed for French plugs.
+Ajouter un objet	Add an item
+Ambassade et consulat	Embassy and consulate
+Ambulance	Ambulance
+Articles	Articles
+Assurance voyage	Travel insurance
+Au secours !	Help!
+Aucun séjour pour l'instant.	No trips yet.
+Bagages pour {0}	Packing for {0}
+Batterie externe	Power bank
+Bonjour	Hello
+Bonnet, gants et écharpe	Hat, gloves and scarf
+Carte : © contributeurs OpenStreetMap	Map: © OpenStreetMap contributors
+Carte bancaire et un peu d'espèces	Bank card and some cash
+Chapeau ou casquette	Hat or cap
+Chaussures confortables pour marcher	Comfortable walking shoes
+Chaussures de marche	Hiking boots
+Cherchez une ville dans « Lieux », ou créez un séjour, pour voir ses infos pratiques.	Search for a city in "Places", or create a trip, to see its practical info.
+Combien ça coûte ?	How much is it?
+Convertisseur	Converter
+Coordonnées de l'ambassade ou du consulat de {0} sur place.	Contact details of the {0} embassy or consulate on site.
+Crème solaire	Sunscreen
+Créer mon séjour sur mesure	Create my tailor-made trip
+Documents	Documents
+Dépassement de {0}	Over by {0}
+Dépenses sur place	On-site spending
+Dépensé : {0} sur {1} prévus	Spent: {0} of {1} planned
+Enregistrez ce séjour dans « Mes voyages » pour suivre vos dépenses.	Save this trip in "My trips" to track your spending.
+Environ 10 % au restaurant	About 10% at restaurants
+Excusez-moi	Excuse me
+Gourde	Water bottle
+Heure (HH:MM)	Time (HH:MM)
+Il reste {0}	{0} left
+Jeux et en-cas pour les enfants	Games and snacks for the kids
+L'addition, s'il vous plaît	The bill, please
+Lessive de voyage	Travel laundry wash
+Libellé (facultatif)	Label (optional)
+Lieu ou activité	Place or activity
+Lieux	Places
+Lieux à visiter	Places to visit
+Lunettes de soleil	Sunglasses
+Maillot de bain	Swimsuit
+Manteau chaud	Warm coat
+Merci	Thank you
+Mes ajouts	My additions
+Modifier l'étape	Edit stop
+Mon expérience à {0}	My experience in {0}
+Monnaie et convertisseur	Currency and converter
+Montant	Amount
+Médicaments personnels	Personal medication
+Note (facultatif)	Note (optional)
+Nouvelle dépense	New expense
+Nouvelle étape	New stop
+Numéros d'urgence	Emergency numbers
+On arrondit ou on laisse 5 à 10 %	Round up or leave 5 to 10%
+Où est… ?	Where is…?
+Parapluie ou imperméable	Umbrella or raincoat
+Pas de pourboire : il peut même vexer	No tipping: it can even offend
+Pas encore d'infos pratiques pour ce pays.	No practical info for this country yet.
+Passeport ou carte d'identité	Passport or ID card
+Petit sac à dos	Small backpack
+Petite trousse de premiers secours	Small first-aid kit
+Phrases utiles ({0})	Useful phrases ({0})
+Police	Police
+Pompiers	Fire brigade
+Pourboire	Tipping
+Prises françaises compatibles.	French plugs fit.
+Prises {0} · {1} V	Plugs {0} · {1} V
+Programme jour par jour selon vos goûts, la météo et votre budget	Day-by-day plan based on your tastes, the weather and your budget
+Prévoyez le coût de votre séjour, puis suivez vos dépenses sur place.	Plan the cost of your trip, then track your spending there.
+Pull ou veste	Sweater or jacket
+Pyjama	Pyjamas
+Quel séjour préparez-vous ?	What trip are you planning?
+Rechercher l'ambassade ›	Find the embassy ›
+Réservations enregistrées hors connexion	Bookings saved offline
+S'il vous plaît	Please
+Sandales ou tongs	Sandals or flip-flops
+Selon la météo	Depending on the weather
+Selon vos activités	Depending on your activities
+Service compris ; on laisse la petite monnaie si on est satisfait	Service included; leave small change if you're happy
+Serviette de plage	Beach towel
+Sous-vêtements et chaussettes	Underwear and socks
+Tenue couvrant épaules et genoux (lieux de culte)	Outfit covering shoulders and knees (places of worship)
+Tenues de jour	Day outfits
+Toilette et santé	Toiletries and health
+Trousse de toilette	Toiletry bag
+Téléphone et chargeur	Phone and charger
+Une tenue pour sortir le soir	An outfit for evenings out
+Urgences	Emergency
+Veste légère	Light jacket
+Vêtements	Clothes
+ambassade	embassy
+{0} / {1} prêts	{0} / {1} packed
+{0} dépense(s) notée(s)	{0} expense(s) recorded
+Écouteurs	Earphones
+Électricité	Electricity
+Électronique	Electronics
+ℹ️ Infos pratiques	ℹ️ Practical info
+↑ Monter	↑ Move up
+↓ Descendre	↓ Move down
+✎ Modifier	✎ Edit
+✕ Supprimer	✕ Delete
+✨ Créer mon séjour	✨ Create my trip
+💰 Budget et dépenses	💰 Budget and spending
+🧳 Bagages	🧳 Packing
+Libanais et oriental	Lebanese and Middle Eastern
+cuisine orientale	Middle Eastern food
+Plages animées	Lively beaches
+plages animées	lively beaches
+Criques et plages calmes	Coves and quiet beaches
+criques	coves
++ Nouveau voyage	+ New trip
+Ajouter	Add
+Dates et voyageurs	Dates and travellers
+Dates à préciser	Dates to be set
+Informations indicatives, à vérifier avant le départ. Taux de change du jour : open.er-api.com.	Indicative information, to be checked before departure. Today's exchange rates: open.er-api.com.
+Nouveau voyage	New trip
+Personnaliser en détail ›	Customise in detail ›
+Prix indicatifs vus récemment (Travelpayouts) : le prix final est confirmé sur le site de réservation.	Indicative prices seen recently (Travelpayouts): the final price is confirmed on the booking site.
+Suggestions selon la durée, la météo prévue et vos activités.	Suggestions based on the length of stay, the forecast and your activities.
+Version rapide ›	Quick version ›
+Voyage créé : {0}	Trip created: {0}
+durée estimée	estimated time
+prévisions Open-Meteo	Open-Meteo forecast
+Étape ajoutée	Added stop
+✓ Enregistré dans votre voyage, mis à jour à chaque changement ›	✓ Saved in your trip, updated with every change ›
+✨ Créer le programme sur mesure	✨ Create a tailor-made itinerary
+✨ Refaire le programme sur mesure	✨ Redo the tailor-made itinerary
+Musées	Museums
+Monuments	Monuments
+Attractions	Attractions
+Parcs & jardins	Parks & gardens
+Plages	Beaches
+Restaurants	Restaurants
+Cafés	Cafés
+Bars	Bars
+Boîtes de nuit	Nightclubs
+Shopping & marchés	Shopping & markets
+Visites & excursions	Tours & trips
+Musées, attractions et restaurants de la ville. Réservez vos billets à l'avance pour éviter la file d'attente.	Museums, attractions and restaurants in the city. Book tickets ahead to skip the line.
+Ville	City
+Ex. Paris, Alger, Rome…	E.g. Paris, Algiers, Rome…
+Indiquez une ville.	Enter a city.
+Les visites guidées et excursions sont proposées par des organisateurs : comparez-les ici.	Guided tours and trips are offered by organisers: compare them here.
+Recherche des lieux…	Finding places…
+Recherche de la ville…	Finding the city…
+Recherche des meilleurs lieux…	Finding the best places…
+Recherche sur la carte…	Searching the map…
+Récupération des notes…	Fetching ratings…
+Afficher les lieux	Show places
+Classés par notoriété : nombre de langues dans lesquelles Wikipédia consacre un article au lieu.	Ranked by fame: the number of languages in which Wikipedia has an article about the place.
+Les adresses sélectionnées par le guide de voyage Wikivoyage, dans l'ordre du guide.	Places selected by the Wikivoyage travel guide, in the guide's order.
+Classés selon les notes et avis {0}	Ranked by ratings and reviews from {0}
+ et les recommandations du guide Wikivoyage.	 and Wikivoyage guide recommendations.
+Adresses du guide Wikivoyage, complétées par la carte OpenStreetMap.	Wikivoyage guide places, completed with the OpenStreetMap map.
+Le guide ne couvre pas assez cette ville : adresses trouvées sur la carte OpenStreetMap.	The guide doesn't cover this city enough: places found on the OpenStreetMap map.
+Limite gratuite atteinte pour {0} : relais pris par {1}.	Free limit reached for {0}: {1} has taken over.
+Limite gratuite atteinte pour {0}.	Free limit reached for {0}.
+Données © les contributeurs d'OpenStreetMap, Wikipédia, Wikidata et Wikivoyage.	Data © OpenStreetMap, Wikipedia, Wikidata and Wikivoyage contributors.
+Aucun lieu trouvé pour cette ville.	No places found for this city.
+Recherche impossible : {0}	Search failed: {0}
+Les serveurs de carte ne répondent pas (plus de 20 s). Réessayez dans un instant.	Map servers aren't responding (over 20 s). Try again in a moment.
+Ville introuvable ou connexion indisponible. Choisissez la ville dans la liste proposée.	City not found or no connection. Choose the city from the list.
+à {0} du centre	{0} from the centre
+Ouvert en ce moment	Open now
+Fermé en ce moment	Closed now
+Réserver des billets	Book tickets
+Billets sur {0}	Tickets on {0}
+Site officiel du lieu	Official site
+Voir	View
+Appeler	Call
+Accès libre	Free entry
+Itinéraire	Directions
+En savoir plus (Wikipédia) ›	Learn more (Wikipedia) ›
+Site officiel ›	Official site ›
+★ Incontournable	★ Must-see
+📘 Recommandé par le guide	📘 Recommended by the guide
+{0} avis	{0} reviews
+Voir ›	View ›
+Musée	Museum
+Musée d'art	Art museum
+Musée national	National museum
+Galerie d'art	Art gallery
+Musée militaire	Military museum
+Musée des sciences	Science museum
+Musée d'histoire	History museum
+Écomusée	Ecomuseum
+Maison-musée	House museum
+Château	Castle
+Palais	Palace
+Cathédrale	Cathedral
+Basilique	Basilica
+Mosquée	Mosque
+Synagogue	Synagogue
+Temple	Temple
+Monastère	Monastery
+Abbaye	Abbey
+Église	Church
+Monument	Monument
+Mémorial	Memorial
+Site archéologique	Archaeological site
+Fortification	Fortification
+Fort	Fort
+Tour	Tower
+Arc de triomphe	Triumphal arch
+Pont	Bridge
+Place	Square
+Attraction	Attraction
+Zoo	Zoo
+Parc d'attractions	Amusement park
+Aquarium	Aquarium
+Tour d'observation	Observation tower
+Lieu emblématique	Landmark
+Opéra	Opera house
+Théâtre	Theatre
+Salle de concert	Concert hall
+Stade	Stadium
+Parc	Park
+Parc urbain	City park
+Jardin botanique	Botanical garden
+Jardin	Garden
+Parc national	National park
+Plage	Beach
+Restaurant	Restaurant
+Café	Café
+Bar	Bar
+Sortie de nuit	Night out
+Boutique	Shop
+Shopping	Shopping
+Marché	Market
+Centre commercial	Shopping centre
+Grand magasin	Department store
+Boîte de nuit	Nightclub
+Pub	Pub
+Lieu de culte	Place of worship
+Lieu à visiter	Place to visit
+Lieu	Place
+Point de vue	Viewpoint
+Ruines	Ruins
+Porte de ville	City gate
+Manoir	Manor
+Réserve naturelle	Nature reserve
+Temple bouddhiste	Buddhist temple
+Temple hindou	Hindu temple
+Brasserie en plein air	Beer garden
+Votre expérience sur mesure	Your tailor-made experience
+Quelques questions sur vos envies et vos goûts : nous composons un programme qui mêle visites, balades, restaurants et sorties.	A few questions about your wishes and tastes: we put together a plan mixing visits, walks, restaurants and nights out.
+Question {0} sur {1}	Question {0} of {1}
+Où voulez-vous vivre l'expérience ?	Where do you want to live the experience?
+Combien de temps avez-vous ?	How much time do you have?
+Avec qui partez-vous ?	Who are you travelling with?
+Qu'est-ce qui vous fait envie ?	What are you in the mood for?
+Plusieurs choix possibles.	Several choices possible.
+Plusieurs choix possibles, ou aucun si tout vous va.	Choose several, or none if anything suits you.
+Plutôt incontournables ou pépites ?	Must-sees or hidden gems?
+Combien de temps aimez-vous passer dans chaque lieu ?	How long do you like to spend at each place?
+À quelle heure aimez-vous commencer la journée ?	What time do you like to start the day?
+Comment vous déplacez-vous ?	How do you get around?
+Des préférences pour les repas et les soirées ?	Any preferences for meals and evenings?
+Quel rythme préférez-vous ?	What pace do you prefer?
+Quel budget pour les repas et les sorties ?	What budget for meals and nights out?
+Quels musées vous attirent ?	Which museums appeal to you?
+Quel genre de patrimoine ?	What kind of heritage?
+Quelle nature vous fait envie ?	What kind of nature?
+Quelles activités de loisirs ?	Which leisure activities?
+Quelle cuisine vous tente ?	What food tempts you?
+Quelle ambiance pour vos soirées ?	What vibe for your evenings?
+Quel shopping ?	What kind of shopping?
+Quelles plages ?	Which beaches?
+Suivant	Next
+Créer mon expérience	Create my experience
+Création de votre expérience…	Creating your experience…
+Sélection des meilleurs lieux de {0}…	Selecting the best places in {0}…
+Analyse des lieux selon vos goûts…	Analysing places against your tastes…
+Composition du programme…	Building the plan…
+Ville introuvable : choisissez-la dans la liste proposée.	City not found: choose it from the list.
+Pas assez de lieux trouvés pour {0}. Essayez d'autres envies ou une grande ville proche.	Not enough places found for {0}. Try other interests or a nearby big city.
+Votre expérience	Your experience
+Autre proposition	Another option
+Modifier	Edit
+Parcours sur la carte ›	Route on the map ›
+Billets	Tickets
+Infos	Info
+Réserver / voir	Book / view
+{0} sur place	{0} on site
+🚶 {0} · ~{1} min à pied depuis l'étape précédente	🚶 {0} · ~{1} min walk from the previous stop
+🚇 {0} · ~{1} min en transports depuis l'étape précédente	🚇 {0} · ~{1} min by transit from the previous stop
+Trajet d'environ {0} min depuis l'étape précédente	About {0} min from the previous stop
+Lieux : Wikidata, Wikivoyage, OpenStreetMap	Places: Wikidata, Wikivoyage, OpenStreetMap
+Jour {0}	Day {0}
+{0} {1} à {2}	{0} of {1} in {2}
+Pour votre envie « {0} » · {1}	For your interest "{0}" · {1}
+Noté {0} sur {1} ({2} avis)	Rated {0} on {1} ({2} reviews)
+L'un des lieux les plus célèbres de {0}	One of the most famous places in {0}
+Un incontournable de {0}	A must-see in {0}
+Recommandé par le guide Wikivoyage	Recommended by the Wikivoyage guide
+Pour souffler au grand air	To breathe some fresh air
+Parmi les lieux les plus réputés de la ville	Among the city's best-known places
+Matin	Morning
+Fin de matinée	Late morning
+Déjeuner	Lunch
+Après-midi	Afternoon
+Pause gourmande	Sweet break
+Fin d'après-midi	Late afternoon
+Dîner	Dinner
+Verre en soirée	Evening drink
+Pour finir la nuit	To end the night
+Une demi-journée	Half a day
+Une journée	One day
+Deux jours	Two days
+Trois jours	Three days
+Seul	Alone
+En couple	As a couple
+Entre amis	With friends
+En famille	With family
+Art et musées	Art and museums
+Histoire et monuments	History and monuments
+Nature et parcs	Nature and parks
+Plage et mer	Beach and sea
+Attractions et loisirs	Attractions and leisure
+Shopping et marchés	Shopping and markets
+Gastronomie	Food
+Vie nocturne	Nightlife
+art	art
+histoire	history
+nature	nature
+plage	beach
+loisirs	leisure
+shopping	shopping
+gastronomie	food
+sorties	nights out
+découverte	discovery
+Peinture et beaux-arts	Painting and fine arts
+Art moderne et contemporain	Modern and contemporary art
+Sciences et techniques	Science and technology
+Histoire et civilisations	History and civilisations
+Châteaux et palais	Castles and palaces
+Lieux de culte	Places of worship
+Sites antiques et archéologiques	Ancient and archaeological sites
+Monuments et places célèbres	Famous monuments and squares
+Jardins et jardins botaniques	Gardens and botanical gardens
+Grands parcs pour se balader	Large parks for a stroll
+Nature sauvage	Wild nature
+Zoos et aquariums	Zoos and aquariums
+Parcs d'attractions	Amusement parks
+Points de vue et panoramas	Viewpoints and panoramas
+Spectacles et stades	Shows and stadiums
+Cuisine locale et traditionnelle	Local and traditional food
+Italien et pizza	Italian and pizza
+Cuisine asiatique	Asian food
+Street food et sur le pouce	Street food and quick bites
+Végétarien et vegan	Vegetarian and vegan
+Gastronomique	Fine dining
+Poissons et fruits de mer	Fish and seafood
+Bars à cocktails	Cocktail bars
+Bars à vin	Wine bars
+Pubs et bières	Pubs and beer
+Musique live et jazz	Live music and jazz
+Marchés et produits locaux	Markets and local produce
+Centres commerciaux	Shopping centres
+Mode et créateurs	Fashion and designers
+beaux-arts	fine arts
+art moderne	modern art
+sciences	science
+musées d'histoire	history museums
+châteaux	castles
+lieux de culte	places of worship
+sites antiques	ancient sites
+monuments	monuments
+jardins	gardens
+grands parcs	big parks
+nature sauvage	wild nature
+zoos et aquariums	zoos and aquariums
+parcs d'attractions	amusement parks
+panoramas	panoramas
+spectacles	shows
+cuisine locale	local food
+cuisine italienne	Italian food
+cuisine asiatique	Asian food
+street food	street food
+cuisine végétarienne	vegetarian food
+fruits de mer	seafood
+cocktails	cocktails
+bars à vin	wine bars
+pubs	pubs
+musique live	live music
+boîtes de nuit	nightclubs
+marchés	markets
+centres commerciaux	shopping centres
+mode	fashion
+Les incontournables	The must-sees
+Les lieux les plus célèbres, à ne pas manquer	The most famous places, not to be missed
+Un mélange	A mix
+Quelques classiques et des lieux moins connus	Some classics and lesser-known places
+Hors des sentiers battus	Off the beaten path
+Des pépites appréciées des connaisseurs	Hidden gems loved by insiders
+Tranquille	Relaxed
+Peu de visites, du temps pour flâner	Few visits, time to wander
+Équilibré	Balanced
+Un bon mélange visites et pauses	A good mix of visits and breaks
+Intense	Intense
+Voir un maximum de choses	See as much as possible
+Survoler	Quick look
+Voir l'essentiel de chaque lieu	See the highlights of each place
+Visite classique	Standard visit
+Le temps habituel de visite	The usual visiting time
+Prendre mon temps	Take my time
+Visiter en détail, lire, s'imprégner	Visit in depth, read, soak it in
+Tôt (8h30)	Early (8:30)
+Vers 9h30	Around 9:30
+Grasse matinée (11h)	Sleep in (11:00)
+Tout à pied	All on foot
+Des lieux proches les uns des autres	Places close to one another
+Transports en commun	Public transport
+On peut aller plus loin entre deux étapes	We can go further between two stops
+Pas de préférence	No preference
+Halal	Halal
+Végétarien	Vegetarian
+Sans alcool (pas de bars)	No alcohol (no bars)
+Petit budget	Small budget
+Adresses abordables	Affordable places
+Budget moyen	Medium budget
+Bon rapport qualité-prix	Good value for money
+Confort	Comfort
+Se faire plaisir	Treat yourself
+rythme {0}	{0} pace
+Récits et histoire des lieux les plus emblématiques, choisis selon vos voyages et vos envies.	Stories and history of the most iconic places, chosen for your trips and interests.
+Une ville, un monument, un lieu…	A city, a monument, a place…
+Article	Article
+Selon vos recherches	Based on your searches
+Les villes emblématiques du monde	The world's iconic cities
+Toutes les villes	All cities
+D'après votre vol	Based on your flight
+D'après vos sorties	Based on your things to do
+D'après votre expérience	Based on your experience
+Pour vous	For you
+Tout	All
+Nature et plages	Nature and beaches
+Loisirs	Leisure
+Découvrir {0}	Discover {0}
+Ville · {0}	City · {0}
+✨ Selon vos goûts	✨ Matches your tastes
+Chargement…	Loading…
+Lire l'article ›	Read the article ›
+Peu d'articles pour ce filtre : essayez « Tout ».	Few articles for this filter: try "All".
+Textes : Wikipédia, licence CC BY-SA. Photos : Wikimedia Commons.	Texts: Wikipedia, CC BY-SA licence. Photos: Wikimedia Commons.
+← Retour	← Back
+{0} min de lecture	{0} min read
+Lire sur Wikipédia	Read on Wikipedia
+Texte issu de l'article Wikipédia « {0} », licence CC BY-SA 4.0.	Text from the Wikipedia article "{0}", CC BY-SA 4.0 licence.
+Les articles ne se chargent pas. Vérifiez la connexion.	Articles won't load. Check your connection.
+Article indisponible pour le moment.	Article unavailable right now.
+Lieu introuvable.	Place not found.
+Paris	Paris
+Rome	Rome
+Londres	London
+New York	New York
+Istanbul	Istanbul
+Barcelone	Barcelona
+Marrakech	Marrakesh
+Alger	Algiers
+Le Caire	Cairo
+Dubaï	Dubai
+Tokyo	Tokyo
+Kyoto	Kyoto
+Bangkok	Bangkok
+Venise	Venice
+Lisbonne	Lisbon
+Amsterdam	Amsterdam
+Prague	Prague
+Athènes	Athens
+Rio de Janeiro	Rio de Janeiro
+Sydney	Sydney
+Séville	Seville
+Tunis	Tunis
+Marseille	Marseille
+Oran	Oran
+Madrid	Madrid
+Casablanca	Casablanca
+France	France
+Italie	Italy
+Royaume-Uni	United Kingdom
+États-Unis	United States
+Turquie	Turkey
+Espagne	Spain
+Maroc	Morocco
+Algérie	Algeria
+Égypte	Egypt
+Émirats arabes unis	United Arab Emirates
+Japon	Japan
+Thaïlande	Thailand
+Portugal	Portugal
+Pays-Bas	Netherlands
+Tchéquie	Czechia
+Grèce	Greece
+Brésil	Brazil
+Australie	Australia
+Tunisie	Tunisia
+Billets coupe-file pour musées et monuments	Skip-the-line tickets for museums and monuments
+Billets et visites guidées de musées	Museum tickets and guided tours
+Horaires, avis et sites officiels	Opening hours, reviews and official sites
+Attractions et activités, annulation gratuite fréquente	Attractions and activities, often free cancellation
+Billets d'entrée instantanés sur mobile	Instant mobile entry tickets
+Parcs d'attractions et pass, fort en Asie	Theme parks and passes, strong in Asia
+Large choix d'activités (groupe Tripadvisor)	Wide choice of activities (Tripadvisor group)
+Visites guidées et excursions d'une journée	Guided tours and day trips
+Excursions, croisières, visites privées	Trips, cruises, private tours
+Excursions et transferts	Trips and transfers
+Restaurants autour de vous, avis et réservation	Restaurants around you, reviews and booking
+Classements et avis de voyageurs	Rankings and traveller reviews
+Visites gastronomiques et cours de cuisine	Food tours and cooking classes
+{0} : carte et avis	{0}: map and reviews
+Langue de l'application	App language
+ et 	 and 
+Essayez « Dates flexibles », un autre jour du calendrier, ou lancez la recherche complète en direct sur Aviasales.	Try "Flexible dates", another day on the calendar, or run the full live search on Aviasales.
+L'app utilise Google tant que sa limite gratuite du mois n'est pas atteinte, puis Tripadvisor, puis Foursquare. Quand toutes sont épuisées, elle revient au guide Wikivoyage et à la carte.	The app uses Google until its monthly free limit is reached, then Tripadvisor, then Foursquare. When all are used up, it goes back to the Wikivoyage guide and the map.
+Mes voyages	My trips
+Voyages	Trips
+← Mes voyages	← My trips
+Mon voyage : {0}	My trip: {0}
+Vos vols, programmes, lieux et articles gardés, disponibles même sans connexion.	Your saved flights, plans, places and articles, available even offline.
+Aucun voyage pour l'instant. Gardez un vol (♡), un programme Expérience, un lieu ou un article : il apparaîtra ici.	No trips yet. Save a flight (♡), an Experience plan, a place or an article: it will appear here.
+Ce voyage est vide.	This trip is empty.
+Vide	Empty
+Programme	Plan
+Lieux favoris	Favourite places
+Articles (lecture hors connexion)	Articles (offline reading)
+Partager	Share
+Partager mon voyage	Share my trip
+{0} vol(s)	{0} flight(s)
+{0} lieu(x)	{0} place(s)
+{0} article(s)	{0} article(s)
+{0} nuits	{0} nights
+♡ Garder ce vol	♡ Save this flight
+Ce vol est déjà dans votre voyage.	This flight is already in your trip.
+Vol ajouté à votre voyage : {0}	Flight added to your trip: {0}
+Programme enregistré dans votre voyage : {0}	Plan saved to your trip: {0}
+Ajouté à votre voyage : {0}	Added to your trip: {0}
+Article déjà gardé.	Article already saved.
+Article gardé pour la lecture hors connexion : {0}	Article saved for offline reading: {0}
+♡ Garder l'article (lecture hors connexion)	♡ Save the article (offline reading)
+Mes lectures	My reading
+💾 Enregistrer dans mon voyage	💾 Save to my trip
+✨ Planifier mon séjour à {0}	✨ Plan my stay in {0}
+Quand commence votre séjour ?	When does your stay start?
+Premier jour	First day
+La météo prévue est prise en compte jusqu'à 16 jours à l'avance : musées s'il pleut, parcs et plages au soleil, point de vue au coucher du soleil.	The forecast is taken into account up to 16 days ahead: museums if it rains, parks and beaches in the sun, a viewpoint at sunset.
+Idéal par temps de pluie	Ideal on a rainy day
+Parfait sous le soleil prévu	Perfect in the forecast sunshine
+journée plutôt à l'abri	a mostly indoor day
+météo Open-Meteo	weather by Open-Meteo
+Clé Google Places API	Google Places API key
+Clé Tripadvisor Content API	Tripadvisor Content API key
+Clé Foursquare Places API	Foursquare Places API key
+Erreur inconnue	Unknown error
+Le service des lieux est très sollicité, réessayez dans un instant.	The places service is very busy, try again in a moment.
+Hôtels	Hotels
+Comparez les hôtels de la ville pour vos dates, puis réservez au meilleur prix.	Compare the city's hotels for your dates, then book at the best price.
+Arrivée	Check-in
+Voyageurs (adultes)	Travellers (adults)
+Rechercher les hôtels	Search hotels
+Prix en direct désactivés	Live prices turned off
+Ajoutez une clé LiteAPI (gratuite) dans Réglages pour voir ici les hôtels disponibles avec leur prix. En attendant, réservez chez nos partenaires :	Add a (free) LiteAPI key in Settings to see available hotels with their prices here. Meanwhile, book with our partners:
+Hôtels : prix en direct (facultatif)	Hotels: live prices (optional)
+Avec une clé LiteAPI (gratuite sur liteapi.travel), l'onglet Hôtels affiche les prix réels pour vos dates. Sans clé, il propose les sites de réservation.	With a LiteAPI key (free on liteapi.travel), the Hotels section shows real prices for your dates. Without a key, it suggests booking sites.
+Clé LiteAPI	LiteAPI key
+Clé LiteAPI refusée. Vérifiez-la dans Réglages.	LiteAPI key rejected. Check it in Settings.
+Erreur du service d'hôtels ({0}).	Hotel service error ({0}).
+Le service d'hôtels ne répond pas. Réessayez dans un instant.	The hotel service isn't responding. Try again in a moment.
+Aucun hôtel disponible pour ces dates.	No hotels available for these dates.
+{0} hôtels disponibles	{0} hotels available
+Recommandés	Recommended
+Note	Rating
+Distance	Distance
+Annulation gratuite	Free cancellation
+{0} / nuit	{0} / night
+Réserver sur {0}	Book on {0}
+Prix et disponibilités : LiteAPI. La réservation se finalise chez le partenaire choisi, au prix affiché par celui-ci.	Prices and availability: LiteAPI. Booking is completed with the chosen partner, at the price it shows.
+🏨 Hôtels à {0}	🏨 Hotels in {0}
+🏨 Où dormir ?	🏨 Where to stay?
+🏨 Trouver un hôtel	🏨 Find a hotel
+Une ou plusieurs journées	One or more days
+Le programme couvre tout votre séjour	The plan covers your whole stay
+Du {0} au {1}	From {0} to {1}
+Nombre de jours	Number of days
+{0} jours	{0} days
+Changer	Change
+Remplacer « {0} »	Replace "{0}"
+Retirer sans remplacer	Remove without replacing
+Ou choisissez un autre lieu :	Or choose another place:
+Pas d'autre lieu disponible pour cette étape.	No other place available for this stop.
+Description	Description
+Pourquoi ce lieu	Why this place
+Infos pratiques	Practical info
+Aucune description disponible pour ce lieu.	No description available for this place.
+Lire l'article complet ›	Read the full article ›
+Temps de visite conseillé : {0}	Suggested visit time: {0}
+Prévu à {0}	Planned at {0}
+Identifiant partenaire Tiqets (facultatif)	Tiqets partner ID (optional)
+Ajouté aux liens de billets Tiqets pour toucher une commission.	Added to Tiqets ticket links so you earn a commission.
+Chambres disponibles	Available rooms
+Aucune chambre disponible pour ces dates.	No rooms available for these dates.
+Chambre	Room
+Non remboursable	Non-refundable
+Annulation gratuite jusqu'au {0}	Free cancellation until {0}
+L'hôtel	The hotel
+Lire la suite	Read more
+Voir moins	Show less
+Équipements	Amenities
+Avis des clients	Guest reviews
+À savoir	Good to know
+Données hôtels, avis et prix : LiteAPI.	Hotel data, reviews and prices: LiteAPI.
+Arrivée dès {0}	Check-in from {0}
+Départ avant {0}	Check-out by {0}
+{0} voyageur(s)	{0} traveller(s)
+Note 8+	Rating 8+
+Petit-déjeuner	Breakfast
+Réserver dans l'app (mode test)	Book in the app (test mode)
+Réserver cette chambre	Book this room
+Réservation confirmée ✓	Booking confirmed ✓
+Vérification de la disponibilité…	Checking availability…
+Prix confirmé : {0}	Confirmed price: {0}
+Prénom	First name
+Nom	Last name
+E-mail	Email
+Confirmer la réservation	Confirm booking
+Fermer	Close
+Mode test : aucune vraie réservation n'est faite et rien n'est payé.	Test mode: no real booking is made and nothing is charged.
+Numéro de réservation : {0}	Booking number: {0}
+Statut : {0}	Status: {0}
+La réservation a été ajoutée à « Mes voyages ».	The booking has been added to "My trips".
+Réservation ajoutée à votre voyage : {0}	Booking added to your trip: {0}
+Cette offre n'est plus disponible. Choisissez-en une autre.	This offer is no longer available. Choose another one.
+La réservation n'a pas abouti.	The booking didn't go through.
+Budget	Budget
+Hébergement	Accommodation
+Repas	Meals
+Visites et sorties	Sights and outings
+Transports sur place	Local transport
+Imprévus et souvenirs	Extras and souvenirs
+Vols gardés dans votre voyage	Flights saved in your trip
+Pas de nuit sur place	No night on site
+Hôtel réservé	Booked hotel
+Estimation : 3 repas par jour et par personne	Estimate: 3 meals per day per person
+Estimation : surtout à pied	Estimate: mostly on foot
+Estimation : métro, bus, taxis occasionnels	Estimate: metro, bus, occasional taxis
+Montant saisi	Amount entered
+10 % des dépenses sur place	10% of on-site spending
+💰 Budget du séjour	💰 Trip budget
+Budget du séjour	Trip budget
+Total estimé	Estimated total
+{0} par personne	{0} per person
+{0} par jour	{0} per day
+Dans votre budget : il reste {0}	Within your budget: {0} left
+Au-dessus de votre budget de {0}	Over your budget by {0}
+Fixer un budget maximum ›	Set a maximum budget ›
+Modifier le budget maximum ›	Change the maximum budget ›
+Voyageurs	Travellers
+Nuits	Nights
+Détail par poste	Breakdown
+Budget maximum	Maximum budget
+Montant ({0})	Amount ({0})
+Réinitialiser	Reset
+Aucun vol choisi	No flight chosen
+Hôtel choisi	Chosen hotel
+Aucun hôtel choisi	No hotel chosen
+Aucune activité choisie	No activity chosen
+Prix d'entrée habituels pour vos activités	Usual admission prices for your activities
+Ajouter repas, transports et imprévus (estimation)	Add meals, transport and extras (estimate)
+Le budget additionne ce que vous avez choisi : vols gardés, hôtel réservé ou mis en favori, activités de votre programme ou ajoutées au voyage. Touchez un poste pour saisir votre propre montant.	The budget adds up what you've chosen: saved flights, booked or favourite hotel, activities from your itinerary or added to the trip. Tap a line to enter your own amount.
+Gratuit	Free
++ {0} autres	+ {0} more
+Choisir un vol ›	Choose a flight ›
+Choisir un hôtel ›	Choose a hotel ›
+Choisir des activités ›	Choose activities ›
+💰 Retour au budget	💰 Back to budget
+Estimation : vol le moins cher de votre recherche	Estimate: cheapest flight from your search
+Estimation selon la distance depuis votre ville de départ	Estimate based on distance from your departure city
+Estimation : prix moyen des hôtels trouvés pour vos dates	Estimate: average price of hotels found for your dates
+Estimation selon le pays et votre niveau de budget	Estimate based on the country and your budget level
+Estimation : environ 1 à 2 visites payantes par jour	Estimate: about 1 to 2 paid visits per day
+Effacer l'historique	Clear history
+Le budget additionne ce que vous avez choisi ; sans choix, une estimation est affichée. Touchez un poste pour saisir votre propre montant.	The budget adds up what you've chosen; where nothing is chosen, an estimate is shown. Tap a line to enter your own amount.
+Entrées payantes de votre programme	Paid admissions in your itinerary
+Autres repas (estimation)	Other meals (estimate)
+Restaurants et cafés choisis + autres repas estimés	Chosen restaurants and cafés + other meals estimated
+Restaurants et cafés de votre programme	Restaurants and cafés in your itinerary
++ {0} lieu(x) en accès libre (places, ponts, jardins…)	+ {0} free-access place(s) (squares, bridges, gardens…)
+Pas encore dans votre voyage (non compté) :	Not in your trip yet (not counted):
++ Vol	+ Flight
++ Hôtel	+ Hotel
++ Activités	+ Activities
+Le budget ne compte que ce qui est dans votre voyage : vols gardés, hôtel choisi, activités. Les lieux en accès libre sont gratuits ; les restaurants comptent dans les repas. Touchez un poste pour saisir votre propre montant.	The budget only counts what's in your trip: saved flights, chosen hotel, activities. Free-access places cost nothing; restaurants count as meals. Tap a line to enter your own amount.
+Réserver dans l'app	Book in the app
+Continuer vers le paiement	Continue to payment
+Paiement sécurisé	Secure payment
+Paiement sécurisé par LiteAPI : votre carte est saisie sur leur page, jamais dans l'app.	Secure payment by LiteAPI: your card is entered on their page, never in the app.
+Mode test : utilisez la carte 4242 4242 4242 4242, une date future et n'importe quel code.	Test mode: use card 4242 4242 4242 4242, any future date and any code.
+Le paiement sécurisé n'est pas disponible pour cette offre. Réservez chez un partenaire.	Secure payment isn't available for this offer. Book with a partner.
+✨ Décrivez votre hôtel idéal (facultatif)	✨ Describe your ideal hotel (optional)
+Ex. calme avec piscine, romantique, près de la plage…	E.g. quiet with a pool, romantic, near the beach…
+Classés selon votre description	Ranked by your description
+🧪 Clé de test : réservations et paiements fictifs.	🧪 Test key: bookings and payments are simulated.
+✅ Clé réelle : réservations et paiements réels.	✅ Live key: real bookings and payments.
+Type de clé non reconnu : elle devrait commencer par « sand_ » ou « prod_ ».	Unrecognised key type: it should start with "sand_" or "prod_".
+Bagages	Packing
+Budget estimé	Estimated budget
+Création du PDF…	Creating PDF…
+En un coup d'œil	At a glance
+Monnaie	Currency
+Météo prévue	Forecast
+Phrases utiles	Useful phrases
+Préparé avec Envolée	Prepared with Envolée
+Sources : Open-Meteo, OpenStreetMap, Wikipédia, Wikivoyage. Prix et infos pratiques indicatifs, à vérifier avant le départ.	Sources: Open-Meteo, OpenStreetMap, Wikipedia, Wikivoyage. Prices and practical info are indicative and should be checked before departure.
+💬 Texte	💬 Text
+📄 Carnet PDF Envolée	📄 Envolée PDF travel book

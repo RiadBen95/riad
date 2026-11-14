@@ -28,6 +28,7 @@ import com.riad.voyage.t
 import com.riad.voyage.tf
 import com.riad.voyage.tk
 import java.time.LocalDate
+import kotlinx.coroutines.launch
 
 /** Actions de modification d'un voyage (programme, bagages, infos pratiques). */
 class TripActions(
@@ -45,6 +46,7 @@ class TripActions(
     val updateInfo: (String, LocalDate, LocalDate, Int) -> Unit = { _, _, _, _ -> },
     val plan: (Trip) -> Unit = {},
     val suggestCities: suspend (String) -> List<com.riad.voyage.data.Place> = { emptyList() },
+    val pdf: suspend (Trip) -> java.io.File? = { null },
 )
 
 @Composable
@@ -187,12 +189,7 @@ private fun TripDetail(
             }
             TripWeather(trip, weather, Modifier.padding(top = 8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
-                Button(onClick = {
-                    val send = Intent(Intent.ACTION_SEND).setType("text/plain")
-                        .putExtra(Intent.EXTRA_SUBJECT, "Envolée · " + t(trip.city))
-                        .putExtra(Intent.EXTRA_TEXT, TripText.share(trip) { t(it) })
-                    runCatching { context.startActivity(Intent.createChooser(send, t("Partager mon voyage"))) }
-                }) { Text(t("Partager")) }
+                ShareButton(trip, actions.pdf)
                 OutlinedButton(onClick = { onDelete(trip.id) }) { Text(t("Supprimer")) }
             }
             OutlinedButton(onClick = { onHotels(trip) }, modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
@@ -435,4 +432,39 @@ private fun TripInfoDialog(
         confirmButton = { TextButton(onClick = { onSave(city, place, start, end, travellers) }, enabled = city.isNotBlank()) { Text(t("Enregistrer")) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(t("Annuler")) } },
     )
+}
+
+/** Partager le voyage : carnet PDF aux couleurs d'Envolée, ou simple texte. */
+@Composable
+private fun ShareButton(trip: Trip, pdf: suspend (Trip) -> java.io.File?) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var open by remember { mutableStateOf(false) }
+    var busy by remember { mutableStateOf(false) }
+    Box {
+        Button(onClick = { open = true }, enabled = !busy) { Text(if (busy) t("Création du PDF…") else t("Partager")) }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            DropdownMenuItem(text = { Text(t("📄 Carnet PDF Envolée")) }, onClick = {
+                open = false
+                busy = true
+                scope.launch {
+                    val file = runCatching { pdf(trip) }.getOrNull()
+                    busy = false
+                    if (file != null) {
+                        val uri = androidx.core.content.FileProvider.getUriForFile(context, context.packageName + ".files", file)
+                        val send = Intent(Intent.ACTION_SEND).setType("application/pdf").putExtra(Intent.EXTRA_STREAM, uri)
+                            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        runCatching { context.startActivity(Intent.createChooser(send, t("Partager mon voyage"))) }
+                    }
+                }
+            })
+            DropdownMenuItem(text = { Text(t("💬 Texte")) }, onClick = {
+                open = false
+                val send = Intent(Intent.ACTION_SEND).setType("text/plain")
+                    .putExtra(Intent.EXTRA_SUBJECT, "Envolée · " + t(trip.city))
+                    .putExtra(Intent.EXTRA_TEXT, TripText.share(trip) { t(it) })
+                runCatching { context.startActivity(Intent.createChooser(send, t("Partager mon voyage"))) }
+            })
+        }
+    }
 }

@@ -311,6 +311,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                             addDay = vm::addDay, packing = vm::packingFor, togglePacked = vm::togglePacked,
                             addPackItem = vm::addPackItem, removePackItem = vm::removePackItem, practical = vm::openPractical,
                             create = vm::createTrip, updateInfo = vm::updateTripInfo, plan = vm::planTrip, suggestCities = vm::suggestCities,
+                            pdf = vm::tripPdf,
                         ),
                     )
                 }

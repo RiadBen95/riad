@@ -7,14 +7,9 @@ import androidx.compose.runtime.setValue
 import java.util.Locale
 
 /** Langues de l'application. Le français sert de texte source (et de clé de traduction). */
-enum class Lang(val code: String, val nativeName: String, val rtl: Boolean = false) {
+enum class Lang(val code: String, val nativeName: String) {
     FR("fr", "Français"),
     EN("en", "English"),
-    AR("ar", "العربية", rtl = true),
-    ES("es", "Español"),
-    ZH("zh", "中文"),
-    JA("ja", "日本語"),
-    HI("hi", "हिन्दी"),
     ;
 
     val locale: Locale get() = Locale.forLanguageTag(code)
@@ -26,7 +21,7 @@ enum class Lang(val code: String, val nativeName: String, val rtl: Boolean = fal
 
 /**
  * Traductions : chaque texte français de l'app est la clé ; les traductions viennent de
- * res/raw/translations.tsv (fr, en, ar, es, zh, ja, hi). Un texte non traduit reste en français.
+ * res/raw/translations.tsv (fr, en). Un texte non traduit reste en français.
  */
 object I18n {
     /** Langue affichée ; c'est un état Compose : changer de langue redessine l'app. */

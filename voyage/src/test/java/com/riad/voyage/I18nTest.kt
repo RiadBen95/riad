@@ -9,10 +9,10 @@ class I18nTest {
     private val tsv = File("src/main/res/raw/translations.tsv").readText()
 
     @Test
-    fun everyRowHasSevenLanguages() {
+    fun everyRowHasFrenchAndEnglish() {
         tsv.lines().filter { it.isNotBlank() && !it.startsWith("#") }.forEach { line ->
             val cols = line.split('\t')
-            assertEquals("« ${cols[0]} »", 7, cols.size)
+            assertEquals("« ${cols[0]} »", 2, cols.size)
             assertTrue("« ${cols[0]} » a une traduction vide", cols.all { it.isNotBlank() })
             // Les valeurs {0}, {1}… doivent se retrouver dans chaque langue.
             Regex("\\{\\d}").findAll(cols[0]).forEach { ph -> cols.forEach { assertTrue("${cols[0]} → $it", it.contains(ph.value)) } }
@@ -27,11 +27,6 @@ class I18nTest {
             assertEquals("Question 2 of 8", tf("Question {0} sur {1}", 2, 8))
             assertEquals("Restaurant · €€", tk("Restaurant · €€"))
             assertEquals("Texte inconnu", t("Texte inconnu"))
-            I18n.loadForTest(tsv.lines().filterNot { it.startsWith("#") }.joinToString("\n"), Lang.AR)
-            assertEquals("رحلات جوية", t("Vols"))
-            assertTrue(Lang.AR.rtl)
-            I18n.loadForTest(tsv.lines().filterNot { it.startsWith("#") }.joinToString("\n"), Lang.JA)
-            assertEquals("フライト", t("Vols"))
         } finally {
             I18n.loadForTest("", Lang.FR)
         }

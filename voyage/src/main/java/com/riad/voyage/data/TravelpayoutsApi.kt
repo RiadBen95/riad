@@ -14,11 +14,7 @@ class TravelpayoutsApi(
     private val token: String,
     private val currency: String,
 ) {
-    private fun placesLocale() = when (com.riad.voyage.I18n.lang) {
-        com.riad.voyage.Lang.FR -> "fr"
-        com.riad.voyage.Lang.ES -> "es"
-        else -> "en"
-    }
+    private fun placesLocale() = com.riad.voyage.I18n.lang.code
 
     suspend fun searchPlaces(term: String): List<Place> {
         val url = "https://autocomplete.travelpayouts.com/places2?term=${enc(term)}" +
