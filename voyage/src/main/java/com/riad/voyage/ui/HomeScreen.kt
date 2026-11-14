@@ -1,45 +1,15 @@
 package com.riad.voyage.ui
 
-import Place
-import PopularPlaces
-import PriceAlert
-import RecentSearch
-import WikiSummary
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -242,7 +212,7 @@ fun HomeScreen(
             }
         }
         if (recents.isNotEmpty()) {
-            item { SectionTitle(t("Reprendre une recherche"), AppIcons.History) }
+            item { SectionTitle(t("Reprendre une recherche"), sectionPad, AppIcons.History) }
             item {
                 LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     items(recents) { r -> RecentCard(r) { onRecent(r) } }
@@ -258,7 +228,7 @@ fun HomeScreen(
                 }
             }
         }
-        item { SectionTitle(t("Destinations populaires"), null) }
+        item { SectionTitle(t("Destinations populaires"), sectionPad, null) }
         item {
             val list = featured.filter { it.first != form.origin?.code }
             LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -315,16 +285,6 @@ private fun QuickTile(label: String, icon: ImageVector, onClick: () -> Unit, mod
     }
 }
 
-@Composable
-private fun SectionTitle(title: String, icon: ImageVector?) {
-    Row(Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-        if (icon != null) {
-            Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
-            Spacer(Modifier.width(8.dp))
-        }
-        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -382,3 +342,5 @@ private fun DestinationCard(place: Place, wikiTag: String, wiki: suspend (String
         }
     }
 }
+
+private val sectionPad = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 10.dp)

@@ -1,18 +1,5 @@
 package com.riad.voyage
 
-import ActivityLinks
-import AlertStore
-import DayPrice
-import DemoData
-import Flight
-import Place
-import PopularPlaces
-import PriceAlert
-import RecentSearch
-import RecentStore
-import Settings
-import SettingsStore
-import TravelpayoutsApi
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -543,14 +530,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val nights = runCatching {
             ChronoUnit.DAYS.between(LocalDate.parse(trip.startDate!!), LocalDate.parse(trip.endDate!!)).toInt()
         }.getOrNull()?.coerceAtLeast(0) ?: 3
-        val (flights, hotel, acts) = choicesOf(trip, rates)
-        val answers = _experience.value.answers
-            BudgetInput(
-                city = trip.city, country = countryOf(trip.city, trip.country),
-                travellers = if (answers.city.equals(trip.city, true)) travellersFor(answers.company) else 2,
-                nights = nights, level = answers.budget, mobility = answers.mobility,
-                flights = flights, hotel = hotel?.first, hotelBooked = hotel?.second == true, activities = acts,
-            )
+        val a = _experience.value.answers
+        budgetFor(trip.city, countryOf(trip.city, trip.country), trip, rates, nights,
+            if (a.city.equals(trip.city, true)) travellersFor(a.company) else 2)
     }
 
     /** Budget du programme Expérience affiché (+ vols et hôtel choisis pour la même ville). */
@@ -558,19 +540,21 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val st = _experience.value
         val a = st.answers
         val city = st.result?.city ?: a.city
-        val trip = _trips.value.firstOrNull { it.city.equals(city, true) }
+        val program = st.result?.days.orEmpty().flatMap { d -> d.steps.map { PlannedActivity(it.place.name, it.place.kind, it.category) } }
+        budgetFor(city, countryOf(city, a.place?.country.orEmpty()), _trips.value.firstOrNull { it.city.equals(city, true) }, rates,
+            if (a.duration.halfDay) 0 else (a.duration.days - 1).coerceAtLeast(0), travellersFor(a.company), program)
+    }
+
+    private fun budgetFor(
+        city: String, country: String, trip: Trip?, rates: Map<String, Double>, nights: Int, travellers: Int,
+        program: List<PlannedActivity> = emptyList(),
+    ): BudgetInput {
         val (flights, hotel, saved) = choicesOf(trip, rates)
-        val program = st.result?.days.orEmpty().flatMap { d ->
-            d.steps.map { PlannedActivity(it.place.name, it.place.kind, it.category) }
-        }
-            BudgetInput(
-                city = city, country = countryOf(city, a.place?.country.orEmpty()),
-                travellers = travellersFor(a.company),
-                nights = if (a.duration.halfDay) 0 else (a.duration.days - 1).coerceAtLeast(0),
-                level = a.budget, mobility = a.mobility,
-                flights = flights, hotel = hotel?.first, hotelBooked = hotel?.second == true,
-                activities = program + saved,
-            )
+        val a = _experience.value.answers
+        return BudgetInput(
+            city = city, country = country, travellers = travellers, nights = nights, level = a.budget, mobility = a.mobility,
+            flights = flights, hotel = hotel?.first, hotelBooked = hotel?.second == true, activities = program + saved,
+        )
     }
 
     /** Depuis le budget, aller choisir ce qui manque (vol, hôtel, activités) pour la même ville. */

@@ -188,33 +188,9 @@ object LiteApi {
 
     data class Rate(val price: Double, val currency: String?, val refundable: Boolean, val board: String?, val offerId: String?)
 
-    /** Prix le plus bas de chaque hôtel (offre « offerRetailRate », sinon tarif de la chambre). */
-    fun parseRates(json: String): Map<String, Rate> {
-        val arr = JSONObject(json).optJSONArray("data") ?: return emptyMap()
-        val out = mutableMapOf<String, Rate>()
-        for (i in 0 until arr.length()) {
-            val h = arr.getJSONObject(i)
-            val hotelId = h.optString("hotelId")
-            if (hotelId.isBlank()) continue
-            val rooms = h.optJSONArray("roomTypes") ?: continue
-            for (j in 0 until rooms.length()) {
-                val room = rooms.getJSONObject(j)
-                val rate = room.optJSONArray("rates")?.optJSONObject(0)
-                val total = rate?.optJSONObject("retailRate")?.optJSONArray("total")?.optJSONObject(0)
-                val offer = room.optJSONObject("offerRetailRate")
-                val price = offer?.optDouble("amount")?.takeIf { !it.isNaN() } ?: total?.optDouble("amount")?.takeIf { !it.isNaN() } ?: continue
-                val r = Rate(
-                    price = price,
-                    currency = (offer?.optString("currency") ?: total?.optString("currency"))?.ifBlank { null },
-                    refundable = rate?.optJSONObject("cancellationPolicies")?.optString("refundableTag") == "RFN",
-                    board = rate?.optString("boardName")?.ifBlank { null },
-                    offerId = room.optString("offerId").ifBlank { null },
-                )
-                val best = out[hotelId]
-                if (best == null || r.price < best.price) out[hotelId] = r
-            }
-        }
-        return out
+    /** Prix le plus bas de chaque hôtel (même lecture que la page de l'hôtel). */
+    fun parseRates(json: String): Map<String, Rate> = LiteApiMore.roomsByHotel(json).mapValues { (_, rooms) ->
+        rooms.minBy { it.price }.let { Rate(it.price, it.currency, it.refundable, it.board, it.offerId) }
     }
 
     private suspend fun get(url: String, key: String) = LiteHttp.call(url, key)
@@ -428,11 +404,15 @@ object LiteApiMore {
         return parseOffers(LiteHttp.call("$BASE/hotels/rates", key, body.toString()))
     }
 
-    fun parseOffers(json: String): List<RoomOffer> {
-        val arr = JSONObject(json).optJSONArray("data") ?: return emptyList()
-        val out = mutableListOf<RoomOffer>()
+    fun parseOffers(json: String): List<RoomOffer> = roomsByHotel(json).values.flatten().sortedBy { it.price }
+
+    /** Chambres proposées par hôtel, dans une réponse « hotels/rates » (offre « offerRetailRate », sinon tarif). */
+    fun roomsByHotel(json: String): Map<String, List<RoomOffer>> {
+        val arr = JSONObject(json).optJSONArray("data") ?: return emptyMap()
+        val out = linkedMapOf<String, MutableList<RoomOffer>>()
         for (i in 0 until arr.length()) {
-            val rooms = arr.getJSONObject(i).optJSONArray("roomTypes") ?: continue
+            val h = arr.getJSONObject(i)
+            val rooms = h.optJSONArray("roomTypes") ?: continue
             for (j in 0 until rooms.length()) {
                 val room = rooms.getJSONObject(j)
                 val offerId = room.s("offerId") ?: continue
@@ -441,7 +421,7 @@ object LiteApiMore {
                 val offer = room.optJSONObject("offerRetailRate")
                 val price = offer?.optDouble("amount")?.takeIf { !it.isNaN() } ?: total?.optDouble("amount")?.takeIf { !it.isNaN() } ?: continue
                 val policies = rate?.optJSONObject("cancellationPolicies")
-                out += RoomOffer(
+                out.getOrPut(h.optString("hotelId")) { mutableListOf() } += RoomOffer(
                     offerId = offerId,
                     roomName = rate?.s("name") ?: room.s("name") ?: "",
                     board = rate?.s("boardName"),
@@ -452,7 +432,7 @@ object LiteApiMore {
                 )
             }
         }
-        return out.sortedBy { it.price }
+        return out
     }
 
     suspend fun prebook(key: String, offerId: String): Prebook? {

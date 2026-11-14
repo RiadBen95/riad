@@ -1,43 +1,13 @@
 package com.riad.voyage.ui
 
-import HotelBooking
-import RoomOffer
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -119,7 +89,7 @@ fun HotelDetailScreen(
         }
 
         // Chambres et offres
-        item { SectionTitle2(t("Chambres disponibles")) }
+        item { SectionTitle(t("Chambres disponibles"), sectionPad) }
         d.error?.let { e -> item { Text(e, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 16.dp)) } }
         if (!d.loading && d.offers.isEmpty() && d.error == null) {
             item { Text(t("Aucune chambre disponible pour ces dates."), modifier = Modifier.padding(horizontal = 16.dp)) }
@@ -129,7 +99,7 @@ fun HotelDetailScreen(
         }
 
         info?.description?.let { desc ->
-            item { SectionTitle2(t("L'hôtel")) }
+            item { SectionTitle(t("L'hôtel"), sectionPad) }
             item {
                 Column(Modifier.padding(horizontal = 16.dp)) {
                     Text(desc, style = MaterialTheme.typography.bodyMedium, maxLines = if (showAll) Int.MAX_VALUE else 8, overflow = TextOverflow.Ellipsis)
@@ -140,7 +110,7 @@ fun HotelDetailScreen(
             }
         }
         if (!info?.facilities.isNullOrEmpty()) {
-            item { SectionTitle2(t("Équipements")) }
+            item { SectionTitle(t("Équipements"), sectionPad) }
             item {
                 FlowRow(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     info!!.facilities.take(24).forEach { f ->
@@ -154,7 +124,7 @@ fun HotelDetailScreen(
         // Avis des clients
         val summary = d.summary
         if (summary != null || d.reviews.isNotEmpty()) {
-            item { SectionTitle2(t("Avis des clients")) }
+            item { SectionTitle(t("Avis des clients"), sectionPad) }
         }
         if (summary != null) {
             item {
@@ -189,7 +159,7 @@ fun HotelDetailScreen(
         }
 
         info?.important?.let { imp ->
-            item { SectionTitle2(t("À savoir")) }
+            item { SectionTitle(t("À savoir"), sectionPad) }
             item { Text(imp, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(horizontal = 16.dp)) }
         }
         item {
@@ -199,15 +169,10 @@ fun HotelDetailScreen(
     }
 }
 
-@Composable
-private fun SectionTitle2(text: String) {
-    Text(text, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
-}
 
 @Composable
 private fun OfferCard(o: RoomOffer, state: HotelState, hotelName: String, sandbox: Boolean, onBook: () -> Unit) {
     val context = LocalContext.current
-    var menu by remember { mutableStateOf(false) }
     Card(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(o.roomName.ifBlank { t("Chambre") }, fontWeight = FontWeight.Bold)
@@ -224,18 +189,7 @@ private fun OfferCard(o: RoomOffer, state: HotelState, hotelName: String, sandbo
                     Text(tf("{0} / nuit", formatPrice((o.price / state.nights).toInt(), o.currency)), style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Box {
-                    Button(onClick = { menu = true }) { Text(t("Réserver")) }
-                    DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                        DropdownMenuItem(
-                            text = { Text(if (sandbox) t("Réserver dans l'app (mode test)") else t("Réserver dans l'app")) },
-                            onClick = { menu = false; onBook() },
-                        )
-                        HotelBooking.partners("$hotelName ${state.city}", state.checkIn, state.checkOut, state.adults).forEach { p ->
-                            DropdownMenuItem(text = { Text(tf("Réserver sur {0}", p.name)) }, onClick = { menu = false; openUrl(context, p.url) })
-                        }
-                    }
-                }
+                BookMenu(hotelName, state, if (sandbox) t("Réserver dans l'app (mode test)") else t("Réserver dans l'app"), onBook)
             }
         }
     }
@@ -385,3 +339,5 @@ private fun PaymentDialog(html: String, sandbox: Boolean, onDone: () -> Unit, on
         }
     }
 }
+
+private val sectionPad = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)

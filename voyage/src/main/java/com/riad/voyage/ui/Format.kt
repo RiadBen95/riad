@@ -7,7 +7,6 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Currency
 import java.util.Locale
-import parseDateTime
 
 private val FR: Locale get() = com.riad.voyage.I18n.lang.locale
 
