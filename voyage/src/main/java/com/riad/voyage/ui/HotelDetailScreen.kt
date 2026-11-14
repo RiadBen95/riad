@@ -63,13 +63,16 @@ fun HotelDetailScreen(
     onBook: (RoomOffer) -> Unit,
     onConfirm: (String, String, String) -> Unit,
     onCancelBooking: () -> Unit,
+    onPaymentDone: () -> Unit = {},
+    onPaymentCancel: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val info = d.info
     val images = info?.images?.takeIf { it.isNotEmpty() } ?: listOfNotNull(d.hotel.photo)
     var showAll by remember { mutableStateOf(false) }
 
-    if (d.booking != null) BookingDialog(d, state, sandbox, onConfirm, onCancelBooking)
+    if (d.paymentHtml != null) PaymentDialog(d.paymentHtml, sandbox, onPaymentDone, onPaymentCancel)
+    else if (d.booking != null) BookingDialog(d, state, sandbox, onConfirm, onCancelBooking)
 
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
@@ -219,9 +222,10 @@ private fun OfferCard(o: RoomOffer, state: HotelState, hotelName: String, sandbo
                 Box {
                     Button(onClick = { menu = true }) { Text(t("Réserver")) }
                     DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                        if (sandbox) {
-                            DropdownMenuItem(text = { Text(t("Réserver dans l'app (mode test)")) }, onClick = { menu = false; onBook() })
-                        }
+                        DropdownMenuItem(
+                            text = { Text(if (sandbox) t("Réserver dans l'app (mode test)") else t("Réserver dans l'app")) },
+                            onClick = { menu = false; onBook() },
+                        )
                         HotelBooking.partners("$hotelName ${state.city}", state.checkIn, state.checkOut, state.adults).forEach { p ->
                             DropdownMenuItem(text = { Text(tf("Réserver sur {0}", p.name)) }, onClick = { menu = false; openUrl(context, p.url) })
                         }
@@ -271,6 +275,8 @@ private fun BookingDialog(
                         OutlinedTextField(email, { email = it }, label = { Text(t("E-mail")) }, singleLine = true)
                         if (sandbox) Text(t("Mode test : aucune vraie réservation n'est faite et rien n'est payé."),
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                        else if (d.prebook.secretKey != null) Text(t("Paiement sécurisé par LiteAPI : votre carte est saisie sur leur page, jamais dans l'app."),
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     d.bookingError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                     if (d.bookingBusy) CircularProgressIndicator()
@@ -283,10 +289,58 @@ private fun BookingDialog(
                 d.prebook != null -> Button(
                     onClick = { onConfirm(first, last, email) },
                     enabled = !d.bookingBusy && first.isNotBlank() && last.isNotBlank() && email.contains('@'),
-                ) { Text(t("Confirmer la réservation")) }
+                ) { Text(if (d.prebook.secretKey != null) t("Continuer vers le paiement") else t("Confirmer la réservation")) }
                 else -> {}
             }
         },
         dismissButton = { if (confirmed == null) OutlinedButton(onClick = onCancel, enabled = !d.bookingBusy) { Text(t("Annuler")) } },
     )
+}
+
+/** Page de paiement sécurisé LiteAPI dans une WebView ; le retour sur l'adresse de fin déclenche la réservation. */
+@android.annotation.SuppressLint("SetJavaScriptEnabled")
+@Composable
+private fun PaymentDialog(html: String, sandbox: Boolean, onDone: () -> Unit, onCancel: () -> Unit) {
+    var finished by remember { mutableStateOf(false) }
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onCancel,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        androidx.compose.material3.Surface(Modifier.fillMaxSize()) {
+            Column {
+                Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(t("Paiement sécurisé"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f).padding(start = 8.dp))
+                    androidx.compose.material3.TextButton(onClick = onCancel) { Text(t("Annuler")) }
+                }
+                if (sandbox) Text(t("Mode test : utilisez la carte 4242 4242 4242 4242, une date future et n'importe quel code."),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(horizontal = 16.dp))
+                androidx.compose.ui.viewinterop.AndroidView(
+                    modifier = Modifier.fillMaxSize(),
+                    factory = { ctx ->
+                        android.webkit.WebView(ctx).apply {
+                            settings.javaScriptEnabled = true
+                            settings.domStorageEnabled = true
+                            webViewClient = object : android.webkit.WebViewClient() {
+                                private fun check(url: String?): Boolean {
+                                    if (url != null && url.startsWith(com.riad.voyage.data.LitePayment.RETURN_URL)) {
+                                        if (!finished) { finished = true; onDone() }
+                                        return true
+                                    }
+                                    return false
+                                }
+                                override fun shouldOverrideUrlLoading(view: android.webkit.WebView?, request: android.webkit.WebResourceRequest?) =
+                                    check(request?.url?.toString())
+                                override fun onPageStarted(view: android.webkit.WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                                    if (check(url)) view?.stopLoading() else super.onPageStarted(view, url, favicon)
+                                }
+                            }
+                            loadDataWithBaseURL("https://payment-wrapper.liteapi.travel/", html, "text/html", "UTF-8", null)
+                        }
+                    },
+                )
+            }
+        }
+    }
 }

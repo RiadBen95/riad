@@ -146,6 +146,8 @@ data class HotelDetailState(
     val bookingBusy: Boolean = false,
     val bookingError: String? = null,
     val confirmed: com.riad.voyage.data.HotelBookingResult? = null,
+    val paymentHtml: String? = null,                          // page de paiement sécurisé affichée
+    val guest: List<String> = emptyList(),                    // prénom, nom, e-mail
 )
 
 /** Calculateur de budget du séjour. */
@@ -654,15 +656,47 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Étape 2 : réservation au nom du voyageur, puis ajout dans « Mes voyages ». */
+    /**
+     * Étape 2 : coordonnées du voyageur, puis paiement sécurisé LiteAPI (carte saisie sur la page
+     * LiteAPI, jamais dans l'app). En mode test sans page de paiement : paiement fictif.
+     */
     fun confirmHotelBooking(firstName: String, lastName: String, email: String) {
         val key = _settings.value.liteApiKey
         val d = _hotels.value.detail ?: return
         val pre = d.prebook ?: return
+        val guest = listOf(firstName.trim(), lastName.trim(), email.trim())
+        val sandbox = key.startsWith("sandbox")
+        when {
+            pre.secretKey != null && pre.transactionId != null -> _hotels.update {
+                it.copy(detail = it.detail?.copy(guest = guest, bookingError = null,
+                    paymentHtml = com.riad.voyage.data.LitePayment.html(pre.secretKey, sandbox)))
+            }
+            sandbox -> bookHotel(guest, null)
+            else -> _hotels.update {
+                it.copy(detail = it.detail?.copy(bookingError = t("Le paiement sécurisé n'est pas disponible pour cette offre. Réservez chez un partenaire.")))
+            }
+        }
+    }
+
+    /** Retour de la page de paiement : paiement accepté → réservation. */
+    fun hotelPaymentDone() {
+        val d = _hotels.value.detail ?: return
+        _hotels.update { it.copy(detail = it.detail?.copy(paymentHtml = null)) }
+        bookHotel(d.guest, d.prebook?.transactionId)
+    }
+
+    fun hotelPaymentCancelled() = _hotels.update { it.copy(detail = it.detail?.copy(paymentHtml = null)) }
+
+    private fun bookHotel(guest: List<String>, transactionId: String?) {
+        val key = _settings.value.liteApiKey
+        val d = _hotels.value.detail ?: return
+        val pre = d.prebook ?: return
+        if (guest.size < 3) return
+        val (firstName, lastName, email) = guest
         _hotels.update { it.copy(detail = it.detail?.copy(bookingBusy = true, bookingError = null)) }
         viewModelScope.launch {
             val r = kotlinx.coroutines.withTimeoutOrNull(40_000) {
-                runCatching { com.riad.voyage.data.LiteApiMore.book(key, pre.prebookId, firstName.trim(), lastName.trim(), email.trim()) }
+                runCatching { com.riad.voyage.data.LiteApiMore.book(key, pre.prebookId, firstName, lastName, email, transactionId) }
             }
             val ok = r?.getOrNull()
             _hotels.update { st ->

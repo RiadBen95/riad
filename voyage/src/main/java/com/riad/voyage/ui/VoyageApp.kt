@@ -238,6 +238,8 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                             onBook = vm::startHotelBooking,
                             onConfirm = vm::confirmHotelBooking,
                             onCancelBooking = vm::cancelHotelBooking,
+                            onPaymentDone = vm::hotelPaymentDone,
+                            onPaymentCancel = vm::hotelPaymentCancelled,
                         )
                     } else {
                         HotelsScreen(
@@ -250,6 +252,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                             suggestCities = vm::suggestCities,
                             onConfigure = configure,
                             onOpen = vm::openHotelDetail,
+                            onBookInApp = vm::openHotelDetail,
                         )
                     }
                 }

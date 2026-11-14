@@ -58,6 +58,7 @@ fun HotelsScreen(
     suggestCities: suspend (String) -> List<Place>,
     onConfigure: () -> Unit,
     onOpen: (HotelOffer) -> Unit = {},
+    onBookInApp: (HotelOffer) -> Unit = onOpen,
 ) {
     val context = LocalContext.current
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -135,7 +136,7 @@ fun HotelsScreen(
                 Text(tf("{0} hôtels disponibles", state.visible.size), style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.padding(top = 6.dp))
             }
-            items(state.visible, key = { it.id }) { o -> HotelCard(o, state, isFavorite(o.name), { onSave(o) }, { onOpen(o) }) }
+            items(state.visible, key = { it.id }) { o -> HotelCard(o, state, isFavorite(o.name), { onSave(o) }, { onOpen(o) }, { onBookInApp(o) }) }
             item {
                 Text(t("Prix et disponibilités : LiteAPI. La réservation se finalise chez le partenaire choisi, au prix affiché par celui-ci."),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -157,7 +158,7 @@ private fun PartnerRow(name: String, onClick: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HotelCard(o: HotelOffer, state: HotelState, favorite: Boolean, onSave: () -> Unit, onOpen: () -> Unit) {
+private fun HotelCard(o: HotelOffer, state: HotelState, favorite: Boolean, onSave: () -> Unit, onOpen: () -> Unit, onBookInApp: () -> Unit) {
     val context = LocalContext.current
     var menu by remember { mutableStateOf(false) }
     Card(onClick = onOpen, shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
@@ -206,6 +207,9 @@ private fun HotelCard(o: HotelOffer, state: HotelState, favorite: Boolean, onSav
                 Box {
                     Button(onClick = { menu = true }) { Text(t("Réserver")) }
                     DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                        // En premier : réservation dans l'app (choix de la chambre sur la page de l'hôtel).
+                        DropdownMenuItem(text = { Text(t("Réserver dans l'app"), fontWeight = FontWeight.Bold) },
+                            onClick = { menu = false; onBookInApp() })
                         HotelBooking.partners("${o.name} ${state.city}", state.checkIn, state.checkOut, state.adults).forEach { p ->
                             DropdownMenuItem(text = { Text(tf("Réserver sur {0}", p.name)) }, onClick = { menu = false; openUrl(context, p.url) })
                         }

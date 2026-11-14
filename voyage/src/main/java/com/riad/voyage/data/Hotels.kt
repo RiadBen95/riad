@@ -231,7 +231,40 @@ data class RoomOffer(
     val cancelDeadline: String?,
 )
 
-data class Prebook(val prebookId: String, val price: Double?, val currency: String?)
+/** Pré-réservation. [secretKey] / [transactionId] : paiement sécurisé LiteAPI (le client paie LiteAPI directement). */
+data class Prebook(
+    val prebookId: String,
+    val price: Double?,
+    val currency: String?,
+    val secretKey: String? = null,
+    val transactionId: String? = null,
+)
+
+/** Page de paiement LiteAPI (formulaire de carte sécurisé), affichée dans l'app. */
+object LitePayment {
+    const val RETURN_URL = "https://envolee.app/paiement-termine"
+
+    fun html(secretKey: String, sandbox: Boolean, businessName: String = "Envolée"): String {
+        fun js(s: String) = JSONObject.quote(s)
+        return """<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{font-family:sans-serif;margin:16px;background:#fff;color:#111}</style>
+<script src="https://payment-wrapper.liteapi.travel/dist/liteAPIPayment.js?v=a1"></script></head>
+<body><div id="targetElement"></div>
+<script>
+var liteAPIConfig = {
+  publicKey: ${js(if (sandbox) "sandbox" else "live")},
+  appearance: { theme: 'flat' },
+  options: { business: { name: ${js(businessName)} } },
+  targetElement: '#targetElement',
+  secretKey: ${js(secretKey)},
+  returnUrl: ${js(RETURN_URL)}
+};
+var liteAPIPayment = new LiteAPIPayment(liteAPIConfig);
+liteAPIPayment.handlePayment();
+</script></body></html>"""
+    }
+}
 
 data class HotelBookingResult(val bookingId: String, val status: String?, val confirmation: String?, val price: Double?, val currency: String?)
 
@@ -360,19 +393,26 @@ object LiteApiMore {
     }
 
     suspend fun prebook(key: String, offerId: String): Prebook? {
-        val body = JSONObject().put("offerId", offerId).put("usePaymentSdk", false)
+        val body = JSONObject().put("offerId", offerId).put("usePaymentSdk", true)
         val d = JSONObject(LiteHttp.call("$BOOK/rates/prebook", key, body.toString())).optJSONObject("data") ?: return null
-        return Prebook(d.s("prebookId") ?: return null, d.optDouble("price").takeIf { !it.isNaN() }, d.s("currency"))
+        return Prebook(
+            d.s("prebookId") ?: return null, d.optDouble("price").takeIf { !it.isNaN() }, d.s("currency"),
+            secretKey = d.s("secretKey"), transactionId = d.s("transactionId"),
+        )
     }
 
-    /** Réservation : en mode test (clé « sandbox_ »), le paiement fictif ACC_CREDIT_CARD est accepté. */
-    suspend fun book(key: String, prebookId: String, firstName: String, lastName: String, email: String): HotelBookingResult? {
+    /**
+     * Réservation. Avec [transactionId] (paiement sécurisé LiteAPI réussi) : réservation réelle payée
+     * par le voyageur. Sans : paiement fictif ACC_CREDIT_CARD, accepté seulement en mode test.
+     */
+    suspend fun book(key: String, prebookId: String, firstName: String, lastName: String, email: String, transactionId: String? = null): HotelBookingResult? {
         val person = JSONObject().put("firstName", firstName).put("lastName", lastName).put("email", email)
         val body = JSONObject()
             .put("prebookId", prebookId)
             .put("holder", person)
             .put("guests", JSONArray().put(JSONObject(person.toString()).put("occupancyNumber", 1)))
-            .put("payment", JSONObject().put("method", "ACC_CREDIT_CARD"))
+            .put("payment", if (transactionId != null) JSONObject().put("method", "TRANSACTION_ID").put("transactionId", transactionId)
+                else JSONObject().put("method", "ACC_CREDIT_CARD"))
         val d = JSONObject(LiteHttp.call("$BOOK/rates/book", key, body.toString())).optJSONObject("data") ?: return null
         return HotelBookingResult(
             bookingId = d.s("bookingId") ?: return null,
