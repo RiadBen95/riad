@@ -473,20 +473,17 @@ object ExperienceBuilder {
         var clock = parseTime(steps.first().time) ?: a.start.minutes
         var prev: ExperienceStep? = null
         return steps.map { st ->
-            if (prev == null) { clock += st.durationMin; prev = st; return@map st.copy(fromPreviousM = null, travelMin = null) }
-            val meters = prev?.place?.takeIf { it.hasCoordinates && st.place.hasCoordinates }
+            // La première étape garde son heure ; les suivantes s'enchaînent.
+            val before = prev ?: run { clock += st.durationMin; prev = st; return@map st.copy(fromPreviousM = null, travelMin = null) }
+            val meters = before.place.takeIf { it.hasCoordinates && st.place.hasCoordinates }
                 ?.let { PlacesParser.distanceMeters(it.lat, it.lon, st.place.lat, st.place.lon).toInt() }
-            val travel = when {
-                prev == null -> 0
-                meters == null -> 15
-                else -> travelMinutes(meters, a.mobility)
-            }
-            val buffer = if (prev != null && fixedStart(st.moment) == null) a.pace.bufferMin else 0
+            val travel = if (meters == null) 15 else travelMinutes(meters, a.mobility)
+            val buffer = if (fixedStart(st.moment) == null) a.pace.bufferMin else 0
             val earliest = round5(max(clock + travel + buffer, fixedStart(st.moment) ?: 0))
             // Lieu aux horaires connus : pas avant son ouverture (pause de midi comprise).
             val start = date?.let { OpeningHours.nextStart(st.place.openingHours, it.dayOfWeek, earliest, st.durationMin, it.monthValue) } ?: earliest
             clock = start + st.durationMin
-            val out = st.copy(time = fmt(start), fromPreviousM = meters, travelMin = if (prev == null) null else travel)
+            val out = st.copy(time = fmt(start), fromPreviousM = meters, travelMin = travel)
             prev = out
             out
         }

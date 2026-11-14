@@ -107,9 +107,13 @@ class ExperienceTest {
         assertEquals(listOf("city", "duration", "interests"), Quiz.steps(a, quick = true))
         val exp = ExperienceBuilder.build(a, "Paris", pools)
         val first = exp.days[0].steps
-        val moved = ExperienceBuilder.moveStep(a, exp, 0, 0, 1).days[0].steps
-        assertEquals(first[0].place.id, moved[1].place.id)
-        assertEquals(first[1].place.id, moved[0].place.id)
+        // Deux visites voisines s'échangent ; un repas garde sa place.
+        val i = first.indices.first { it + 1 < first.size && !ExperienceBuilder.isAnchored(first[it]) && !ExperienceBuilder.isAnchored(first[it + 1]) }
+        val moved = ExperienceBuilder.moveStep(a, exp, 0, i, 1).days[0].steps
+        assertEquals(first[i].place.id, moved[i + 1].place.id)
+        assertEquals(first[i + 1].place.id, moved[i].place.id)
+        val lunch = first.indexOfFirst { it.moment == "Déjeuner" }
+        assertEquals(exp, ExperienceBuilder.moveStep(a, exp, 0, lunch, -1))
         val added = ExperienceBuilder.addStep(a, exp, 0, "Pique-nique").days[0].steps
         // Ajoutée avant le dîner, pour garder une heure de journée.
         assertEquals(added.indexOfFirst { it.moment == "Dîner" } - 1, added.indexOfFirst { it.place.name == "Pique-nique" })
