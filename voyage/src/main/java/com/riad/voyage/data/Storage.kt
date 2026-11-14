@@ -20,26 +20,34 @@ data class Settings(
 class SettingsStore(context: Context) {
     private val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
 
-    fun load() = Settings(
-        token = prefs.getString("token", "").orEmpty(),
+    private val SECRETS = listOf("token", "googleKey", "tripadvisorKey", "foursquareKey", "liteApiKey")
+
+    /** Clés d'API : chiffrées sur le téléphone (Keystore Android). */
+    private fun secret(name: String) = SecretBox.decrypt(prefs.getString(name, "").orEmpty())
+
+    fun load(): Settings = Settings(
+        token = secret("token"),
         marker = prefs.getString("marker", "").orEmpty(),
         currency = prefs.getString("currency", "EUR").orEmpty().ifBlank { "EUR" },
-        googleKey = prefs.getString("googleKey", "").orEmpty(),
-        tripadvisorKey = prefs.getString("tripadvisorKey", "").orEmpty(),
-        foursquareKey = prefs.getString("foursquareKey", "").orEmpty(),
-        liteApiKey = prefs.getString("liteApiKey", "").orEmpty(),
+        googleKey = secret("googleKey"),
+        tripadvisorKey = secret("tripadvisorKey"),
+        foursquareKey = secret("foursquareKey"),
+        liteApiKey = secret("liteApiKey"),
         tiqetsPartner = prefs.getString("tiqetsPartner", "").orEmpty(),
-    )
+    ).also { loaded ->
+        // Anciennes clés enregistrées en clair : chiffrées dès la première lecture.
+        if (SECRETS.any { prefs.getString(it, "").orEmpty().let { v -> v.isNotEmpty() && !SecretBox.isEncrypted(v) } }) save(loaded)
+    }
 
     fun save(s: Settings) {
         prefs.edit()
-            .putString("token", s.token.trim())
+            .putString("token", SecretBox.encrypt(s.token.trim()))
             .putString("marker", s.marker.trim())
             .putString("currency", s.currency)
-            .putString("googleKey", s.googleKey.trim())
-            .putString("tripadvisorKey", s.tripadvisorKey.trim())
-            .putString("foursquareKey", s.foursquareKey.trim())
-            .putString("liteApiKey", s.liteApiKey.trim())
+            .putString("googleKey", SecretBox.encrypt(s.googleKey.trim()))
+            .putString("tripadvisorKey", SecretBox.encrypt(s.tripadvisorKey.trim()))
+            .putString("foursquareKey", SecretBox.encrypt(s.foursquareKey.trim()))
+            .putString("liteApiKey", SecretBox.encrypt(s.liteApiKey.trim()))
             .putString("tiqetsPartner", s.tiqetsPartner.trim())
             .apply()
     }

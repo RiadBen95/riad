@@ -162,7 +162,7 @@ Android 8.0 (API 26) minimum.
   l'app est compilée mais rien n'est publié.
 - **CI** : droits en lecture par défaut, publication seulement depuis la branche principale ou de
   développement, actions épinglées par empreinte, mises à jour par Dependabot.
-- **App** : aucune sauvegarde des données, trafic
+- **App** : clés d'API chiffrées avec le Keystore Android, aucune sauvegarde des données, trafic
   HTTPS uniquement, liens externes limités à http(s), page de paiement limitée à LiteAPI et
   Stripe, réservations payées non confirmées conservées pour être finalisées sans nouveau paiement.
 - À venir : serveur intermédiaire pour garder les clés et vérifier les paiements côté serveur.
