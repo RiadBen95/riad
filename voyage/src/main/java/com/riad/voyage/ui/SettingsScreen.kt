@@ -131,6 +131,17 @@ fun SettingsScreen(
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
+            // Type de clé, reconnu à son début (la clé elle-même reste masquée).
+            supportingText = {
+                val k = liteApiKey.trim()
+                when {
+                    k.isEmpty() -> {}
+                    k.startsWith("sandbox") -> Text(t("🧪 Clé de test : réservations et paiements fictifs."))
+                    k.startsWith("prod") -> Text(t("✅ Clé réelle : réservations et paiements réels."),
+                        color = MaterialTheme.colorScheme.error)
+                    else -> Text(t("Type de clé non reconnu : elle devrait commencer par « sandbox_ » ou « prod_ »."))
+                }
+            },
         )
 
         OutlinedTextField(
