@@ -156,10 +156,11 @@ Android 8.0 (API 26) minimum.
 
 ## Sécurité
 
-- **Signature** : Envolée est publiée en version *release* signée avec une clé privée qui n'est
-  pas dans le dépôt. La CI la lit dans les secrets GitHub `ENVOLEE_KEYSTORE_BASE64`,
-  `ENVOLEE_KEYSTORE_PASSWORD`, `ENVOLEE_KEY_ALIAS` et `ENVOLEE_KEY_PASSWORD`. Sans ces secrets,
-  l'app est compilée mais rien n'est publié.
+- **Signature** : pour l'instant, Envolée est signée avec une clé fixe du dépôt (clé de test
+  publique), pour que chaque version s'installe par-dessus l'ancienne. Si les secrets GitHub
+  `ENVOLEE_KEYSTORE_BASE64`, `ENVOLEE_KEYSTORE_PASSWORD`, `ENVOLEE_KEY_ALIAS` et
+  `ENVOLEE_KEY_PASSWORD` sont ajoutés, la CI publie à la place une version *release* signée avec
+  cette clé privée (à faire avant une vraie publication).
 - **CI** : droits en lecture par défaut, publication seulement depuis la branche principale ou de
   développement, actions épinglées par empreinte, mises à jour par Dependabot.
 - **App** : clés d'API chiffrées avec le Keystore Android, aucune sauvegarde des données, trafic

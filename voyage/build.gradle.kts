@@ -21,6 +21,14 @@ android {
     // Signature de la version publiée : la clé privée n'est jamais dans le dépôt. La CI la reçoit
     // des secrets GitHub (variables ENVOLEE_*). Sans elles, la version release n'est pas signée.
     signingConfigs {
+        // Clé fixe (versionnée) : chaque nouvelle version s'installe par-dessus l'ancienne.
+        // Clé de test publique : à remplacer par la clé privée (secrets ENVOLEE_*) avant une vraie publication.
+        getByName("debug") {
+            storeFile = file("debug-signing.jks")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
         create("release") {
             val path = System.getenv("ENVOLEE_KEYSTORE_FILE")
             if (path != null) {
@@ -33,6 +41,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
+        }
         release {
             if (System.getenv("ENVOLEE_KEYSTORE_FILE") != null) signingConfig = signingConfigs.getByName("release")
             // R8 réduit les bibliothèques ; le code de l'app est conservé tel quel (proguard-rules.pro)

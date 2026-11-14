@@ -31,9 +31,9 @@ jobs:
         run: |
           ./gradlew :app:assembleDebug
           cp app/build/outputs/apk/debug/app-debug.apk accordeur-guitare.apk
-      # Envolée est publiée en version « release » signée avec la clé privée stockée dans les
-      # secrets GitHub (jamais dans le dépôt). Sans ces secrets, rien n'est publié.
-      - name: Envolée (release signée)
+      # Envolée : version « release » signée si la clé privée est dans les secrets GitHub (ENVOLEE_*),
+      # sinon version debug signée avec la clé fixe du dépôt.
+      - name: Envolée
         env:
           KEYSTORE_BASE64: ${{ secrets.ENVOLEE_KEYSTORE_BASE64 }}
           ENVOLEE_KEYSTORE_PASSWORD: ${{ secrets.ENVOLEE_KEYSTORE_PASSWORD }}
@@ -41,8 +41,10 @@ jobs:
           ENVOLEE_KEY_PASSWORD: ${{ secrets.ENVOLEE_KEY_PASSWORD }}
         run: |
           if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "::warning::Secrets de signature absents : Envolée est compilée mais pas publiée."
-            ./gradlew :voyage:assembleRelease
+            # Pas de clé privée : version debug signée avec la clé fixe du dépôt (comme avant).
+            ./gradlew :voyage:assembleDebug
+            cp voyage/build/outputs/apk/debug/voyage-debug.apk envolee.apk
+            cp envolee.apk voyage-malin.apk
             exit 0
           fi
           echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/envolee.jks"
@@ -80,7 +82,7 @@ jobs:
         run: gh run download "${{ github.run_id }}" --name apk --dir out
       - name: Publier la release
         run: |
-          if [ ! -f out/envolee.apk ]; then echo "Pas d'APK signé : rien à publier."; exit 0; fi
+          if [ ! -f out/envolee.apk ]; then echo "Pas d'APK : rien à publier."; exit 0; fi
           # Liens directs : https://github.com/<owner>/<repo>/releases/latest/download/envolee.apk
           gh release create "build-${{ github.run_number }}" out/*.apk \
             --target "${{ github.sha }}" --latest \
