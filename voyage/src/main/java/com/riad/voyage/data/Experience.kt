@@ -713,7 +713,7 @@ object ExperienceBuilder {
             val firstDay = dayIndex == 1
             val lastDay = dayIndex == a.duration.days
             // Dernier jour : fin du programme à temps pour l'aéroport (2 h avant + 1 h de trajet).
-            val dayEnd = a.departureMin?.takeIf { lastDay }?.let { it - 180 } ?: 24 * 60
+            val dayEnd = a.departureMin?.takeIf { lastDay }?.let { it - 180 } ?: 30 * 60   // sinon la soirée peut finir après minuit
 
             fun travelFrom(p: PointOfInterest): Pair<Int?, Int> {
                 val l = last ?: return null to 0
@@ -844,7 +844,7 @@ object ExperienceBuilder {
                     }
                 }
             }
-            if (dayEnd < 24 * 60) {
+            if (lastDay && a.departureMin != null) {
                 clock = min(clock, dayEnd)
                 place(ActivityLinks.Category.TOURS, transferPlace(t("Départ pour l'aéroport ou la gare")), "Départ", 60, fixedStart = max(clock, dayEnd))
             }
