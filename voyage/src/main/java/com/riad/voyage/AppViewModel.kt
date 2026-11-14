@@ -40,6 +40,7 @@ import com.riad.voyage.data.PlacesApi
 import com.riad.voyage.data.PlacesParser
 import com.riad.voyage.data.PlannedActivity
 import com.riad.voyage.data.PointOfInterest
+import com.riad.voyage.data.minutesOf
 import com.riad.voyage.data.PopularPlaces
 import com.riad.voyage.data.Prebook
 import com.riad.voyage.data.PriceAlert
@@ -1010,7 +1011,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             })
         }
         val end = st.answers.startDate.plusDays((st.answers.duration.days - 1).toLong())
-        val updated = trip.copy(programTitle = exp.title, programSubtitle = exp.subtitle, program = program,
+        val c = st.answers.company
+        val travellers = if (c == Quiz.Company.SOLO || c == Quiz.Company.COUPLE) travellersFor(c) else trip.travellers ?: travellersFor(c)
+        val updated = trip.copy(programTitle = exp.title, programSubtitle = exp.subtitle, program = program, travellers = travellers,
             startDate = trip.startDate ?: st.answers.startDate.toString(), endDate = trip.endDate ?: end.toString())
         if (silent) { tripStore.upsert(updated); refreshTrips() }
         else saveTrip(updated, tf("Programme enregistré dans votre voyage : {0}", t(exp.city)))
@@ -1031,6 +1034,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         it.copy(startDate = start.toString(), endDate = end.toString(), travellers = travellers, arrivalTime = arrival, departureTime = departure)
     }
 
+    /** Compagnie de voyage cohérente avec un nombre de voyageurs (garde la réponse actuelle quand elle convient). */
+    private fun companyFor(travellers: Int, current: Quiz.Company) = when (travellers) {
+        1 -> Quiz.Company.SOLO
+        2 -> if (current == Quiz.Company.SOLO) Quiz.Company.COUPLE else current
+        else -> if (current == Quiz.Company.FAMILY) current else Quiz.Company.FRIENDS
+    }
+
     /** « Programme sur mesure » depuis un voyage : ville, dates et voyageurs déjà remplis ; reste les envies. */
     fun planTrip(trip: Trip) {
         val days = ((trip.nights ?: 0) + 1).coerceIn(1, Quiz.Duration.MAX_DAYS)
@@ -1038,12 +1048,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             a.copy(
                 city = trip.city, place = null, startDate = trip.start ?: LocalDate.now(), duration = Quiz.Duration(days),
                 arrivalMin = trip.arrivalMin, departureMin = trip.departureMin,
-                company = when (trip.travellers) {
-                    1 -> Quiz.Company.SOLO
-                    2 -> if (a.company == Quiz.Company.SOLO) Quiz.Company.COUPLE else a.company
-                    null -> a.company
-                    else -> if (a.company == Quiz.Company.FAMILY) a.company else Quiz.Company.FRIENDS
-                },
+                company = trip.travellers?.let { companyFor(it, a.company) } ?: a.company,
             )
         }
         _experience.update { it.copy(quick = true, step = it.steps.indexOf("interests"), result = null, error = null, tripId = trip.id) }
@@ -1263,6 +1268,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 return@launch
             }
             updateAnswers { com.riad.voyage.data.ClaudeAssistant.toAnswers(req, it) }
+            // Voyage relié : le nombre de voyageurs dit dans la demande l'emporte, sinon celui du voyage.
+            linkedTrip(_experience.value)?.let { trip ->
+                if (req.travellers > 0) updateTrip(trip.id) { it.copy(travellers = req.travellers) }
+                else trip.travellers?.let { n -> updateAnswers { it.copy(company = companyFor(n, it.company)) } }
+            }
             _experience.update { it.copy(describing = false) }
             generateExperience()
         }
@@ -1313,7 +1323,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val a = _experience.value.answers
         var exp = _experience.value.result ?: return
         // Lieux fermés (définitivement ou ce jour-là) : remplacés par le premier lieu proposé à la place.
-        checks.filter { it.value.closedForGood || it.value.closedToday }.keys.forEach { id ->
+        val closedThen = exp.days.flatMap { it.steps }.filter { st ->
+            checks[st.place.id]?.hoursToday?.let { !com.riad.voyage.data.OpeningHours.fits(it, minutesOf(st.time) ?: 0, st.durationMin) } == true
+        }.map { it.place.id }
+        (checks.filter { it.value.closedForGood || it.value.closedToday }.keys + closedThen).forEach { id ->
             exp.days.forEachIndexed { d, day ->
                 val i = day.steps.indexOfFirst { it.place.id == id }
                 if (i >= 0) exp = ExperienceBuilder.replaceStep(a, exp, d, i,
@@ -1350,6 +1363,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Charge les meilleurs lieux de chaque catégorie utile, puis compose l'expérience. */
     fun generateExperience() {
+        updateAnswers { it.copy(country = countryOf(it.city.trim(), it.place?.country.orEmpty())) }   // cuisine locale
         val a = _experience.value.answers
         val city = a.city.trim()
         if (city.isBlank()) return

@@ -24,12 +24,28 @@ object OpeningHours {
                 body.contains("off") || body.contains("closed") -> IntRange.EMPTY
                 else -> time.findAll(body).map { m ->
                     val (h1, m1, h2, m2) = m.destructured
-                    (h1.toInt() * 60 + m1.toInt())..(h2.toInt() * 60 + m2.toInt())
+                    val from = h1.toInt() * 60 + m1.toInt()
+                    val to = h2.toInt() * 60 + m2.toInt()
+                    from..(if (to <= from) to + 24 * 60 else to)   // « 18:00-02:00 » : jusqu'à 2 h du matin
                 }.toList().takeIf { it.isNotEmpty() }?.let { ranges -> ranges.minOf { it.first }..ranges.maxOf { it.last } }
                     ?: return null
             }
         }
         return result
+    }
+
+    /**
+     * Horaires du jour en texte (Google : « 13:00 – 22:30 », « 12:00 – 15:00, 19:00 – 23:30 »).
+     * Vrai si une plage contient toute l'étape ; vrai aussi si le texte ne donne pas d'heures lisibles.
+     */
+    fun fits(text: String?, start: Int, minutes: Int): Boolean {
+        val ranges = Regex("(\\d{1,2}):(\\d{2})\\s*[–-]\\s*(\\d{1,2}):(\\d{2})").findAll(text.orEmpty()).map { m ->
+            val (h1, m1, h2, m2) = m.destructured
+            val from = h1.toInt() * 60 + m1.toInt()
+            val to = h2.toInt() * 60 + m2.toInt()
+            from to (if (to <= from) to + 24 * 60 else to)
+        }.toList()
+        return ranges.isEmpty() || ranges.any { (from, to) -> start >= from && start + minutes <= to }
     }
 
     private fun covers(spec: String, day: DayOfWeek): Boolean = spec.split(',').any { part ->

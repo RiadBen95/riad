@@ -911,4 +911,5 @@ ROWS = [
     ['Jardin public', 'Public garden'],
     ['Aréna', 'Arena'],
     ['Musée en plein air', 'Open-air museum'],
+    ["Soirée libre à l'hôtel après l'arrivée", 'Free evening at the hotel after arrival'],
 ]

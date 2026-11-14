@@ -117,7 +117,8 @@ class ExperienceTest {
 
     @Test
     fun onlyChosenInterestsMakeTheDay() {
-        val a = Quiz.Answers(city = "Paris", interests = setOf(Quiz.Interest.FOOD), company = Quiz.Company.SOLO)
+        // « Hors des sentiers battus » : pas de lieu phare ajouté d'office.
+        val a = Quiz.Answers(city = "Paris", interests = setOf(Quiz.Interest.FOOD), company = Quiz.Company.SOLO, style = Quiz.Style.HIDDEN)
         val cats = ExperienceBuilder.build(a, "Paris", pools).days.single().steps.map { it.category }.toSet()
         assertTrue(cats.isNotEmpty())
         assertTrue("$cats", cats.all { it == Category.RESTAURANTS || it == Category.CAFES })
@@ -168,5 +169,17 @@ class ExperienceTest {
         // Les horaires restent cohérents après modification, et le déjeuner pas avant 12h30.
         removed.days.single().steps.zipWithNext().forEach { (x, y) -> assertTrue(minutes(y.time) >= minutes(x.time) + x.durationMin) }
         assertTrue(minutes(removed.days.single().steps.first { it.moment == "Déjeuner" }.time) >= 12 * 60 + 30)
+    }
+
+    @Test
+    fun arrivalEveningAndEarlyDepartureAreRespected() {
+        val a = Quiz.Answers(city = "Paris", interests = setOf(Quiz.Interest.FOOD, Quiz.Interest.NIGHT), duration = Quiz.Duration(3),
+            arrivalMin = 20 * 60, departureMin = 9 * 60, restAfterArrival = true)
+        val days = ExperienceBuilder.build(a, "Paris", pools).days
+        assertEquals(listOf("Arrivée"), days.first().steps.map { it.moment })          // soirée libre à l'hôtel
+        val last = days.last().steps
+        assertEquals("Départ", last.last().moment)                                       // rien après le départ
+        last.zipWithNext().forEach { (x, y) -> assertTrue("${x.time} → ${y.time}", minutes(y.time) >= minutes(x.time)) }
+        assertTrue(last.none { it.moment == "Petit-déjeuner" && minutes(it.time) > minutes(last.last().time) })
     }
 }

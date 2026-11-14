@@ -164,6 +164,8 @@ object Quiz {
         val departureMin: Int? = null,        // heure de départ (avion, train) le dernier jour
         val wanted: List<String> = emptyList(),   // lieux demandés nommément (saisie libre)
         val avoidNames: List<String> = emptyList(), // lieux ou types à éviter (saisie libre)
+        val restAfterArrival: Boolean = false,      // soirée libre à l'hôtel le jour de l'arrivée
+        val country: String = "",                   // pays de la ville (cuisine locale)
     )
 
     /**
@@ -233,7 +235,7 @@ object ExperienceBuilder {
 
     fun neededCategories(a: Quiz.Answers): Set<ActivityLinks.Category> = buildSet {
         addAll(activityCategories(a))
-        if (a.style != Quiz.Style.HIDDEN && a.interests.any { it.category != null }) addAll(iconicCategories)
+        if (a.style != Quiz.Style.HIDDEN) addAll(iconicCategories)   // un lieu phare par jour, même sans envie de visite
         add(ActivityLinks.Category.RESTAURANTS)
         if (wantsCafe(a)) add(ActivityLinks.Category.CAFES)
         if (wantsBar(a)) add(ActivityLinks.Category.BARS)
@@ -304,13 +306,35 @@ object ExperienceBuilder {
      * Correspondance entre un lieu et des goûts : le type du lieu compte le plus, puis son nom,
      * puis sa description (Wikipédia, guide). 0 = aucun rapport.
      */
-    fun tasteScore(p: PointOfInterest, tastes: List<Quiz.Taste>): Int {
+    /** Cuisine du pays (mots du type de restaurant) : « locale » veut dire italienne à Milan, catalane à Barcelone. */
+    private val cuisines = mapOf(
+        "france" to listOf("francais", "bistrot", "brasserie", "bouchon", "creperie"),
+        "italie" to listOf("italien", "trattoria", "osteria", "pizzeria", "pizza", "lombard", "milanais", "romain", "toscan", "sicilien"),
+        "espagne" to listOf("espagnol", "catalan", "tapas", "paella", "basque", "andalou"),
+        "portugal" to listOf("portugais"), "grece" to listOf("grec"), "algerie" to listOf("algerien"),
+        "maroc" to listOf("marocain"), "tunisie" to listOf("tunisien"), "turquie" to listOf("turc"),
+        "allemagne" to listOf("allemand", "bavarois"), "belgique" to listOf("belge"), "royaume uni" to listOf("britannique", "pub"),
+        "japon" to listOf("japonais", "sushi", "ramen"), "liban" to listOf("libanais"), "mexique" to listOf("mexicain"),
+        "etats unis" to listOf("americain", "burger"), "inde" to listOf("indien"), "thailande" to listOf("thai"),
+    )
+    private val otherCuisines = cuisines.values.flatten() + listOf("philippin", "chinois", "vietnamien", "coreen", "kebab", "asiatique", "fusion")
+
+    private fun localWords(country: String) = cuisines[normalize(country)].orEmpty()
+
+    /** Restaurant d'une cuisine étrangère au pays (« Restaurant philippin » à Milan). */
+    fun isForeignCuisine(p: PointOfInterest, country: String): Boolean {
+        val local = localWords(country).ifEmpty { return false }
+        val kind = " " + normalize(p.kind) + " "
+        return local.none { kind.contains(it) } && otherCuisines.any { it !in local && kind.contains(" $it") }
+    }
+
+    fun tasteScore(p: PointOfInterest, tastes: List<Quiz.Taste>, country: String = ""): Int {
         if (tastes.isEmpty()) return 0
         val kind = " " + normalize(p.kind) + " "
         val name = " " + normalize(p.name) + " "
         val desc = " " + normalize(p.description.orEmpty().take(600)) + " "
         return tastes.maxOf { t ->
-            t.keywords.sumOf { k ->
+            (t.keywords + if (t == Quiz.Taste.LOCAL_FOOD) localWords(country) else emptyList()).sumOf { k ->
                 val kw = normalize(k)
                 (if (kind.contains(kw)) 3 else 0) + (if (name.contains(kw)) 2 else 0) + (if (desc.contains(kw)) 1 else 0)
             }.coerceAtMost(6)
@@ -714,7 +738,7 @@ object ExperienceBuilder {
             fun fillVisits(until: Int, moment: (Int) -> String) {
                 var guard = 0
                 val end = min(until, dayEnd)
-                while (guard++ < 6 && activities.isNotEmpty() && visitsToday < maxVisits(a.pace)) {
+                while (guard++ < 6 && (activities.isNotEmpty() || a.style != Quiz.Style.HIDDEN) && visitsToday < maxVisits(a.pace)) {
                     // Lieux phares (ou demandés) d'autres catégories, même hors des envies cochées.
                     val extra = if (a.style == Quiz.Style.HIDDEN) emptyList() else (iconicCategories - activities.toSet()).flatMap { c ->
                         pools[c].orEmpty().filter { it.id !in used && (isWanted(a, it) || (!iconicToday && isIconic(it))) }.map { c to it }
@@ -749,14 +773,33 @@ object ExperienceBuilder {
                 }
             }
 
+            /** Heure de début possible d'un lieu à partir de [at] selon ses horaires (null : fermé à ce moment). */
+            fun openAt(p: PointOfInterest, at: Int, minutes: Int): Int? {
+                val hours = OpeningHours.forDay(p.openingHours, todayDate.dayOfWeek) ?: return at
+                val start = max(at, hours.first)
+                return start.takeIf { it + minutes <= hours.last && it + minutes <= dayEnd }
+            }
+
+            /** Café, bar ou sortie : le mieux noté parmi ceux ouverts à l'heure prévue. */
+            fun venue(category: ActivityLinks.Category, moment: String, minutes: Int, limit: Int, rank: (PointOfInterest) -> Double) {
+                val at = clock
+                val best = candidates(category).take(limit).mapNotNull { p -> openAt(p, at + travelFrom(p).second, minutes)?.let { p to it } }
+                    .maxByOrNull { rank(it.first) } ?: return
+                place(category, best.first, moment, minutes, fixedStart = best.second)
+            }
+
             fun meal(category: ActivityLinks.Category, moment: String, at: Int) {
-                val best = candidates(category).take(30).maxByOrNull { p ->
-                    tasteScore(p, tastesFor(a, category).ifEmpty { listOf(Quiz.Taste.LOCAL_FOOD) }) * 1.5 + emblem(p) -
+                val local = Quiz.Taste.LOCAL_FOOD in tastesFor(a, category).ifEmpty { listOf(Quiz.Taste.LOCAL_FOOD) }
+                val best = candidates(category).take(30).mapNotNull { p ->
+                    openAt(p, max(at, clock + travelFrom(p).second), visitMinutes(p, category))?.let { p to it }
+                }.maxByOrNull { (p, _) ->
+                    tasteScore(p, tastesFor(a, category).ifEmpty { listOf(Quiz.Taste.LOCAL_FOOD) }, a.country) * 1.5 + emblem(p) -
+                        (if (local && isForeignCuisine(p, a.country)) 4.0 else 0.0) -   // cuisine locale demandée
                         (if (normalize(p.kind) in usedKinds) 3.0 else 0.0) -          // varier les cuisines
                         (travelFrom(p).second / (if (a.mobility == Quiz.Mobility.WALK) 6.0 else 12.0)) -
                         (if (p.id in avoid) 6.0 else 0.0)
                 } ?: return
-                place(category, best, moment, visitMinutes(best, category), fixedStart = at)
+                place(category, best.first, moment, visitMinutes(best.first, category), fixedStart = best.second)
             }
 
             val lateStart = a.start == Quiz.Start.LATE
@@ -765,11 +808,13 @@ object ExperienceBuilder {
                 place(ActivityLinks.Category.TOURS, transferPlace(t("Arrivée et installation")), "Arrivée", 90, fixedStart = arrival)
                 last = null
             }
-            // Matin (sans visite choisie, par exemple « Gastronomie » seule : petit-déjeuner dans un café).
-            if (activities.isEmpty() && wantsCafe(a)) {
-                candidates(ActivityLinks.Category.CAFES).take(20).maxByOrNull { p ->
-                    tasteScore(p, tastesFor(a, ActivityLinks.Category.CAFES)) + emblem(p)
-                }?.let { place(ActivityLinks.Category.CAFES, it, "Petit-déjeuner", 60) }
+            // Soirée libre à l'hôtel demandée : rien d'autre ce jour-là.
+            if (firstDay && a.arrivalMin != null && a.restAfterArrival) {
+                return@map ExperienceDay(if (a.duration.days > 1) tf("Jour {0}", dayIndex) else t(a.duration.label), steps, date, today)
+            }
+            // Matin seulement (sans visite choisie, par exemple « Gastronomie » seule : petit-déjeuner dans un café).
+            if (activities.isEmpty() && wantsCafe(a) && clock <= 10 * 60 + 30) {
+                venue(ActivityLinks.Category.CAFES, "Petit-déjeuner", 60, 20) { p -> tasteScore(p, tastesFor(a, ActivityLinks.Category.CAFES)) + emblem(p) }
             }
             fillVisits(12 * 60 + 30) { if (it < 11 * 60) "Matin" else "Fin de matinée" }
             if (clock <= 14 * 60 && 12 * 60 + 30 + 75 <= dayEnd) meal(ActivityLinks.Category.RESTAURANTS, "Déjeuner", 12 * 60 + 30)
@@ -779,28 +824,32 @@ object ExperienceBuilder {
                 val afternoonEnd = if (a.duration.halfDay) 17 * 60 else 19 * 60 + 15
                 // Première visite de l'après-midi, pause gourmande, puis le reste du créneau.
                 fillVisits(if (wantsCafe(a)) 16 * 60 + 15 else afternoonEnd) { "Après-midi" }
+                // Pause gourmande : pas collée au déjeuner (au moins 1 h 30 après sa fin).
+                val lunchEnd = steps.lastOrNull { it.moment == "Déjeuner" }?.let { (minutesOf(it.time) ?: 0) + it.durationMin }
+                if (lunchEnd != null && clock < lunchEnd + 90) clock = min(lunchEnd + 90, 16 * 60)
                 if (wantsCafe(a) && clock <= 17 * 60 && clock + 45 <= dayEnd) {
-                    candidates(ActivityLinks.Category.CAFES).take(20).maxByOrNull { p ->
+                    venue(ActivityLinks.Category.CAFES, "Pause gourmande", 45, 20) { p ->
                         tasteScore(p, tastesFor(a, ActivityLinks.Category.CAFES)) + emblem(p) - travelFrom(p).second / 6.0
-                    }?.let { place(ActivityLinks.Category.CAFES, it, "Pause gourmande", 45) }
+                    }
                     fillVisits(afternoonEnd) { if (it >= 17 * 60) "Fin d'après-midi" else "Après-midi" }
                 }
                 if (!a.duration.halfDay && 20 * 60 + 75 <= dayEnd) {
                     meal(ActivityLinks.Category.RESTAURANTS, "Dîner", 20 * 60)
-                    if (wantsBar(a)) candidates(ActivityLinks.Category.BARS).take(20).maxByOrNull { p ->
+                    if (wantsBar(a)) venue(ActivityLinks.Category.BARS, "Verre en soirée", 90, 20) { p ->
                         tasteScore(p, tastesFor(a, ActivityLinks.Category.BARS)) * 1.5 + emblem(p) - travelFrom(p).second / 6.0 -
                             (if (p.id in avoid) 6.0 else 0.0)
-                    }?.let { place(ActivityLinks.Category.BARS, it, "Verre en soirée", 90) }
-                    if (wantsClub(a) && dayIndex % 2 == 1) candidates(ActivityLinks.Category.NIGHTLIFE).take(15).maxByOrNull { p ->
+                    }
+                    if (wantsClub(a) && dayIndex % 2 == 1) venue(ActivityLinks.Category.NIGHTLIFE, "Pour finir la nuit", 120, 15) { p ->
                         emblem(p) - travelFrom(p).second / 10.0 - (if (p.id in avoid) 6.0 else 0.0)
-                    }?.let { place(ActivityLinks.Category.NIGHTLIFE, it, "Pour finir la nuit", 120) }
+                    }
                 }
             }
             if (dayEnd < 24 * 60) {
                 clock = min(clock, dayEnd)
                 place(ActivityLinks.Category.TOURS, transferPlace(t("Départ pour l'aéroport ou la gare")), "Départ", 60, fixedStart = max(clock, dayEnd))
             }
-            ExperienceDay(if (a.duration.days > 1) tf("Jour {0}", dayIndex) else t(a.duration.label), steps, date, today)
+            ExperienceDay(if (a.duration.days > 1) tf("Jour {0}", dayIndex) else t(a.duration.label),
+                steps.sortedBy { minutesOf(it.time) }, date, today)
         }.filter { it.steps.isNotEmpty() }
 
         val present = days.flatMap { d -> d.steps.map { it.category } }.toSet()

@@ -146,6 +146,10 @@ private fun Questionnaire(
                     // Version rapide : la date de début est demandée ici (pas de question à part).
                     if (state.quick) DateButton(t("Premier jour"), a.startDate, java.time.LocalDate.now(), { d -> onAnswers { it.copy(startDate = d) } }, Modifier.fillMaxWidth())
                     TimeField(t("Heure d'arrivée (facultatif, HH:MM)"), a.arrivalMin) { m -> onAnswers { it.copy(arrivalMin = m) } }
+                    if (a.arrivalMin != null) Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = a.restAfterArrival, onCheckedChange = { v -> onAnswers { it.copy(restAfterArrival = v) } })
+                        Text(t("Soirée libre à l'hôtel après l'arrivée"))
+                    }
                     TimeField(t("Heure de départ le dernier jour (facultatif, HH:MM)"), a.departureMin) { m -> onAnswers { it.copy(departureMin = m) } }
                     ChoiceCard(t("Une demi-journée"), null, a.duration.halfDay) { onAnswers { it.copy(duration = Quiz.Duration.HALF) } }
                     val end = a.startDate.plusDays((a.duration.days - 1).toLong())

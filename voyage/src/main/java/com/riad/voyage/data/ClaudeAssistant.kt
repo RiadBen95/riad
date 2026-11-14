@@ -47,6 +47,8 @@ class TripRequest(o: JSONObject) {
     val departureTime: String = o.optString("departureTime")
     val wanted: List<String> = list(o, "wanted")
     val avoid: List<String> = list(o, "avoid")
+    val travellers: Int = o.optInt("travellers")
+    val restAfterArrival: Boolean = o.optBoolean("restAfterArrival")
 }
 
 /**
@@ -88,7 +90,10 @@ object ClaudeAssistant {
             - Laisse un champ texte vide ("") ou une liste vide si la demande ne le précise pas ; n'invente rien.
             - Nous sommes le $today. startDate au format AAAA-MM-JJ.
             - days : nombre de jours du séjour (0 si inconnu) ; halfDay : true pour une demi-journée.
-            - arrivalTime / departureTime au format HH:MM (arrivée le premier jour, départ le dernier jour).
+            - arrivalTime / departureTime au format HH:MM (arrivée le premier jour, départ le dernier jour) ; une heure
+              approximative se convertit : matin 09:00, midi 12:00, après-midi 15:00, soir 19:00, nuit 22:00.
+            - restAfterArrival : true si la personne veut rester à l'hôtel (se reposer) après son arrivée.
+            - travellers : nombre de voyageurs s'il est dit ou évident (« seul » = 1, « à deux » ou « en couple » = 2), sinon 0.
             - company parmi : ${choices(Quiz.Company.entries.toTypedArray())}.
             - interests parmi : ${choices(Quiz.Interest.entries.toTypedArray())}.
             - tastes parmi : ${Quiz.Taste.entries.joinToString(", ") { "${it.name} (${it.label})" }}.
@@ -97,7 +102,7 @@ object ClaudeAssistant {
               budget parmi : ${choices(Quiz.Budget.entries.toTypedArray())}.
             - wanted : lieux ou noms cités explicitement (ex. « Sagrada Família », « Gaudí ») ; avoid : lieux ou types à éviter.
             Réponds uniquement par un objet JSON avec les clés : city, startDate, days, halfDay, company, interests, tastes,
-            style, pace, mobility, diet, budget, arrivalTime, departureTime, wanted, avoid.
+            style, pace, mobility, diet, budget, arrivalTime, departureTime, restAfterArrival, travellers, wanted, avoid.
 
             Demande : $text
         """.trimIndent()
@@ -155,6 +160,7 @@ object ClaudeAssistant {
             departureMin = minutesOf(r.departureTime) ?: a.departureMin,
             wanted = r.wanted.filter { it.isNotBlank() },
             avoidNames = r.avoid.filter { it.isNotBlank() },
+            restAfterArrival = r.restAfterArrival,
         )
     }
 }
