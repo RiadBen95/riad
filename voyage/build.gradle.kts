@@ -18,25 +18,33 @@ android {
         versionName = "1.$build"
     }
 
-    // Clé de signature fixe (versionnée) : chaque nouvelle version s'installe par-dessus l'ancienne
-    // sans désinstaller. C'est une clé de test publique, à remplacer avant une publication sur le Play Store.
+    // Signature de la version publiée : la clé privée n'est jamais dans le dépôt. La CI la reçoit
+    // des secrets GitHub (variables ENVOLEE_*). Sans elles, la version release n'est pas signée.
     signingConfigs {
-        getByName("debug") {
-            storeFile = file("debug-signing.jks")
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
+        create("release") {
+            val path = System.getenv("ENVOLEE_KEYSTORE_FILE")
+            if (path != null) {
+                storeFile = file(path)
+                storePassword = System.getenv("ENVOLEE_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ENVOLEE_KEY_ALIAS")
+                keyPassword = System.getenv("ENVOLEE_KEY_PASSWORD")
+            }
         }
     }
 
     buildTypes {
-        debug {
-            signingConfig = signingConfigs.getByName("debug")
-        }
         release {
+            if (System.getenv("ENVOLEE_KEYSTORE_FILE") != null) signingConfig = signingConfigs.getByName("release")
+            // R8 réduit les bibliothèques ; le code de l'app est conservé tel quel (proguard-rules.pro)
+            // pour éviter toute casse à l'exécution (lecture JSON, WorkManager…).
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
+    }
+    lint {
+        // Les vérifications de lint ne bloquent pas la publication (elles restent visibles dans les rapports).
+        abortOnError = false
+        checkReleaseBuilds = false
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

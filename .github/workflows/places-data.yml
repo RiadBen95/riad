@@ -11,19 +11,19 @@ on:
     - cron: "17 3 * * 1"   # chaque lundi : données à jour
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   generate:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # enregistre data/places dans le dépôt
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      # Action épinglée par empreinte ; Python 3 est déjà installé sur la machine (pas d'action tierce).
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Interroger Wikidata
-        run: python tools/build_places.py data/places
+        run: python3 tools/build_places.py data/places
       - name: Enregistrer dans le dépôt
         run: |
           git config user.name "github-actions[bot]"
