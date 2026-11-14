@@ -1701,7 +1701,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val s = _settings.value
         val c = s.aiConfig?.takeIf { s.has(com.riad.voyage.data.AiFeature.SOUVENIR) } ?: return null
         val spent = trip.expenses.joinToString("\n") { "${it.label} : ${it.amount} ${it.currency}" }
-        return attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.souvenir(c, TripText.share(trip) { t(it) } + "\nDépenses :\n" + spent) }?.getOrNull()
+        return attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.souvenir(c, com.riad.voyage.data.TripText.share(trip) { t(it) } + "\nDépenses :\n" + spent) }?.getOrNull()
     }
 
     val souvenirEnabled get() = _settings.value.has(com.riad.voyage.data.AiFeature.SOUVENIR)
@@ -1715,7 +1715,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val needs = listOfNotNull(a?.diet?.takeIf { it != Quiz.Diet.NONE }?.label, "jeunes enfants".takeIf { a?.youngKids == true },
             "poussette".takeIf { a?.stroller == true }).joinToString(", ")
         val local = practicalFor(trip.city, trip.country)?.phrases?.let { "la langue locale de ${trip.city}" } ?: "la langue locale"
-        val story = attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.story(c, TripText.share(trip) { t(it) }, trip.program.size, local, needs) }?.getOrNull() ?: return trip
+        val story = attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.story(c, com.riad.voyage.data.TripText.share(trip) { t(it) }, trip.program.size, local, needs) }?.getOrNull() ?: return trip
         val updated = trip.copy(storyIntro = story.intro, storyDays = story.days, extraPhrases = story.phrases)
         tripStore.upsert(updated)
         refreshTrips()

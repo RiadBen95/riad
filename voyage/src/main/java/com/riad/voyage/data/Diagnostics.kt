@@ -36,7 +36,7 @@ object Diagnostics {
                 "Tripadvisor : ${yes(settings.tripadvisorKey.isNotBlank())} · Foursquare : ${yes(settings.foursquareKey.isNotBlank())} · " +
                 "LiteAPI : ${yes(settings.liteApiKey.isNotBlank())}")
             line("Envolée AI : clé ${yes(settings.claudeKey.isNotBlank())} · activée ${yes(settings.claudeOn)} · saisie libre ${yes(settings.claudeDescribe)} · " +
-                "vérification ${yes(settings.claudeChecks)} · modèle ${settings.claudeModel}")
+                "recherches web ${yes(settings.aiWeb)} · vérification des lieux ${yes(settings.placeChecks)} · modèle ${settings.claudeModel}")
             line()
             val a = state.answers
             line("== Réponses du questionnaire ==")
