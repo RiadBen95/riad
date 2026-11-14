@@ -45,13 +45,13 @@ class TripRequest {
     var avoid: List<String> = emptyList()
 }
 
-class ReviewSummary {
+class PlaceReviewSummary {
     var id: String = ""
     var summary: String = ""
 }
 
-class ReviewSummaries {
-    var items: List<ReviewSummary> = emptyList()
+class PlaceReviewSummaries {
+    var items: List<PlaceReviewSummary> = emptyList()
 }
 
 /**
@@ -100,7 +100,7 @@ object ClaudeAssistant {
             val params = MessageCreateParams.builder()
                 .model(model.id)
                 .maxTokens(4000L)
-                .outputConfig(ReviewSummaries::class.java)
+                .outputConfig(PlaceReviewSummaries::class.java)
                 .addUserMessage(
                     "Pour chaque lieu, résume ses avis de visiteurs en une phrase courte et utile (moins de 20 mots, " +
                         "en ${com.riad.voyage.I18n.lang.nativeName}), sans inventer. Garde le même id.\n\n$input",
