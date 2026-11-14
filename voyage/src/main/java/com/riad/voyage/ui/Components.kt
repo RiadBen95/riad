@@ -44,9 +44,21 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 
+/**
+ * Lien web sûr : seuls http(s) sont acceptés. Les liens viennent en partie de données ouvertes
+ * (OpenStreetMap, Wikidata) : un autre type (intent:, file:, content:…) pourrait déclencher une
+ * action inattendue dans une autre app. Sans schéma (« www.site.fr »), https est ajouté.
+ */
+fun safeWebUri(url: String): Uri? {
+    val u = url.trim().let { if (Regex("^[a-zA-Z][a-zA-Z0-9+.-]*:").containsMatchIn(it)) it else "https://$it" }
+    val uri = runCatching { Uri.parse(u) }.getOrNull() ?: return null
+    return uri.takeIf { it.scheme?.lowercase() in setOf("http", "https") && !it.host.isNullOrBlank() }
+}
+
 fun openUrl(context: Context, url: String) {
+    val uri = safeWebUri(url) ?: return Toast.makeText(context, t("Lien non pris en charge"), Toast.LENGTH_SHORT).show()
     try {
-        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        context.startActivity(Intent(Intent.ACTION_VIEW, uri).addCategory(Intent.CATEGORY_BROWSABLE).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     } catch (_: ActivityNotFoundException) {
         Toast.makeText(context, t("Aucun navigateur installé"), Toast.LENGTH_SHORT).show()
     }

@@ -327,6 +327,15 @@ data class Prebook(
 object LitePayment {
     const val RETURN_URL = "https://envolee.app/paiement-termine"
 
+    private val trustedHosts = listOf("liteapi.travel", "stripe.com", "stripe.network", "stripecdn.com")
+
+    /** Page autorisée dans la fenêtre de paiement (https vers LiteAPI ou Stripe uniquement). */
+    fun allowed(url: String): Boolean {
+        val u = runCatching { java.net.URI(url) }.getOrNull() ?: return false
+        val host = u.host?.lowercase() ?: return false
+        return u.scheme == "https" && trustedHosts.any { host == it || host.endsWith(".$it") }
+    }
+
     /** Clé de test LiteAPI : « sand_… » (les clés réelles commencent par « prod_ »). */
     fun isSandbox(key: String) = key.trim().lowercase().let { it.startsWith("sand") }
 

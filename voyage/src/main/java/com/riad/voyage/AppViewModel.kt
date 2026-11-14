@@ -187,6 +187,10 @@ data class ExperienceState(
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val settingsStore = SettingsStore(app)
+    private val pendingStore = com.riad.voyage.data.PendingBookingStore(app)
+    private val _pendingBooking = MutableStateFlow(pendingStore.load())
+    /** Réservation payée en attente de confirmation (à finaliser). */
+    val pendingBooking: StateFlow<com.riad.voyage.data.PendingBooking?> = _pendingBooking.asStateFlow()
     private val alertStore = AlertStore(app)
     private val recentStore = RecentStore(app)
     val quotas = com.riad.voyage.data.QuotaStore(app)
@@ -645,6 +649,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Étape 1 de la réservation directe : LiteAPI confirme la disponibilité et le prix exact. */
     fun startHotelBooking(offer: com.riad.voyage.data.RoomOffer) {
         val key = _settings.value.liteApiKey
+        // Même chambre déjà pré-réservée : on la réutilise (pas de seconde pré-réservation ni de doublon).
+        _hotels.value.detail?.let { d ->
+            if (d.prebook != null && d.booking?.offerId == offer.offerId && d.confirmed == null) {
+                _hotels.update { it.copy(detail = d.copy(booking = offer, bookingError = null)) }
+                return
+            }
+        }
         _hotels.update { it.copy(detail = it.detail?.copy(booking = offer, prebook = null, bookingBusy = true, bookingError = null, confirmed = null)) }
         viewModelScope.launch {
             val r = kotlinx.coroutines.withTimeoutOrNull(25_000) { runCatching { com.riad.voyage.data.LiteApiMore.prebook(key, offer.offerId) } }
@@ -692,43 +703,60 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun hotelPaymentCancelled() = _hotels.update { it.copy(detail = it.detail?.copy(paymentHtml = null)) }
 
     private fun bookHotel(guest: List<String>, transactionId: String?) {
-        val key = _settings.value.liteApiKey
         val d = _hotels.value.detail ?: return
         val pre = d.prebook ?: return
         if (guest.size < 3) return
-        val (firstName, lastName, email) = guest
+        val h = _hotels.value
+        val p = com.riad.voyage.data.PendingBooking(
+            pre.prebookId, transactionId.orEmpty(), guest, h.city, h.checkIn.toString(), h.checkOut.toString(),
+            d.hotel.name, d.hotel.lat ?: 0.0, d.hotel.lon ?: 0.0, pre.price ?: d.booking?.price, pre.currency ?: d.booking?.currency,
+        )
+        // Paiement fait : on garde une trace tant que la réservation n'est pas confirmée.
+        if (transactionId != null) { pendingStore.save(p); _pendingBooking.value = p }
+        runBooking(p)
+    }
+
+    /** Finalise une réservation déjà payée (même paiement, aucun nouveau débit). */
+    fun retryPendingBooking() { _pendingBooking.value?.let { runBooking(it) } }
+
+    private fun runBooking(p: com.riad.voyage.data.PendingBooking) {
+        val key = _settings.value.liteApiKey
+        val paid = p.transactionId.isNotBlank()
+        val (firstName, lastName, email) = p.guest
         _hotels.update { it.copy(detail = it.detail?.copy(bookingBusy = true, bookingError = null)) }
         viewModelScope.launch {
             val r = kotlinx.coroutines.withTimeoutOrNull(40_000) {
-                runCatching { com.riad.voyage.data.LiteApiMore.book(key, pre.prebookId, firstName, lastName, email, transactionId) }
+                runCatching { com.riad.voyage.data.LiteApiMore.book(key, p.prebookId, firstName, lastName, email, p.transactionId.ifBlank { null }) }
             }
             val ok = r?.getOrNull()
-            _hotels.update { st ->
-                val cur = st.detail ?: return@update st
-                st.copy(detail = when {
-                    ok != null -> cur.copy(bookingBusy = false, confirmed = ok)
-                    r == null -> cur.copy(bookingBusy = false, bookingError = t("Le service d'hôtels ne répond pas. Réessayez dans un instant."))
-                    else -> cur.copy(bookingBusy = false, bookingError = r.exceptionOrNull()?.let { TravelpayoutsApi.userMessage(it) }
-                        ?: t("La réservation n'a pas abouti."))
-                })
+            val failure = when {
+                ok != null -> null
+                paid -> t("Paiement reçu, mais la réservation n'est pas encore confirmée. Réessayez : aucun nouveau paiement ne sera demandé.")
+                r == null -> t("Le service d'hôtels ne répond pas. Réessayez dans un instant.")
+                else -> r.exceptionOrNull()?.let { TravelpayoutsApi.userMessage(it) } ?: t("La réservation n'a pas abouti.")
             }
-            if (ok != null) {
-                val h = _hotels.value
-                val trip = tripFor(h.city)
-                val price = (ok.price ?: pre.price ?: d.booking?.price)?.let { com.riad.voyage.ui.formatPrice(it.toInt(), ok.currency ?: pre.currency ?: "EUR") }
-                val label = listOfNotNull("Hôtel réservé", ok.confirmation?.let { "Réf. $it" } ?: "Réf. ${ok.bookingId}", price).joinToString(" · ")
-                saveTrip(
-                    trip.copy(
-                        places = trip.places + com.riad.voyage.data.SavedPlace.of(d.hotel.toPoi("").copy(kind = label)),
-                        startDate = trip.startDate ?: h.checkIn.toString(), endDate = trip.endDate ?: h.checkOut.toString(),
-                    ),
-                    tf("Réservation ajoutée à votre voyage : {0}", t(h.city)),
-                )
-            }
+            _hotels.update { st -> st.copy(detail = st.detail?.copy(bookingBusy = false, confirmed = ok, bookingError = failure)) }
+            if (_hotels.value.detail == null && failure != null) _message.value = failure
+            if (ok == null) return@launch
+            pendingStore.clear()
+            _pendingBooking.value = null
+            val trip = tripFor(p.city)
+            val price = (ok.price ?: p.price)?.let { com.riad.voyage.ui.formatPrice(it.toInt(), ok.currency ?: p.currency ?: "EUR") }
+            val label = listOfNotNull("Hôtel réservé", "Réf. " + (ok.confirmation ?: ok.bookingId), price).joinToString(" · ")
+            saveTrip(
+                trip.copy(
+                    places = trip.places + com.riad.voyage.data.SavedPlace(p.hotelName, label, p.lat, p.lon, p.lat != 0.0),
+                    startDate = trip.startDate ?: p.checkIn, endDate = trip.endDate ?: p.checkOut,
+                ),
+                tf("Réservation ajoutée à votre voyage : {0}", t(p.city)),
+            )
         }
     }
 
-    fun cancelHotelBooking() = _hotels.update { it.copy(detail = it.detail?.copy(booking = null, prebook = null, bookingError = null, confirmed = null)) }
+    /** Ferme la fenêtre ; la pré-réservation reste valable pour la même chambre (sauf si déjà confirmée). */
+    fun cancelHotelBooking() = _hotels.update {
+        it.copy(detail = it.detail?.let { d -> d.copy(booking = null, prebook = d.prebook.takeIf { d.confirmed == null }, bookingError = null, confirmed = null) })
+    }
 
     fun saveHotel(o: com.riad.voyage.data.HotelOffer) {
         val h = _hotels.value

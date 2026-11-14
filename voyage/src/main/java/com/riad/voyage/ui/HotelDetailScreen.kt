@@ -65,6 +65,8 @@ fun HotelDetailScreen(
     onCancelBooking: () -> Unit,
     onPaymentDone: () -> Unit = {},
     onPaymentCancel: () -> Unit = {},
+    paidPending: Boolean = false,
+    onRetryPending: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val info = d.info
@@ -72,7 +74,7 @@ fun HotelDetailScreen(
     var showAll by remember { mutableStateOf(false) }
 
     if (d.paymentHtml != null) PaymentDialog(d.paymentHtml, sandbox, onPaymentDone, onPaymentCancel)
-    else if (d.booking != null) BookingDialog(d, state, sandbox, onConfirm, onCancelBooking)
+    else if (d.booking != null) BookingDialog(d, state, sandbox, onConfirm, onCancelBooking, paidPending, onRetryPending)
 
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
@@ -244,6 +246,8 @@ private fun BookingDialog(
     sandbox: Boolean,
     onConfirm: (String, String, String) -> Unit,
     onCancel: () -> Unit,
+    paidPending: Boolean,
+    onRetry: () -> Unit,
 ) {
     var first by remember { mutableStateOf("") }
     var last by remember { mutableStateOf("") }
@@ -286,6 +290,7 @@ private fun BookingDialog(
         confirmButton = {
             when {
                 confirmed != null -> Button(onClick = onCancel) { Text(t("Fermer")) }
+                paidPending -> Button(onClick = onRetry, enabled = !d.bookingBusy) { Text(t("Réessayer la réservation")) }
                 d.prebook != null -> Button(
                     onClick = { onConfirm(first, last, email) },
                     enabled = !d.bookingBusy && first.isNotBlank() && last.isNotBlank() && email.contains('@'),
@@ -325,10 +330,15 @@ private fun PaymentDialog(html: String, sandbox: Boolean, onDone: () -> Unit, on
                     modifier = Modifier.fillMaxSize(),
                     factory = { ctx ->
                         android.webkit.WebView(ctx).apply {
+                            // Page verrouillée : JavaScript (nécessaire au formulaire Stripe), mais ni fichiers,
+                            // ni fenêtres secondaires, ni contenu non chiffré.
                             settings.javaScriptEnabled = true
                             settings.domStorageEnabled = true
-                            settings.javaScriptCanOpenWindowsAutomatically = true
-                            settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+                            settings.javaScriptCanOpenWindowsAutomatically = false
+                            settings.setSupportMultipleWindows(false)
+                            settings.allowFileAccess = false
+                            settings.allowContentAccess = false
+                            settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
                             // Le formulaire de carte (Stripe) tourne dans des iframes qui ont besoin de leurs cookies.
                             android.webkit.CookieManager.getInstance().setAcceptCookie(true)
                             android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
@@ -340,12 +350,15 @@ private fun PaymentDialog(html: String, sandbox: Boolean, onDone: () -> Unit, on
                                 }
                             }
                             webViewClient = object : android.webkit.WebViewClient() {
+                                /** Vrai = navigation bloquée. Seuls LiteAPI, Stripe et l'adresse de fin sont permis. */
                                 private fun check(url: String?): Boolean {
                                     if (url != null && url.startsWith(com.riad.voyage.data.LitePayment.RETURN_URL)) {
                                         if (!finished) { finished = true; onDone() }
                                         return true
                                     }
-                                    return false
+                                    if (url == null || com.riad.voyage.data.LitePayment.allowed(url)) return false
+                                    problem = t("Page extérieure bloquée pour votre sécurité.")
+                                    return true
                                 }
                                 override fun shouldOverrideUrlLoading(view: android.webkit.WebView?, request: android.webkit.WebResourceRequest?) =
                                     check(request?.url?.toString())
@@ -362,6 +375,8 @@ private fun PaymentDialog(html: String, sandbox: Boolean, onDone: () -> Unit, on
                             loadDataWithBaseURL("https://payment-wrapper.liteapi.travel/", html, "text/html", "UTF-8", null)
                         }
                     },
+                    // Rien ne reste en mémoire après le paiement (cache, historique, page).
+                    onRelease = { w -> w.stopLoading(); w.clearCache(true); w.clearHistory(); w.clearFormData(); w.destroy() },
                 )
             }
         }

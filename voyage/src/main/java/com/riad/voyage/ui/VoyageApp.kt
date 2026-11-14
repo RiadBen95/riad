@@ -49,6 +49,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
     val hotels by vm.hotels.collectAsStateWithLifecycle()
     val budget by vm.budget.collectAsStateWithLifecycle()
     val budgetReturn by vm.budgetReturn.collectAsStateWithLifecycle()
+    val pendingBooking by vm.pendingBooking.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(message) {
@@ -239,6 +240,8 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                             onConfirm = vm::confirmHotelBooking,
                             onCancelBooking = vm::cancelHotelBooking,
                             onPaymentDone = vm::hotelPaymentDone,
+                            paidPending = pendingBooking != null,
+                            onRetryPending = vm::retryPendingBooking,
                             onPaymentCancel = vm::hotelPaymentCancelled,
                         )
                     } else {
@@ -253,6 +256,8 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                             onConfigure = configure,
                             onOpen = vm::openHotelDetail,
                             onBookInApp = vm::openHotelDetail,
+                            pendingHotel = pendingBooking?.hotelName,
+                            onRetryPending = vm::retryPendingBooking,
                         )
                     }
                 }

@@ -5,6 +5,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PaymentTest {
+    @Test fun paymentWindowOnlyAllowsLiteApiAndStripe() {
+        assertTrue(LitePayment.allowed("https://js.stripe.com/v3/"))
+        assertTrue(LitePayment.allowed("https://payment-wrapper.liteapi.travel/x"))
+        assertTrue(!LitePayment.allowed("http://js.stripe.com/"))
+        assertTrue(!LitePayment.allowed("https://stripe.com.evil.example/"))
+        assertTrue(!LitePayment.allowed("intent://scan#Intent;end"))
+    }
+
     @Test fun sandboxKeysAreRecognised() {
         assertTrue(LitePayment.isSandbox("sand_c0155ab8-0000"))
         assertTrue(!LitePayment.isSandbox("prod_1234"))

@@ -59,6 +59,8 @@ fun HotelsScreen(
     onConfigure: () -> Unit,
     onOpen: (HotelOffer) -> Unit = {},
     onBookInApp: (HotelOffer) -> Unit = onOpen,
+    pendingHotel: String? = null,
+    onRetryPending: () -> Unit = {},
 ) {
     val context = LocalContext.current
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -66,6 +68,19 @@ fun HotelsScreen(
             Text(t("Hôtels"), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             Text(t("Comparez les hôtels de la ville pour vos dates, puis réservez au meilleur prix."),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        // Réservation payée mais pas encore confirmée : la finaliser (sans nouveau paiement).
+        pendingHotel?.let { name ->
+            item {
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(tf("Réservation payée à confirmer : {0}", name), fontWeight = FontWeight.Bold)
+                        Text(t("Le paiement a été reçu mais la confirmation n'est pas arrivée. Finalisez-la : aucun nouveau paiement ne sera demandé."),
+                            style = MaterialTheme.typography.bodySmall)
+                        Button(onClick = onRetryPending) { Text(t("Réessayer la réservation")) }
+                    }
+                }
+            }
         }
         item {
             PlaceField(
