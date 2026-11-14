@@ -55,7 +55,7 @@ fun BlogScreen(
         state.articleLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
         else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item {
-                Text(t("Blogue"), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                Text(t("Articles"), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                 Text(
                     t("Récits et histoire des lieux les plus emblématiques, choisis selon vos voyages et vos envies."),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,

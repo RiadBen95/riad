@@ -18,6 +18,9 @@ import com.riad.voyage.data.BudgetCalculator
 import com.riad.voyage.data.BudgetInput
 import com.riad.voyage.data.BudgetItem
 import com.riad.voyage.data.BudgetLine
+import com.riad.voyage.data.Expense
+import com.riad.voyage.data.Fx
+import com.riad.voyage.data.Trip
 import com.riad.voyage.data.Quiz
 import com.riad.voyage.t
 import com.riad.voyage.tf
@@ -36,6 +39,11 @@ fun BudgetScreen(
     onOverride: (BudgetItem, Double?) -> Unit,
     onTarget: (Double?) -> Unit,
     onChoose: (BudgetItem) -> Unit = {},
+    expenses: List<Expense> = emptyList(),
+    localCurrency: String? = null,
+    onAddExpense: ((String, Double, String, BudgetItem) -> Unit)? = null,   // null : séjour pas encore enregistré
+    onRemoveExpense: (Long) -> Unit = {},
+    rates: suspend () -> Map<String, Double> = { emptyMap() },
 ) {
     // Conversion euro → devise affichée (euro si le taux n'est pas encore connu).
     val rate = if (currency.equals("EUR", true)) 1.0 else state.rates[currency.uppercase()]
@@ -45,6 +53,7 @@ fun BudgetScreen(
 
     var editing by remember { mutableStateOf<BudgetLine?>(null) }
     var editingTarget by remember { mutableStateOf(false) }
+    var addingExpense by remember { mutableStateOf(false) }
 
     val input = state.input
     val lines = state.lines
@@ -138,12 +147,69 @@ fun BudgetScreen(
             }
         }
 
+        // Dépenses réelles sur place, comparées au budget prévu.
+        item {
+            Text(t("Dépenses sur place"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp))
+            if (onAddExpense == null) {
+                Text(t("Enregistrez ce séjour dans « Mes voyages » pour suivre vos dépenses."), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else {
+                val spent = expenses.sumOf { Fx.toEur(it.amount, it.currency, state.rates) }
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(tf("Dépensé : {0} sur {1} prévus", money(spent), money(total)), fontWeight = FontWeight.Bold)
+                        val left = total - spent
+                        Text(
+                            if (left >= 0) tf("Il reste {0}", money(left)) else tf("Dépassement de {0}", money(-left)),
+                            color = if (left >= 0) com.riad.voyage.ui.theme.dealColor() else MaterialTheme.colorScheme.error,
+                        )
+                        LinearProgressIndicator(progress = { if (total > 0) (spent / total).toFloat().coerceIn(0f, 1f) else 0f },
+                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp))
+                        // Par poste : dépensé / prévu.
+                        lines.forEach { line ->
+                            val s = expenses.filter { it.item == line.item.name }.sumOf { Fx.toEur(it.amount, it.currency, state.rates) }
+                            if (s > 0) Text("${line.item.emoji} ${t(line.item.label)} : ${money(s)} / ${money(line.amountEur)}",
+                                style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+                Button(onClick = { addingExpense = true }, modifier = Modifier.padding(top = 6.dp)) { Text(t("+ Ajouter une dépense")) }
+            }
+        }
+        items(expenses.sortedByDescending { it.id }, key = { it.id }) { e ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(e.label.ifBlank { t(BudgetItem.entries.firstOrNull { it.name == e.item }?.label ?: "Dépense") }, fontWeight = FontWeight.Medium)
+                    Text(e.date + " · " + (BudgetItem.entries.firstOrNull { it.name == e.item }?.let { "${it.emoji} ${t(it.label)}" } ?: ""),
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Text(formatPrice(e.amount.roundToInt(), e.currency), fontWeight = FontWeight.Bold)
+                TextButton(onClick = { onRemoveExpense(e.id) }) { Text("✕") }
+            }
+        }
+        item {
+            Card(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                Column(Modifier.padding(14.dp)) {
+                    Text("💱 " + t("Convertisseur"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    CurrencyConverter(from = localCurrency ?: "EUR", to = currency.uppercase(), rates = rates)
+                }
+            }
+        }
+
         item {
             Text(
                 t("Le budget ne compte que ce qui est dans votre voyage : vols gardés, hôtel choisi, activités. Les lieux en accès libre sont gratuits ; les restaurants comptent dans les repas. Touchez un poste pour saisir votre propre montant."),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+
+    if (addingExpense && onAddExpense != null) {
+        ExpenseDialog(
+            currencies = listOfNotNull(localCurrency, currency.uppercase(), "EUR").distinct(),
+            onDismiss = { addingExpense = false },
+            onSave = { label, amount, cur, item -> onAddExpense(label, amount, cur, item); addingExpense = false },
+        )
     }
 
     editing?.let { line ->
@@ -235,4 +301,71 @@ private fun AmountDialog(
             }
         },
     )
+}
+
+/** Nouvelle dépense : montant, devise, poste du budget et libellé. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ExpenseDialog(currencies: List<String>, onDismiss: () -> Unit, onSave: (String, Double, String, BudgetItem) -> Unit) {
+    var amount by remember { mutableStateOf("") }
+    var label by remember { mutableStateOf("") }
+    var cur by remember { mutableStateOf(currencies.first()) }
+    var item by remember { mutableStateOf(BudgetItem.MEALS) }
+    val value = amount.replace(',', '.').toDoubleOrNull()
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(t("Nouvelle dépense")) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(amount, { amount = it.filter { c -> c.isDigit() || c == ',' || c == '.' } }, label = { Text(t("Montant")) },
+                    singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    currencies.forEach { c -> FilterChip(selected = c == cur, onClick = { cur = c }, label = { Text(c) }) }
+                }
+                androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    BudgetItem.entries.filter { it != BudgetItem.FLIGHT }.forEach { b ->
+                        FilterChip(selected = b == item, onClick = { item = b }, label = { Text("${b.emoji} ${t(b.label)}") })
+                    }
+                }
+                OutlinedTextField(label, { label = it }, label = { Text(t("Libellé (facultatif)")) }, singleLine = true)
+            }
+        },
+        confirmButton = { TextButton(onClick = { value?.let { onSave(label, it, cur, item) } }, enabled = value != null && value > 0) { Text(t("Enregistrer")) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(t("Annuler")) } },
+    )
+}
+
+/** Onglet Budget sans budget ouvert : choisir le voyage (ou l'expérience) à budgéter. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BudgetPicker(trips: List<Trip>, experienceCity: String?, onTrip: (Trip) -> Unit, onExperience: () -> Unit, onCreate: () -> Unit) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        item {
+            Text(t("Budget"), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Text(t("Prévoyez le coût de votre séjour, puis suivez vos dépenses sur place."), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        experienceCity?.let { city ->
+            item {
+                Card(onClick = onExperience, modifier = Modifier.fillMaxWidth()) {
+                    Text("✨ " + tf("Mon expérience à {0}", t(city)), fontWeight = FontWeight.Bold, modifier = Modifier.padding(16.dp))
+                }
+            }
+        }
+        items(trips.filter { !it.isEmpty }, key = { it.id }) { trip ->
+            Card(onClick = { onTrip(trip) }, modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp)) {
+                    Text("🧳 " + t(trip.city), fontWeight = FontWeight.Bold)
+                    trip.startDate?.let { Text(it + (trip.endDate?.let { e -> " → $e" } ?: ""), style = MaterialTheme.typography.bodySmall) }
+                    if (trip.expenses.isNotEmpty()) Text(tf("{0} dépense(s) notée(s)", trip.expenses.size), style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary)
+                }
+            }
+        }
+        if (experienceCity == null && trips.none { !it.isEmpty }) {
+            item {
+                Text(t("Aucun séjour pour l'instant."), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Button(onClick = onCreate, modifier = Modifier.padding(top = 8.dp)) { Text(t("✨ Créer mon séjour")) }
+            }
+        }
+    }
 }

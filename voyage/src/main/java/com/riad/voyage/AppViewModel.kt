@@ -80,11 +80,19 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
+/**
+ * Navigation. Envolée est un planificateur de séjour : Expérience, Ville, Voyages et Budget sont au
+ * cœur (barre du bas) ; Vols et Hôtels sont des compléments réservables (depuis l'accueil et le voyage).
+ */
 enum class Tab(val label: String, val inBottomBar: Boolean = true) {
-    HOME("Accueil"), FLIGHTS("Vols"), HOTELS("Hôtels"), ACTIVITIES("Sorties"), EXPERIENCE("Expérience"), BLOG("Blogue"),
-    ALERTS("Alertes", inBottomBar = false), TRIPS("Mes voyages", inBottomBar = false), BUDGET("Budget", inBottomBar = false),
-    SETTINGS("Réglages", inBottomBar = false),
+    HOME("Accueil"), EXPERIENCE("Expérience"), CITY("Ville"), TRIPS("Voyages"), BUDGET("Budget"),
+    FLIGHTS("Vols", inBottomBar = false), HOTELS("Hôtels", inBottomBar = false),
+    ACTIVITIES("Sorties", inBottomBar = false), BLOG("Blogue", inBottomBar = false),   // sections de la page Ville
+    ALERTS("Alertes", inBottomBar = false), SETTINGS("Réglages", inBottomBar = false),
 }
+
+/** Sections de la page Ville. */
+enum class CitySection(val label: String) { PLACES("Lieux"), ARTICLES("Articles"), INFO("Infos pratiques") }
 
 sealed interface KeyStatus {
     data object Unknown : KeyStatus
@@ -210,6 +218,7 @@ data class BudgetState(
     val targetEur: Double? = null,
     val rates: Map<String, Double> = emptyMap(),
     val from: Tab = Tab.HOME,
+    val tripId: String? = null,          // voyage dont on suit les dépenses
 ) {
     val lines get() = BudgetCalculator.compute(input, overrides)
     val totalEur get() = lines.sumOf { it.amountEur }
@@ -326,9 +335,32 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun api() = _settings.value.let { TravelpayoutsApi(it.token, it.currency) }
 
-    fun selectTab(t: Tab) {
+    private val _citySection = MutableStateFlow(CitySection.PLACES)
+    val citySection: StateFlow<CitySection> = _citySection.asStateFlow()
+
+    fun setCitySection(s: CitySection) { _citySection.value = s; selectTab(Tab.CITY) }
+
+    /** Ville affichée dans la page Ville (lieux, articles, infos) : recherche en cours, sinon prochain voyage. */
+    fun currentCity(): Pair<String, String>? {
+        val c = _activityCity.value.ifBlank { _blog.value.city?.name.orEmpty() }
+            .ifBlank { _experience.value.result?.city.orEmpty() }.ifBlank { _trips.value.firstOrNull()?.city.orEmpty() }
+        if (c.isBlank()) return null
+        val country = _activityPlace.value?.takeIf { it.name.equals(c, true) }?.country
+            ?: _blog.value.city?.takeIf { it.name.equals(c, true) }?.country
+            ?: _trips.value.firstOrNull { it.city.equals(c, true) }?.country.orEmpty()
+        return c to countryOf(c, country)
+    }
+
+    fun selectTab(t0: Tab) {
+        // Sorties et Blogue sont des sections de la page Ville.
+        val t = when (t0) {
+            Tab.ACTIVITIES -> { _citySection.value = CitySection.PLACES; Tab.CITY }
+            Tab.BLOG -> { _citySection.value = CitySection.ARTICLES; Tab.CITY }
+            else -> t0
+        }
+        val section = _citySection.value
         // Les sorties reprennent la destination du vol si rien n'est saisi.
-        if (t == Tab.ACTIVITIES && _activityCity.value.isBlank()) {
+        if (t == Tab.CITY && _activityCity.value.isBlank()) {
             _activityCity.value = _form.value.destination?.name.orEmpty()
             _activityPlace.value = _form.value.destination
         }
@@ -340,9 +372,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             val dest = _form.value.destination ?: _activityPlace.value
             if (dest != null) _hotels.update { it.copy(city = dest.name, place = dest) }
         }
+        if (t == Tab.CITY && _activityCity.value.isBlank()) {
+            _trips.value.firstOrNull()?.let { _activityCity.value = it.city }
+        }
         _tab.value = t
-        if (t == Tab.ACTIVITIES) searchActivities()
-        if (t == Tab.BLOG && _blog.value.city == null) blogContext().firstOrNull()?.let { (c, why) -> openBlogCity(c, why) }
+        if (t == Tab.CITY && section == CitySection.PLACES) searchActivities()
+        if (t == Tab.CITY && section == CitySection.ARTICLES && _blog.value.city == null) {
+            blogContext().firstOrNull()?.let { (c, why) -> openBlogCity(c, why) }
+        }
     }
 
     /** Efface l'historique des recherches de vols. */
@@ -478,11 +515,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Reconstruit le budget à partir des choix actuels (taux de change en paramètre). */
     private var budgetBuilder: ((Map<String, Double>) -> BudgetInput)? = null
 
-    private fun openBudget(build: (Map<String, Double>) -> BudgetInput) {
-        val from = if (_tab.value == Tab.BUDGET) _budget.value?.from ?: Tab.HOME else _tab.value
+    private fun openBudget(tripId: String?, build: (Map<String, Double>) -> BudgetInput) {
+        val from = _tab.value
         budgetBuilder = build
         val rates = _budget.value?.rates.orEmpty()
-        _budget.value = BudgetState(input = build(rates), rates = rates, from = from)
+        _budget.value = BudgetState(input = build(rates), rates = rates, from = from, tripId = tripId)
         _tab.value = Tab.BUDGET
         viewModelScope.launch {
             val fresh = attempt(8_000) { Fx.rates() }?.getOrNull().orEmpty()
@@ -525,7 +562,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Budget d'un voyage enregistré, à partir de ce qui y a été choisi. */
-    fun openBudgetForTrip(trip0: Trip) = openBudget { rates ->
+    fun openBudgetForTrip(trip0: Trip) = openBudget(trip0.id) { rates ->
         val trip = _trips.value.firstOrNull { it.id == trip0.id } ?: trip0
         val nights = runCatching {
             ChronoUnit.DAYS.between(LocalDate.parse(trip.startDate!!), LocalDate.parse(trip.endDate!!)).toInt()
@@ -536,7 +573,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Budget du programme Expérience affiché (+ vols et hôtel choisis pour la même ville). */
-    fun openBudgetForExperience() = openBudget { rates ->
+    fun openBudgetForExperience() = openBudget(
+        _trips.value.firstOrNull { it.city.equals(_experience.value.result?.city ?: _experience.value.answers.city, true) }?.id,
+    ) { rates ->
         val st = _experience.value
         val a = st.answers
         val city = st.result?.city ?: a.city
@@ -596,7 +635,89 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setBudgetTarget(eur: Double?) = _budget.update { it?.copy(targetEur = eur) }
 
-    fun closeBudget() { _budgetReturn.value = false; val from = _budget.value?.from ?: Tab.HOME; _tab.value = from }
+    /** Ferme le budget : retour à l'écran d'origine (ou au choix du voyage si ouvert depuis l'onglet Budget). */
+    fun closeBudget() {
+        _budgetReturn.value = false
+        val from = _budget.value?.from ?: Tab.HOME
+        if (from == Tab.BUDGET) _budget.value = null else _tab.value = from
+    }
+
+    // ---------- Voyage : dépenses, programme, bagages ----------
+
+    private fun updateTrip(id: String, transform: (Trip) -> Trip) {
+        val trip = _trips.value.firstOrNull { it.id == id } ?: return
+        tripStore.upsert(transform(trip))
+        refreshTrips()
+    }
+
+    fun addExpense(tripId: String, label: String, amount: Double, currency: String, item: BudgetItem) = updateTrip(tripId) {
+        it.copy(expenses = it.expenses + com.riad.voyage.data.Expense(System.currentTimeMillis(), label.trim(), amount, currency, item.name,
+            LocalDate.now().toString()))
+    }
+
+    fun removeExpense(tripId: String, id: Long) = updateTrip(tripId) { it.copy(expenses = it.expenses.filter { e -> e.id != id }) }
+
+    private fun editDays(tripId: String, f: (MutableList<SavedDay>) -> Unit) = updateTrip(tripId) { t ->
+        t.copy(program = t.program.toMutableList().also(f))
+    }
+
+    private fun editSteps(tripId: String, day: Int, f: (MutableList<com.riad.voyage.data.SavedStep>) -> Unit) = editDays(tripId) { days ->
+        days.getOrNull(day)?.let { d -> days[day] = d.copy(steps = d.steps.toMutableList().also(f)) }
+    }
+
+    /** Déplace une étape d'un cran dans la journée ([delta] = -1 vers le haut, +1 vers le bas). */
+    fun moveStep(tripId: String, day: Int, index: Int, delta: Int) = editSteps(tripId, day) { s ->
+        val j = index + delta
+        if (index in s.indices && j in s.indices) s.add(j, s.removeAt(index))
+    }
+
+    fun deleteStep(tripId: String, day: Int, index: Int) = editSteps(tripId, day) { s -> if (index in s.indices) s.removeAt(index) }
+
+    fun editStep(tripId: String, day: Int, index: Int, time: String, name: String, note: String) = editSteps(tripId, day) { s ->
+        s.getOrNull(index)?.let { st -> s[index] = st.copy(time = time.trim(), moment = note.trim(), place = st.place.copy(name = name.trim())) }
+    }
+
+    /** Ajoute une étape libre (lieu saisi à la main) ; les étapes sont rangées par heure. */
+    fun addStep(tripId: String, day: Int, time: String, name: String, note: String) = editSteps(tripId, day) { s ->
+        s += com.riad.voyage.data.SavedStep(time.trim(), note.trim(), "📍", "", 60, SavedPlace(name.trim(), "Étape ajoutée", 0.0, 0.0, false))
+        s.sortBy { it.time }
+    }
+
+    fun addDay(tripId: String) = editDays(tripId) { days -> days += SavedDay(tf("Jour {0}", days.size + 1), null, emptyList()) }
+
+    fun togglePacked(tripId: String, key: String) = updateTrip(tripId) {
+        it.copy(packed = if (key in it.packed) it.packed - key else it.packed + key)
+    }
+
+    fun addPackItem(tripId: String, text: String) = updateTrip(tripId) { if (text.isBlank()) it else it.copy(extraItems = it.extraItems + text.trim()) }
+
+    fun removePackItem(tripId: String, text: String) = updateTrip(tripId) { it.copy(extraItems = it.extraItems - text, packed = it.packed - text) }
+
+    /** Liste de bagages d'un voyage : durée, météo du séjour (si prévue), activités, pays, enfants. */
+    suspend fun packingFor(trip: Trip): List<com.riad.voyage.data.PackItem> {
+        val start = trip.startDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+        val end = trip.endDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+        val nights = if (start != null && end != null) ChronoUnit.DAYS.between(start, end).toInt().coerceAtLeast(0)
+            else (trip.program.size - 1).coerceAtLeast(2)
+        val forecast = weatherFor(trip.city).filter { w -> start == null || (!w.date.isBefore(start) && !w.date.isAfter(end ?: start)) }
+        val kinds = trip.program.flatMap { d -> d.steps.map { it.place.kind + " " + it.place.name } } + trip.places.map { it.kind + " " + it.name }
+        val a = _experience.value.answers
+        val family = a.city.equals(trip.city, true) && a.company == com.riad.voyage.data.Quiz.Company.FAMILY
+        return com.riad.voyage.data.Packing.generate(nights, forecast, kinds, practicalFor(trip.city, trip.country), family)
+    }
+
+    /** Ouvre les infos pratiques de la ville d'un voyage (page Ville). */
+    fun openPractical(trip: Trip) {
+        _activityCity.value = trip.city
+        _activityPlace.value = null
+        setCitySection(CitySection.INFO)
+    }
+
+    /** Infos pratiques du pays d'une ville (null si le pays n'est pas connu). */
+    fun practicalFor(city: String, country: String = "") = com.riad.voyage.data.Practical.of(countryOf(city, country))
+
+    /** Taux de change (base euro), gardés en mémoire. */
+    suspend fun rates(): Map<String, Double> = attempt(8_000) { Fx.rates() }?.getOrNull().orEmpty()
 
     // ---------- Hôtels ----------
 
@@ -999,7 +1120,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     /** « Lire l'article complet » depuis la fiche d'un lieu : ouvre le lecteur du Blogue. */
     fun readPlaceArticle(tag: String) {
-        _tab.value = Tab.BLOG
+        _citySection.value = CitySection.ARTICLES
+        _tab.value = Tab.CITY
         openArticle(tag)
     }
 

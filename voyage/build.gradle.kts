@@ -80,6 +80,8 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.10.0")
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    // Carte OpenStreetMap (sans clé d'API) pour l'itinéraire du programme.
+    implementation("org.osmdroid:osmdroid-android:6.1.18")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")

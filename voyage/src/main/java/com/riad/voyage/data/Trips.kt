@@ -57,6 +57,9 @@ data class SavedArticle(
     }
 }
 
+/** Dépense réelle sur place, dans la devise payée. [item] : poste du budget (nom de [BudgetItem]). */
+data class Expense(val id: Long, val label: String, val amount: Double, val currency: String, val item: String, val date: String)
+
 /** Un voyage : tout ce que la personne a gardé pour une destination. */
 data class Trip(
     val id: String,
@@ -69,6 +72,9 @@ data class Trip(
     val flights: List<SavedFlight> = emptyList(),
     val places: List<SavedPlace> = emptyList(),
     val articles: List<SavedArticle> = emptyList(),
+    val expenses: List<Expense> = emptyList(),
+    val packed: Set<String> = emptySet(),          // objets cochés dans la liste de bagages
+    val extraItems: List<String> = emptyList(),    // objets ajoutés à la main
     val updated: Long = System.currentTimeMillis(),
 ) {
     val isEmpty get() = program.isEmpty() && flights.isEmpty() && places.isEmpty() && articles.isEmpty()
@@ -97,6 +103,7 @@ object TripJson {
     private fun <T> JSONArray?.list(f: (JSONObject) -> T): List<T> =
         if (this == null) emptyList() else List(length()) { f(getJSONObject(it)) }
     private fun <T> List<T>.arr(f: (T) -> JSONObject) = JSONArray().also { a -> forEach { a.put(f(it)) } }
+    private fun JSONArray?.strings(): List<String> = if (this == null) emptyList() else List(length()) { optString(it) }
 
     private fun place(p: SavedPlace) = JSONObject().put("name", p.name).put("kind", p.kind).put("lat", p.lat).put("lon", p.lon)
         .put("hasCoordinates", p.hasCoordinates).put("website", p.website).put("mapsUrl", p.mapsUrl)
@@ -125,6 +132,12 @@ object TripJson {
             JSONObject().put("wiki", a.wiki).put("title", a.title).put("imageUrl", a.imageUrl).put("intro", a.intro).put("url", a.url)
                 .put("sections", a.sections.arr { (h, b) -> JSONObject().put("h", h).put("b", b) })
         })
+        .put("expenses", t.expenses.arr { e ->
+            JSONObject().put("id", e.id).put("label", e.label).put("amount", e.amount).put("currency", e.currency)
+                .put("item", e.item).put("date", e.date)
+        })
+        .put("packed", JSONArray(t.packed.toList()))
+        .put("extraItems", JSONArray(t.extraItems))
 
     fun decode(o: JSONObject) = Trip(
         id = o.optString("id"),
@@ -148,6 +161,12 @@ object TripJson {
             SavedArticle(a.optString("wiki"), a.optString("title"), a.s("imageUrl"), a.optString("intro"),
                 a.optJSONArray("sections").list { it.optString("h") to it.optString("b") }, a.optString("url"))
         },
+        expenses = o.optJSONArray("expenses").list { e ->
+            Expense(e.optLong("id"), e.optString("label"), e.optDouble("amount", 0.0), e.optString("currency", "EUR"),
+                e.optString("item"), e.optString("date"))
+        },
+        packed = o.optJSONArray("packed").strings().toSet(),
+        extraItems = o.optJSONArray("extraItems").strings(),
         updated = o.optLong("updated"),
     )
 

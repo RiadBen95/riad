@@ -126,6 +126,117 @@ Réservation payée à confirmer : {0}	Paid booking to confirm: {0}	حجز مد�
 Le paiement a été reçu mais la confirmation n'est pas arrivée. Finalisez-la : aucun nouveau paiement ne sera demandé.	The payment was received but the confirmation didn't arrive. Complete it: no new payment will be requested.	تم استلام الدفع لكن التأكيد لم يصل. أكمله: لن يُطلب دفع جديد.	El pago se recibió pero la confirmación no llegó. Finalízala: no se pedirá un nuevo pago.	已收到付款但未收到确认。请完成确认：不会再次扣款。	お支払いは受け付けましたが確認が届いていません。手続きを完了してください（再度の支払いはありません）。	भुगतान मिल गया पर पुष्टि नहीं आई। इसे पूरा करें: नया भुगतान नहीं माँगा जाएगा।
 Météo à {0}	Weather in {0}	الطقس في {0}	El tiempo en {0}	{0} 天气	{0}の天気	{0} का मौसम
 Prévisions disponibles 16 jours avant le départ.	Forecast available 16 days before departure.	تتوفر التوقعات قبل 16 يومًا من المغادرة.	Previsión disponible 16 días antes de la salida.	出发前 16 天可查看天气预报。	天気予報は出発の16日前から表示されます。	पूर्वानुमान प्रस्थान से 16 दिन पहले उपलब्ध होगा।
++ Ajouter un jour	+ Add a day	+ إضافة يوم	+ Añadir un día	+ 添加一天	+ 日を追加	+ एक दिन जोड़ें
++ Ajouter une dépense	+ Add an expense	+ إضافة مصروف	+ Añadir un gasto	+ 添加支出	+ 支出を追加	+ खर्च जोड़ें
++ Ajouter une étape	+ Add a stop	+ إضافة محطة	+ Añadir una parada	+ 添加一站	+ 立ち寄り先を追加	+ पड़ाव जोड़ें
++ Créer un programme	+ Create an itinerary	+ إنشاء برنامج	+ Crear un programa	+ 创建行程	+ プランを作成	+ कार्यक्रम बनाएँ
+15 à 20 % attendus au restaurant	15 to 20% expected at restaurants	يُتوقع 15 إلى 20٪ في المطاعم	Se espera un 15 a 20 % en restaurantes	餐厅通常需付 15–20% 小费	レストランでは15〜20％が期待されます	रेस्तराँ में 15 से 20% अपेक्षित
+Adaptateur de prise	Plug adapter	محوّل قابس	Adaptador de enchufe	插头转换器	変換プラグ	प्लग एडाप्टर
+Adaptateur nécessaire pour les prises françaises.	Adapter needed for French plugs.	يلزم محوّل للقوابس الفرنسية.	Se necesita adaptador para enchufes franceses.	法国插头需要转换器。	フランスのプラグには変換アダプターが必要です。	फ़्रांसीसी प्लग के लिए एडाप्टर ज़रूरी है।
+Ajouter un objet	Add an item	إضافة غرض	Añadir un objeto	添加物品	持ち物を追加	सामान जोड़ें
+Ambassade et consulat	Embassy and consulate	السفارة والقنصلية	Embajada y consulado	大使馆和领事馆	大使館・領事館	दूतावास और वाणिज्य दूतावास
+Ambulance	Ambulance	الإسعاف	Ambulancia	救护车	救急車	एम्बुलेंस
+Articles	Articles	مقالات	Artículos	文章	記事	लेख
+Assurance voyage	Travel insurance	تأمين السفر	Seguro de viaje	旅行保险	旅行保険	यात्रा बीमा
+Au secours !	Help!	النجدة!	¡Socorro!	救命！	助けて！	बचाओ!
+Aucun séjour pour l'instant.	No trips yet.	لا توجد رحلات حتى الآن.	Aún no hay viajes.	暂无行程。	まだ旅行はありません。	अभी कोई यात्रा नहीं।
+Bagages pour {0}	Packing for {0}	حقيبة السفر إلى {0}	Equipaje para {0}	{0} 行李清单	{0}の持ち物	{0} के लिए सामान
+Batterie externe	Power bank	بطارية خارجية	Batería externa	充电宝	モバイルバッテリー	पावर बैंक
+Bonjour	Hello	مرحبا	Hola	你好	こんにちは	नमस्ते
+Bonnet, gants et écharpe	Hat, gloves and scarf	قبعة وقفازات ووشاح	Gorro, guantes y bufanda	帽子、手套和围巾	ニット帽・手袋・マフラー	टोपी, दस्ताने और मफ़लर
+Carte : © contributeurs OpenStreetMap	Map: © OpenStreetMap contributors	الخريطة: © مساهمو OpenStreetMap	Mapa: © colaboradores de OpenStreetMap	地图：© OpenStreetMap 贡献者	地図：© OpenStreetMap 寄稿者	मानचित्र: © OpenStreetMap योगदानकर्ता
+Carte bancaire et un peu d'espèces	Bank card and some cash	بطاقة بنكية وبعض النقود	Tarjeta bancaria y algo de efectivo	银行卡和少量现金	クレジットカードと少しの現金	बैंक कार्ड और थोड़ी नकदी
+Chapeau ou casquette	Hat or cap	قبعة	Sombrero o gorra	帽子	帽子	टोपी
+Chaussures confortables pour marcher	Comfortable walking shoes	أحذية مريحة للمشي	Calzado cómodo para caminar	舒适的步行鞋	歩きやすい靴	चलने के लिए आरामदायक जूते
+Chaussures de marche	Hiking boots	أحذية للمشي الطويل	Botas de montaña	登山鞋	トレッキングシューズ	हाइकिंग जूते
+Cherchez une ville dans « Lieux », ou créez un séjour, pour voir ses infos pratiques.	Search for a city in "Places", or create a trip, to see its practical info.	ابحث عن مدينة في «الأماكن» أو أنشئ رحلة لرؤية معلوماتها العملية.	Busca una ciudad en «Lugares», o crea un viaje, para ver su información práctica.	在“地点”中搜索城市或创建行程，即可查看实用信息。	「スポット」で都市を検索するか旅行を作成すると、実用情報が表示されます。	व्यावहारिक जानकारी देखने के लिए "जगहें" में शहर खोजें या यात्रा बनाएँ।
+Combien ça coûte ?	How much is it?	بكم هذا؟	¿Cuánto cuesta?	多少钱？	いくらですか？	यह कितने का है?
+Convertisseur	Converter	المحوّل	Conversor	换算器	通貨換算	कन्वर्टर
+Coordonnées de l'ambassade ou du consulat de {0} sur place.	Contact details of the {0} embassy or consulate on site.	بيانات سفارة أو قنصلية {0} في الوجهة.	Datos de contacto de la embajada o el consulado de {0} en destino.	当地 {0} 大使馆或领事馆的联系方式。	現地の{0}大使館・領事館の連絡先。	वहाँ {0} के दूतावास या वाणिज्य दूतावास का पता।
+Crème solaire	Sunscreen	واقي الشمس	Protector solar	防晒霜	日焼け止め	सनस्क्रीन
+Créer mon séjour sur mesure	Create my tailor-made trip	أنشئ رحلتي حسب الطلب	Crear mi viaje a medida	定制我的行程	オーダーメイドの旅を作る	मेरी मनपसंद यात्रा बनाएँ
+Documents	Documents	المستندات	Documentos	证件	書類	दस्तावेज़
+Dépassement de {0}	Over by {0}	تجاوز بمقدار {0}	Exceso de {0}	超支 {0}	{0}オーバー	{0} ज़्यादा
+Dépenses sur place	On-site spending	المصاريف في المكان	Gastos en destino	当地支出	現地での支出	वहाँ का खर्च
+Dépensé : {0} sur {1} prévus	Spent: {0} of {1} planned	المصروف: {0} من أصل {1} مخطط	Gastado: {0} de {1} previstos	已支出：{0} / 预计 {1}	支出：予定{1}のうち{0}	खर्च: {1} में से {0}
+Enregistrez ce séjour dans « Mes voyages » pour suivre vos dépenses.	Save this trip in "My trips" to track your spending.	احفظ هذه الرحلة في «رحلاتي» لتتبع مصاريفك.	Guarda este viaje en «Mis viajes» para seguir tus gastos.	将此行程保存到“我的行程”即可记录支出。	支出を記録するには、この旅行を「マイトリップ」に保存してください。	खर्च ट्रैक करने के लिए इस यात्रा को "मेरी यात्राएँ" में सहेजें।
+Environ 10 % au restaurant	About 10% at restaurants	نحو 10٪ في المطاعم	Alrededor del 10 % en restaurantes	餐厅约 10% 小费	レストランでは約10％	रेस्तराँ में लगभग 10%
+Excusez-moi	Excuse me	عذرًا	Disculpe	对不起	すみません	माफ़ कीजिए
+Gourde	Water bottle	قارورة ماء	Cantimplora	水壶	水筒	पानी की बोतल
+Heure (HH:MM)	Time (HH:MM)	الوقت (HH:MM)	Hora (HH:MM)	时间（HH:MM）	時刻（HH:MM）	समय (HH:MM)
+Il reste {0}	{0} left	يتبقى {0}	Quedan {0}	还剩 {0}	残り{0}	{0} बचे
+Jeux et en-cas pour les enfants	Games and snacks for the kids	ألعاب ووجبات خفيفة للأطفال	Juegos y meriendas para los niños	给孩子的游戏和零食	子ども用のおもちゃとおやつ	बच्चों के लिए खेल और नाश्ता
+L'addition, s'il vous plaît	The bill, please	الحساب من فضلك	La cuenta, por favor	请结账	お会計をお願いします	बिल दीजिए
+Lessive de voyage	Travel laundry wash	منظف غسيل للسفر	Detergente de viaje	旅行洗衣液	旅行用洗剤	यात्रा डिटर्जेंट
+Libellé (facultatif)	Label (optional)	الوصف (اختياري)	Concepto (opcional)	备注（可选）	メモ（任意）	विवरण (वैकल्पिक)
+Lieu ou activité	Place or activity	مكان أو نشاط	Lugar o actividad	地点或活动	場所・アクティビティ	जगह या गतिविधि
+Lieux	Places	الأماكن	Lugares	地点	スポット	जगहें
+Lieux à visiter	Places to visit	أماكن للزيارة	Lugares que visitar	值得游览的地方	見どころ	घूमने की जगहें
+Lunettes de soleil	Sunglasses	نظارات شمسية	Gafas de sol	太阳镜	サングラス	धूप का चश्मा
+Maillot de bain	Swimsuit	ملابس سباحة	Bañador	泳衣	水着	स्विमसूट
+Manteau chaud	Warm coat	معطف دافئ	Abrigo	保暖外套	暖かいコート	गर्म कोट
+Merci	Thank you	شكرًا	Gracias	谢谢	ありがとう	धन्यवाद
+Mes ajouts	My additions	إضافاتي	Mis añadidos	我添加的	追加したもの	मेरे जोड़े हुए
+Modifier l'étape	Edit stop	تعديل المحطة	Editar la parada	编辑这一站	立ち寄り先を編集	पड़ाव बदलें
+Mon expérience à {0}	My experience in {0}	تجربتي في {0}	Mi experiencia en {0}	我在 {0} 的体验	{0}での体験	{0} में मेरा अनुभव
+Monnaie et convertisseur	Currency and converter	العملة والمحوّل	Moneda y conversor	货币与换算	通貨と換算	मुद्रा और कन्वर्टर
+Montant	Amount	المبلغ	Importe	金额	金額	राशि
+Médicaments personnels	Personal medication	الأدوية الشخصية	Medicamentos personales	个人药品	常備薬	निजी दवाइयाँ
+Note (facultatif)	Note (optional)	ملاحظة (اختياري)	Nota (opcional)	备注（可选）	メモ（任意）	नोट (वैकल्पिक)
+Nouvelle dépense	New expense	مصروف جديد	Nuevo gasto	新支出	新しい支出	नया खर्च
+Nouvelle étape	New stop	محطة جديدة	Nueva parada	新的一站	新しい立ち寄り先	नया पड़ाव
+Numéros d'urgence	Emergency numbers	أرقام الطوارئ	Números de emergencia	紧急电话	緊急連絡先	आपातकालीन नंबर
+On arrondit ou on laisse 5 à 10 %	Round up or leave 5 to 10%	يُقرَّب المبلغ أو يُترك 5 إلى 10٪	Se redondea o se deja un 5 a 10 %	凑整或给 5–10%	端数を切り上げるか5〜10％	राशि पूरी कर दें या 5 से 10% दें
+Où est… ?	Where is…?	أين…؟	¿Dónde está…?	…在哪里？	…はどこですか？	… कहाँ है?
+Parapluie ou imperméable	Umbrella or raincoat	مظلة أو معطف مطر	Paraguas o impermeable	雨伞或雨衣	傘またはレインコート	छाता या रेनकोट
+Pas de pourboire : il peut même vexer	No tipping: it can even offend	لا بقشيش: قد يُعدّ إهانة	Sin propina: puede incluso ofender	不给小费：甚至可能冒犯对方	チップは不要：失礼になることも	टिप नहीं: इससे बुरा भी लग सकता है
+Pas encore d'infos pratiques pour ce pays.	No practical info for this country yet.	لا توجد معلومات عملية لهذا البلد بعد.	Aún no hay información práctica para este país.	暂无该国家的实用信息。	この国の実用情報はまだありません。	इस देश की व्यावहारिक जानकारी अभी नहीं है।
+Passeport ou carte d'identité	Passport or ID card	جواز السفر أو بطاقة الهوية	Pasaporte o DNI	护照或身份证	パスポートまたは身分証	पासपोर्ट या पहचान पत्र
+Petit sac à dos	Small backpack	حقيبة ظهر صغيرة	Mochila pequeña	小背包	小さめのリュック	छोटा बैग
+Petite trousse de premiers secours	Small first-aid kit	حقيبة إسعافات أولية صغيرة	Pequeño botiquín	小型急救包	簡易救急セット	छोटी प्राथमिक चिकित्सा किट
+Phrases utiles ({0})	Useful phrases ({0})	عبارات مفيدة ({0})	Frases útiles ({0})	实用短语（{0}）	便利なフレーズ（{0}）	उपयोगी वाक्य ({0})
+Police	Police	الشرطة	Policía	警察	警察	पुलिस
+Pompiers	Fire brigade	الإطفاء	Bomberos	消防	消防	दमकल
+Pourboire	Tipping	البقشيش	Propina	小费	チップ	टिप
+Prises françaises compatibles.	French plugs fit.	القوابس الفرنسية متوافقة.	Los enchufes franceses son compatibles.	法国插头可直接使用。	フランスのプラグがそのまま使えます。	फ़्रांसीसी प्लग चल जाएँगे।
+Prises {0} · {1} V	Plugs {0} · {1} V	القوابس {0} · {1} فولت	Enchufes {0} · {1} V	插头 {0} · {1} 伏	プラグ {0} · {1} V	प्लग {0} · {1} V
+Programme jour par jour selon vos goûts, la météo et votre budget	Day-by-day plan based on your tastes, the weather and your budget	برنامج يومي حسب أذواقك والطقس وميزانيتك	Programa día a día según tus gustos, el tiempo y tu presupuesto	根据您的喜好、天气和预算逐日安排	好み・天気・予算に合わせた日ごとのプラン	आपकी पसंद, मौसम और बजट के अनुसार दिन-ब-दिन कार्यक्रम
+Prévoyez le coût de votre séjour, puis suivez vos dépenses sur place.	Plan the cost of your trip, then track your spending there.	خطط لتكلفة رحلتك ثم تابع مصاريفك هناك.	Planifica el coste de tu viaje y luego sigue tus gastos allí.	规划行程费用，并在当地记录支出。	旅の費用を見積もり、現地では支出を記録しましょう。	यात्रा का खर्च तय करें, फिर वहाँ खर्च ट्रैक करें।
+Pull ou veste	Sweater or jacket	كنزة أو سترة	Jersey o chaqueta	毛衣或外套	セーターまたは上着	स्वेटर या जैकेट
+Pyjama	Pyjamas	ملابس النوم	Pijama	睡衣	パジャマ	पजामा
+Quel séjour préparez-vous ?	What trip are you planning?	ما الرحلة التي تخطط لها؟	¿Qué viaje estás preparando?	您在计划什么旅行？	どんな旅を計画中ですか？	आप कौन सी यात्रा की योजना बना रहे हैं?
+Rechercher l'ambassade ›	Find the embassy ›	ابحث عن السفارة ›	Buscar la embajada ›	查找大使馆 ›	大使館を検索 ›	दूतावास खोजें ›
+Réservations enregistrées hors connexion	Bookings saved offline	الحجوزات محفوظة بلا اتصال	Reservas guardadas sin conexión	离线保存预订信息	予約をオフライン保存	बुकिंग ऑफ़लाइन सहेजी हुई
+S'il vous plaît	Please	من فضلك	Por favor	请	お願いします	कृपया
+Sandales ou tongs	Sandals or flip-flops	صنادل أو شبشب	Sandalias o chanclas	凉鞋或人字拖	サンダル	सैंडल या चप्पल
+Selon la météo	Depending on the weather	حسب الطقس	Según el tiempo	根据天气	天気に合わせて	मौसम के अनुसार
+Selon vos activités	Depending on your activities	حسب أنشطتك	Según tus actividades	根据您的活动	アクティビティに合わせて	आपकी गतिविधियों के अनुसार
+Service compris ; on laisse la petite monnaie si on est satisfait	Service included; leave small change if you're happy	الخدمة مشمولة؛ تُترك الفكة عند الرضا	Servicio incluido; se deja el cambio si se está satisfecho	已含服务费；满意可留些零钱	サービス料込み。満足なら小銭を置く程度	सेवा शामिल; संतुष्ट हों तो छुट्टे पैसे छोड़ दें
+Serviette de plage	Beach towel	منشفة شاطئ	Toalla de playa	沙滩巾	ビーチタオル	बीच तौलिया
+Sous-vêtements et chaussettes	Underwear and socks	ملابس داخلية وجوارب	Ropa interior y calcetines	内衣和袜子	下着と靴下	अंडरवियर और मोज़े
+Tenue couvrant épaules et genoux (lieux de culte)	Outfit covering shoulders and knees (places of worship)	ملابس تغطي الكتفين والركبتين (دور العبادة)	Ropa que cubra hombros y rodillas (lugares de culto)	遮住肩膀和膝盖的衣服（宗教场所）	肩と膝が隠れる服（宗教施設）	कंधे और घुटने ढकने वाले कपड़े (धार्मिक स्थल)
+Tenues de jour	Day outfits	ملابس النهار	Ropa de día	日常衣物	日中の服	दिन के कपड़े
+Toilette et santé	Toiletries and health	النظافة والصحة	Aseo y salud	洗漱与健康	洗面用具・健康	प्रसाधन और स्वास्थ्य
+Trousse de toilette	Toiletry bag	حقيبة أدوات النظافة	Neceser	洗漱包	洗面ポーチ	प्रसाधन किट
+Téléphone et chargeur	Phone and charger	الهاتف والشاحن	Teléfono y cargador	手机和充电器	スマホと充電器	फ़ोन और चार्जर
+Une tenue pour sortir le soir	An outfit for evenings out	ملابس للسهر	Ropa para salir de noche	一套晚上外出的衣服	夜のお出かけ用の服	शाम को बाहर जाने के कपड़े
+Urgences	Emergency	الطوارئ	Emergencias	紧急	緊急	आपातकाल
+Veste légère	Light jacket	سترة خفيفة	Chaqueta ligera	薄外套	薄手の上着	हल्की जैकेट
+Vêtements	Clothes	الملابس	Ropa	衣物	衣類	कपड़े
+ambassade	embassy	سفارة	embajada	大使馆	大使館	दूतावास
+{0} / {1} prêts	{0} / {1} packed	{0} / {1} جاهزة	{0} / {1} listos	已备 {0} / {1}	{0} / {1} 準備済み	{0} / {1} तैयार
+{0} dépense(s) notée(s)	{0} expense(s) recorded	{0} مصروف مسجل	{0} gasto(s) anotado(s)	已记录 {0} 笔支出	{0}件の支出	{0} खर्च दर्ज
+Écouteurs	Earphones	سماعات	Auriculares	耳机	イヤホン	इयरफ़ोन
+Électricité	Electricity	الكهرباء	Electricidad	电源	電源	बिजली
+Électronique	Electronics	الإلكترونيات	Electrónica	电子产品	電子機器	इलेक्ट्रॉनिक्स
+ℹ️ Infos pratiques	ℹ️ Practical info	ℹ️ معلومات عملية	ℹ️ Información práctica	ℹ️ 实用信息	ℹ️ 実用情報	ℹ️ व्यावहारिक जानकारी
+↑ Monter	↑ Move up	↑ للأعلى	↑ Subir	↑ 上移	↑ 上へ	↑ ऊपर
+↓ Descendre	↓ Move down	↓ للأسفل	↓ Bajar	↓ 下移	↓ 下へ	↓ नीचे
+✎ Modifier	✎ Edit	✎ تعديل	✎ Editar	✎ 编辑	✎ 編集	✎ बदलें
+✕ Supprimer	✕ Delete	✕ حذف	✕ Eliminar	✕ 删除	✕ 削除	✕ हटाएँ
+✨ Créer mon séjour	✨ Create my trip	✨ أنشئ رحلتي	✨ Crear mi viaje	✨ 创建我的行程	✨ 旅を作る	✨ मेरी यात्रा बनाएँ
+💰 Budget et dépenses	💰 Budget and spending	💰 الميزانية والمصاريف	💰 Presupuesto y gastos	💰 预算与支出	💰 予算と支出	💰 बजट और खर्च
+🧳 Bagages	🧳 Packing	🧳 الأمتعة	🧳 Equipaje	🧳 行李	🧳 持ち物	🧳 सामान
 Musées	Museums	متاحف	Museos	博物馆	美術館・博物館	संग्रहालय
 Monuments	Monuments	معالم	Monumentos	古迹	名所・史跡	स्मारक
 Attractions	Attractions	معالم سياحية	Atracciones	景点	アトラクション	आकर्षण

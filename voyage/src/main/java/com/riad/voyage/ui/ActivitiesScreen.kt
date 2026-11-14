@@ -96,7 +96,7 @@ fun ActivitiesScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            Text(t("Sorties"), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Text(t("Lieux à visiter"), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             Text(
                 t("Musées, attractions et restaurants de la ville. Réservez vos billets à l'avance pour éviter la file d'attente."),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

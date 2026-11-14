@@ -58,6 +58,7 @@ fun HomeScreen(
     onOpenExperience: () -> Unit,
     onOpenBlog: () -> Unit,
     onOpenHotels: () -> Unit = {},
+    onOpenBudget: () -> Unit = {},
     trips: List<Trip> = emptyList(),
     onOpenTrip: (String?) -> Unit = {},
     onOpenAlerts: () -> Unit,
@@ -103,7 +104,7 @@ fun HomeScreen(
                     Spacer(Modifier.height(18.dp))
                     Text(greeting, color = Color.White.copy(alpha = 0.8f))
                     Text(
-                        t("Où partez-vous ?"),
+                        t("Quel séjour préparez-vous ?"),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -113,7 +114,7 @@ fun HomeScreen(
         }
         item {
             Card(
-                onClick = onOpenFlights,
+                onClick = onOpenExperience,
                 shape = RoundedCornerShape(20.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -131,13 +132,13 @@ fun HomeScreen(
                             .background(MaterialTheme.colorScheme.primaryContainer),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(AppIcons.Search, null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Icon(AppIcons.Sparkle, null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
                     }
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(t("Rechercher un vol"), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                        Text(t("Créer mon séjour sur mesure"), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                         Text(
-                            tf("Depuis {0} · {1} passager(s)", form.origin?.name?.let { t(it) } ?: "…", form.adults),
+                            t("Programme jour par jour selon vos goûts, la météo et votre budget"),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -154,9 +155,9 @@ fun HomeScreen(
                     .offset(y = (-20).dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                QuickTile(t("Vols"), AppIcons.Flight, onOpenFlights, Modifier.weight(1f))
-                QuickTile(t("Hôtels"), AppIcons.Hotel, onOpenHotels, Modifier.weight(1f))
-                QuickTile(t("Sorties"), AppIcons.Ticket, onOpenActivities, Modifier.weight(1f))
+                QuickTile(t("Ville"), AppIcons.City, onOpenActivities, Modifier.weight(1f))
+                QuickTile(t("Voyages"), AppIcons.Luggage, { onOpenTrip(null) }, Modifier.weight(1f))
+                QuickTile(t("Budget"), AppIcons.Wallet, onOpenBudget, Modifier.weight(1f))
             }
         }
         item {
@@ -167,9 +168,10 @@ fun HomeScreen(
                     .offset(y = (-10).dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                QuickTile(t("Expérience"), AppIcons.Sparkle, onOpenExperience, Modifier.weight(1f))
-                QuickTile(t("Blogue"), AppIcons.Book, onOpenBlog, Modifier.weight(1f))
-                QuickTile(t("Voyages"), AppIcons.Luggage, { onOpenTrip(null) }, Modifier.weight(1f), badge = alerts.size.takeIf { it > 0 })
+                // Compléments réservables.
+                QuickTile(t("Vols"), AppIcons.Flight, onOpenFlights, Modifier.weight(1f))
+                QuickTile(t("Hôtels"), AppIcons.Hotel, onOpenHotels, Modifier.weight(1f))
+                QuickTile(t("Alertes"), AppIcons.Bell, onOpenAlerts, Modifier.weight(1f), badge = alerts.size.takeIf { it > 0 })
             }
         }
         // Prochain voyage (ou le dernier modifié) : accès direct au carnet.

@@ -321,6 +321,12 @@ private fun ExperienceResult(
                 }
             }
         }
+        // Carte de l'itinéraire (une puce par jour).
+        item {
+            ProgramMap(exp.days.mapIndexed { i, d ->
+                (d.title.ifBlank { tf("Jour {0}", i + 1) }) to d.steps.filter { it.place.hasCoordinates }.map { MapStop(it.place.name, it.place.lat, it.place.lon) }
+            })
+        }
         exp.days.forEachIndexed { dayIndex, day ->
             item { DayHeader(day, exp.city) }
             itemsIndexed(day.steps) { stepIndex, s -> StepCard(s, exp.city, onOpen = { detail = s }) { editing = dayIndex to stepIndex } }

@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.riad.voyage.AppViewModel
+import com.riad.voyage.CitySection
 import com.riad.voyage.Tab
 import com.riad.voyage.data.LitePayment
 import com.riad.voyage.data.NotablePlaces
@@ -39,6 +40,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
     val budget by vm.budget.collectAsStateWithLifecycle()
     val budgetReturn by vm.budgetReturn.collectAsStateWithLifecycle()
     val pendingBooking by vm.pendingBooking.collectAsStateWithLifecycle()
+    val citySection by vm.citySection.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(message) {
@@ -64,7 +66,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
             NavigationBar {
                 Tab.entries.filter { it.inBottomBar }.forEach { t ->
                     NavigationBarItem(
-                        selected = tab == t,
+                        selected = tab == t || (t == Tab.CITY && (tab == Tab.ACTIVITIES || tab == Tab.BLOG)),
                         onClick = { vm.selectTab(t) },
                         icon = { Icon(tabIcon(t), contentDescription = com.riad.voyage.t(t.label)) },
                         label = { Text(com.riad.voyage.t(t.label), maxLines = 1, fontSize = 10.sp, softWrap = false) },
@@ -91,6 +93,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                     onOpenExperience = { vm.selectTab(Tab.EXPERIENCE) },
                     onOpenBlog = { vm.selectTab(Tab.BLOG) },
                     onOpenHotels = { vm.openHotels(null, null, null, null) },
+                    onOpenBudget = { vm.selectTab(Tab.BUDGET) },
                     trips = trips,
                     onOpenTrip = vm::openTrip,
                     onOpenAlerts = { vm.selectTab(Tab.ALERTS) },
@@ -141,23 +144,61 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                     )
                 }
 
-                Tab.ACTIVITIES -> {
-                    BackHandler { vm.selectTab(Tab.HOME) }
-                    ActivitiesScreen(
-                        city = activityCity,
-                        category = activityCategory,
-                        places = places,
-                        onCity = vm::setActivityCity,
-                        selectedPlace = activityPlace,
-                        onPlace = vm::setActivityPlace,
-                        suggestCities = vm::suggestCities,
-                        onCategory = vm::setActivityCategory,
-                        onSearch = { vm.searchActivities(force = true) },
-                        wiki = vm::wikiSummary,
-                        weather = vm::weatherFor,
-                        isFavorite = { name -> trips.any { tr -> tr.places.any { it.name.equals(name, ignoreCase = true) } } },
-                        onFavorite = { p -> vm.toggleFavorite(p, activityCity.ifBlank { places.city }) },
-                        onReadArticle = vm::readPlaceArticle,
+                Tab.CITY, Tab.ACTIVITIES, Tab.BLOG -> {
+                    BackHandler {
+                        when {
+                            citySection == CitySection.ARTICLES && (blog.article != null || blog.articleLoading) -> vm.closeArticle()
+                            citySection == CitySection.ARTICLES && blog.city != null -> vm.clearBlogCity()
+                            else -> vm.selectTab(Tab.HOME)
+                        }
+                    }
+                    CityScreen(
+                        section = citySection,
+                        onSection = vm::setCitySection,
+                        places = {
+                            ActivitiesScreen(
+                                city = activityCity,
+                                category = activityCategory,
+                                places = places,
+                                onCity = vm::setActivityCity,
+                                selectedPlace = activityPlace,
+                                onPlace = vm::setActivityPlace,
+                                suggestCities = vm::suggestCities,
+                                onCategory = vm::setActivityCategory,
+                                onSearch = { vm.searchActivities(force = true) },
+                                wiki = vm::wikiSummary,
+                                weather = vm::weatherFor,
+                                isFavorite = { name -> trips.any { tr -> tr.places.any { it.name.equals(name, ignoreCase = true) } } },
+                                onFavorite = { p -> vm.toggleFavorite(p, activityCity.ifBlank { places.city }) },
+                                onReadArticle = vm::readPlaceArticle,
+                            )
+                        },
+                        articles = {
+                            BlogScreen(
+                                state = blog,
+                                context = vm.blogContext(),
+                                onCity = vm::openBlogCity,
+                                onPlace = vm::openBlogPlace,
+                                onClearCity = vm::clearBlogCity,
+                                onFilter = vm::setBlogFilter,
+                                onArticle = vm::openArticle,
+                                onCloseArticle = vm::closeArticle,
+                                suggestCities = vm::suggestCities,
+                                searchArticles = vm::searchArticles,
+                                wiki = vm::wikiSummary,
+                                hasPersonalFilter = experience.answers.interests.isNotEmpty() ||
+                                    NotablePlaces.supports(activityCategory),
+                                onSaveArticle = vm::saveArticle,
+                            )
+                        },
+                        info = {
+                            val here = vm.currentCity()
+                            PracticalInfo(
+                                city = here?.first, country = here?.second.orEmpty(),
+                                info = here?.let { vm.practicalFor(it.first, it.second) },
+                                myCurrency = settings.currency, rates = vm::rates,
+                            )
+                        },
                     )
                 }
 
@@ -189,32 +230,6 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         isFavorite = { name -> trips.any { tr -> tr.places.any { it.name.equals(name, ignoreCase = true) } } },
                         onFavorite = { p -> vm.toggleFavorite(p, experience.result?.city ?: experience.answers.city) },
                         onReadArticle = vm::readPlaceArticle,
-                    )
-                }
-
-                Tab.BLOG -> {
-                    BackHandler {
-                        when {
-                            blog.article != null || blog.articleLoading -> vm.closeArticle()
-                            blog.city != null -> vm.clearBlogCity()
-                            else -> vm.selectTab(Tab.HOME)
-                        }
-                    }
-                    BlogScreen(
-                        state = blog,
-                        context = vm.blogContext(),
-                        onCity = vm::openBlogCity,
-                        onPlace = vm::openBlogPlace,
-                        onClearCity = vm::clearBlogCity,
-                        onFilter = vm::setBlogFilter,
-                        onArticle = vm::openArticle,
-                        onCloseArticle = vm::closeArticle,
-                        suggestCities = vm::suggestCities,
-                        searchArticles = vm::searchArticles,
-                        wiki = vm::wikiSummary,
-                        hasPersonalFilter = experience.answers.interests.isNotEmpty() ||
-                            NotablePlaces.supports(activityCategory),
-                        onSaveArticle = vm::saveArticle,
                     )
                 }
 
@@ -279,12 +294,27 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                                 tr.endDate?.let { runCatching { java.time.LocalDate.parse(it) }.getOrNull() })
                         },
                         alertCount = alerts.size,
+                        actions = TripActions(
+                            moveStep = vm::moveStep, deleteStep = vm::deleteStep, editStep = vm::editStep, addStep = vm::addStep,
+                            addDay = vm::addDay, packing = vm::packingFor, togglePacked = vm::togglePacked,
+                            addPackItem = vm::addPackItem, removePackItem = vm::removePackItem, practical = vm::openPractical,
+                        ),
                     )
                 }
 
                 Tab.BUDGET -> {
-                    BackHandler { vm.closeBudget() }
-                    budget?.let { b ->
+                    BackHandler { if (budget != null) vm.closeBudget() else vm.selectTab(Tab.HOME) }
+                    val b = budget
+                    if (b == null) {
+                        BudgetPicker(
+                            trips = trips,
+                            experienceCity = experience.result?.city,
+                            onTrip = vm::openBudgetForTrip,
+                            onExperience = vm::openBudgetForExperience,
+                            onCreate = { vm.selectTab(Tab.EXPERIENCE) },
+                        )
+                    } else {
+                        val budgetTrip = trips.firstOrNull { it.id == b.tripId }
                         BudgetScreen(
                             onChoose = vm::chooseForBudget,
                             state = b,
@@ -293,8 +323,13 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                             onInput = vm::updateBudgetInput,
                             onOverride = vm::setBudgetOverride,
                             onTarget = vm::setBudgetTarget,
+                            expenses = budgetTrip?.expenses.orEmpty(),
+                            localCurrency = vm.practicalFor(b.input.city, b.input.country)?.currency,
+                            onAddExpense = budgetTrip?.let { tr -> { label, amount, cur, item -> vm.addExpense(tr.id, label, amount, cur, item) } },
+                            onRemoveExpense = { id -> budgetTrip?.let { vm.removeExpense(it.id, id) } },
+                            rates = vm::rates,
                         )
-                    } ?: LaunchedEffect(Unit) { vm.selectTab(Tab.HOME) }
+                    }
                 }
 
                 Tab.ALERTS -> {
@@ -313,6 +348,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
 
 private fun tabIcon(t: Tab) = when (t) {
     Tab.HOME -> AppIcons.Home
+    Tab.CITY -> AppIcons.City
     Tab.FLIGHTS -> AppIcons.Flight
     Tab.ACTIVITIES -> AppIcons.Ticket
     Tab.EXPERIENCE -> AppIcons.Sparkle
@@ -320,6 +356,6 @@ private fun tabIcon(t: Tab) = when (t) {
     Tab.TRIPS -> AppIcons.Luggage
     Tab.HOTELS -> AppIcons.Hotel
     Tab.ALERTS -> AppIcons.Bell
-    Tab.BUDGET -> AppIcons.Luggage
+    Tab.BUDGET -> AppIcons.Wallet
     Tab.SETTINGS -> AppIcons.Settings
 }
