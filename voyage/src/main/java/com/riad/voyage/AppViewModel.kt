@@ -114,6 +114,7 @@ data class HotelState(
     val freeCancelOnly: Boolean = false,
     val breakfastOnly: Boolean = false,
     val detail: HotelDetailState? = null,
+    val aiQuery: String = "",                      // description libre : « calme avec piscine… »
 ) {
     /** Hôtels après filtres, dans l'ordre choisi. */
     val visible: List<com.riad.voyage.data.HotelOffer>
@@ -125,7 +126,8 @@ data class HotelState(
     val nights get() = com.riad.voyage.data.HotelBooking.nights(checkIn, checkOut)
     val sorted: List<com.riad.voyage.data.HotelOffer>
         get() = when (sort) {
-            HotelSort.BEST -> offers.sortedByDescending { it.score }
+            HotelSort.BEST -> if (offers.any { it.rank != null }) offers.sortedBy { it.rank ?: Int.MAX_VALUE }
+                else offers.sortedByDescending { it.score }
             HotelSort.PRICE -> offers.sortedBy { it.totalPrice ?: Double.MAX_VALUE }
             HotelSort.RATING -> offers.sortedByDescending { it.rating ?: 0.0 }
             HotelSort.DISTANCE -> offers.sortedBy { it.distanceM ?: Int.MAX_VALUE }
@@ -591,14 +593,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             val nationality = java.util.Locale.getDefault().country.ifBlank { "FR" }
             val result = kotlinx.coroutines.withTimeoutOrNull(35_000) {
                 runCatching {
-                    com.riad.voyage.data.LiteApi.search(key, geo, h.checkIn, h.checkOut, h.adults, _settings.value.currency, nationality)
+                    if (h.aiQuery.isNotBlank())
+                        com.riad.voyage.data.LiteApi.aiSearch(key, h.aiQuery, h.city, geo, h.checkIn, h.checkOut, h.adults, _settings.value.currency, nationality)
+                    else com.riad.voyage.data.LiteApi.search(key, geo, h.checkIn, h.checkOut, h.adults, _settings.value.currency, nationality)
                 }
             }
             _hotels.update {
                 when {
                     result == null -> it.copy(loading = false, searched = true, error = t("Le service d'hôtels ne répond pas. Réessayez dans un instant."))
                     result.isFailure -> it.copy(loading = false, searched = true, error = TravelpayoutsApi.userMessage(result.exceptionOrNull()!!))
-                    else -> it.copy(loading = false, searched = true, offers = result.getOrDefault(emptyList()),
+                    else -> it.copy(loading = false, searched = true, offers = result.getOrDefault(emptyList()), sort = HotelSort.BEST,
                         error = if (result.getOrDefault(emptyList()).isEmpty()) t("Aucun hôtel disponible pour ces dates.") else null)
                 }
             }

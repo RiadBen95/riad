@@ -13,3 +13,14 @@ class PaymentTest {
         assertTrue(LitePayment.html("s", sandbox = true).contains("publicKey: \"sandbox\""))
     }
 }
+
+class AiSearchTest {
+    @Test fun semanticHitsAndRateOrder() {
+        val hits = com.riad.voyage.data.LiteApi.parseSemantic(
+            """{"data":[{"hotelId":"lp1","name":"Spa Hotel","tags":["spa","calme"],"style":"boutique"},{"id":"lp2","name":"B"}]}""")
+        org.junit.Assert.assertEquals(listOf("lp1", "lp2"), hits.map { it.id })
+        org.junit.Assert.assertEquals("spa · calme · boutique", hits[0].tags)
+        val order = com.riad.voyage.data.LiteApi.rateOrder("""{"data":[{"hotelId":"b"},{"hotelId":"a"},{"hotelId":"b"}]}""")
+        org.junit.Assert.assertEquals(listOf("b", "a"), order)
+    }
+}

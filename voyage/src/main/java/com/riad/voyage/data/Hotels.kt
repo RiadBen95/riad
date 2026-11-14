@@ -29,6 +29,8 @@ data class HotelOffer(
     val refundable: Boolean,
     val board: String?,           // « Petit-déjeuner inclus »…
     val offerId: String?,
+    val rank: Int? = null,        // ordre de pertinence (recherche en langage naturel)
+    val match: String? = null,    // pourquoi l'hôtel correspond (étiquettes LiteAPI)
 ) {
     fun perNight(nights: Long) = totalPrice?.let { it / nights.coerceAtLeast(1) }
 
@@ -85,6 +87,87 @@ object LiteApi {
         return hotels.mapNotNull { h ->
             val r = rates[h.id] ?: return@mapNotNull null
             h.copy(totalPrice = r.price, currency = r.currency ?: currency, refundable = r.refundable, board = r.board, offerId = r.offerId)
+        }
+    }
+
+    /**
+     * Recherche en langage naturel (« calme avec piscine près de la plage ») : LiteAPI trouve les
+     * hôtels qui correspondent à l'intention (paramètre aiSearch des prix), classés par pertinence.
+     * Si ce paramètre est refusé, recherche sémantique (/data/hotel/search) puis prix de ces hôtels.
+     */
+    suspend fun aiSearch(
+        key: String,
+        query: String,
+        city: String,
+        center: GeoPoint,
+        checkIn: LocalDate,
+        checkOut: LocalDate,
+        adults: Int,
+        currency: String,
+        nationality: String,
+    ): List<HotelOffer> {
+        val phrase = "${query.trim()}, $city"
+        fun ratesBody() = JSONObject()
+            .put("occupancies", JSONArray().put(JSONObject().put("adults", adults)))
+            .put("currency", currency)
+            .put("guestNationality", nationality)
+            .put("checkin", checkIn.toString())
+            .put("checkout", checkOut.toString())
+            .put("timeout", 8)
+            .put("maxRatesPerHotel", 3)
+        // Fiches des hôtels de la ville (nom, photo, note…) pour compléter les résultats.
+        val nearby = runCatching {
+            parseHotels(get("$BASE/data/hotels?latitude=${center.lat}&longitude=${center.lon}&radius=15000&limit=200", key), center)
+        }.getOrDefault(emptyList()).associateBy { it.id }
+
+        val (ratesJson, semantic) = try {
+            post("$BASE/hotels/rates", key, ratesBody().put("aiSearch", phrase).toString()) to emptyList<SemanticHit>()
+        } catch (e: ApiException) {
+            if (e.code == 401 || e.code == 403) throw e
+            val hits = parseSemantic(get("$BASE/data/hotel/search?query=${java.net.URLEncoder.encode(phrase, "UTF-8")}&limit=30", key))
+            if (hits.isEmpty()) return emptyList()
+            post("$BASE/hotels/rates", key, ratesBody().put("hotelIds", JSONArray(hits.map { it.id })).toString()) to hits
+        }
+        val rates = parseRates(ratesJson)
+        val order = if (semantic.isNotEmpty()) semantic.map { it.id } else rateOrder(ratesJson)
+        val inline = parseHotels(JSONObject(ratesJson).optJSONArray("hotels")?.let { JSONObject().put("data", it).toString() } ?: "{}", center)
+            .associateBy { it.id }
+        val tags = semantic.associate { it.id to it.tags }
+        return order.mapIndexedNotNull { i, id ->
+            val r = rates[id] ?: return@mapIndexedNotNull null
+            val h = inline[id]?.let { a -> nearby[id]?.let { b -> b.copy(photo = b.photo ?: a.photo, rating = b.rating ?: a.rating) } ?: a }
+                ?: nearby[id] ?: semantic.firstOrNull { it.id == id }?.toOffer(center) ?: return@mapIndexedNotNull null
+            h.copy(totalPrice = r.price, currency = r.currency ?: currency, refundable = r.refundable, board = r.board,
+                offerId = r.offerId, rank = i, match = tags[id])
+        }
+    }
+
+    /** Ordre des hôtels dans la réponse des prix (pertinence). */
+    fun rateOrder(json: String): List<String> {
+        val arr = JSONObject(json).optJSONArray("data") ?: return emptyList()
+        return List(arr.length()) { arr.getJSONObject(it).optString("hotelId") }.filter { it.isNotBlank() }.distinct()
+    }
+
+    data class SemanticHit(val id: String, val name: String?, val tags: String?, val photo: String?, val lat: Double?, val lon: Double?) {
+        fun toOffer(center: GeoPoint) = name?.let {
+            HotelOffer(id, it, null, null, null, null, photo, lat, lon,
+                if (lat != null && lon != null) PlacesParser.distanceMeters(center.lat, center.lon, lat, lon).toInt() else null,
+                null, "EUR", false, null, null)
+        }
+    }
+
+    /** Résultats de la recherche sémantique : identifiant, nom, étiquettes (style, ambiance…). */
+    fun parseSemantic(json: String): List<SemanticHit> {
+        val arr = JSONObject(json).optJSONArray("data") ?: return emptyList()
+        return List(arr.length()) { arr.getJSONObject(it) }.mapNotNull { o ->
+            val id = o.optString("hotelId").ifBlank { o.optString("id") }.ifBlank { return@mapNotNull null }
+            val tagArr = o.optJSONArray("tags")
+            val tags = (if (tagArr != null) List(tagArr.length()) { tagArr.optString(it) } else emptyList())
+                .plus(listOf(o.optString("style"), o.optString("location_type")))
+                .filter { it.isNotBlank() && it != "null" }.distinct().take(4).joinToString(" · ").ifBlank { null }
+            SemanticHit(id, o.optString("name").ifBlank { null }, tags,
+                o.optString("main_photo").ifBlank { o.optString("thumbnail") }.ifBlank { null },
+                o.optDouble("latitude").takeIf { !it.isNaN() }, o.optDouble("longitude").takeIf { !it.isNaN() })
         }
     }
 

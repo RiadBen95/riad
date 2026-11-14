@@ -72,3 +72,8 @@ ROWS += [
 ["Mode test : utilisez la carte 4242 4242 4242 4242, une date future et n'importe quel code.", "Test mode: use card 4242 4242 4242 4242, any future date and any code.", "وضع تجريبي: استخدم البطاقة 4242 4242 4242 4242 وأي تاريخ مستقبلي وأي رمز.", "Modo prueba: usa la tarjeta 4242 4242 4242 4242, una fecha futura y cualquier código.", "测试模式：使用卡号 4242 4242 4242 4242、任意未来日期和任意安全码。", "テストモード：カード番号 4242 4242 4242 4242、未来の日付、任意のコードを使用してください。", "टेस्ट मोड: कार्ड 4242 4242 4242 4242, कोई भी भविष्य की तारीख और कोई भी कोड इस्तेमाल करें।"],
 ["Le paiement sécurisé n'est pas disponible pour cette offre. Réservez chez un partenaire.", "Secure payment isn't available for this offer. Book with a partner.", "الدفع الآمن غير متاح لهذا العرض. احجز لدى أحد الشركاء.", "El pago seguro no está disponible para esta oferta. Reserva con un socio.", "此报价不支持安全支付，请通过合作网站预订。", "このプランは安全な決済に対応していません。提携サイトで予約してください。", "इस ऑफ़र के लिए सुरक्षित भुगतान उपलब्ध नहीं है। किसी पार्टनर पर बुक करें।"],
 ]
+ROWS += [
+["✨ Décrivez votre hôtel idéal (facultatif)", "✨ Describe your ideal hotel (optional)", "✨ صف فندقك المثالي (اختياري)", "✨ Describe tu hotel ideal (opcional)", "✨ 描述您理想的酒店（可选）", "✨ 理想のホテルを言葉で（任意）", "✨ अपने आदर्श होटल का वर्णन करें (वैकल्पिक)"],
+["Ex. calme avec piscine, romantique, près de la plage…", "E.g. quiet with a pool, romantic, near the beach…", "مثال: هادئ مع مسبح، رومانسي، قريب من الشاطئ…", "Ej. tranquilo con piscina, romántico, cerca de la playa…", "例如：安静、带泳池、浪漫、靠近海滩…", "例：静かでプール付き、ロマンチック、ビーチの近く…", "उदा. शांत, पूल वाला, रोमांटिक, समुद्र तट के पास…"],
+["Classés selon votre description", "Ranked by your description", "مرتبة حسب وصفك", "Ordenados según tu descripción", "按您的描述排序", "ご希望の内容に合う順", "आपके वर्णन के अनुसार क्रम"],
+]

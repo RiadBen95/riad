@@ -86,6 +86,19 @@ fun HotelsScreen(
             }
         }
         item {
+            // Recherche en langage naturel (LiteAPI) : on décrit l'hôtel voulu avec ses mots.
+            androidx.compose.material3.OutlinedTextField(
+                value = state.aiQuery,
+                onValueChange = { q -> onUpdate { it.copy(aiQuery = q) } },
+                label = { Text(t("✨ Décrivez votre hôtel idéal (facultatif)")) },
+                placeholder = { Text(t("Ex. calme avec piscine, romantique, près de la plage…")) },
+                modifier = Modifier.fillMaxWidth(),
+                maxLines = 3,
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Search),
+                keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = { onSearch() }),
+            )
+        }
+        item {
             Stepper(t("Voyageurs (adultes)"), state.adults, 1..8, { n -> onUpdate { it.copy(adults = n) } })
             Text(tf("{0} nuit(s)", state.nights), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -133,6 +146,8 @@ fun HotelsScreen(
                     item { FilterChip(selected = state.freeCancelOnly, onClick = { onUpdate { it.copy(freeCancelOnly = !it.freeCancelOnly) } }, label = { Text(t("Annulation gratuite")) }) }
                     item { FilterChip(selected = state.breakfastOnly, onClick = { onUpdate { it.copy(breakfastOnly = !it.breakfastOnly) } }, label = { Text(t("Petit-déjeuner")) }) }
                 }
+                if (state.offers.any { it.rank != null }) Text(t("Classés selon votre description"), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary)
                 Text(tf("{0} hôtels disponibles", state.visible.size), style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.padding(top = 6.dp))
             }
@@ -191,6 +206,7 @@ private fun HotelCard(o: HotelOffer, state: HotelState, favorite: Boolean, onSav
                     Text(tf("à {0} du centre", if (m < 1000) "$m m" else "${"%.1f".format(m / 1000.0)} km"),
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+                o.match?.let { Text("✨ $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary) }
                 val tags = listOfNotNull(t("Annulation gratuite").takeIf { o.refundable }, o.board)
                 if (tags.isNotEmpty()) Text(tags.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                 o.totalPrice?.let { total ->
