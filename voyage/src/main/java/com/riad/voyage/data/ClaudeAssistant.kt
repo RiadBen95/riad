@@ -27,23 +27,26 @@ enum class ClaudeModel(val id: String, val label: String, val strengths: String,
 
 /** La demande en langage libre, traduite en réponses du questionnaire (lue depuis le JSON de la réponse). */
 class TripRequest(o: JSONObject) {
-    private fun list(k: String) = o.optJSONArray(k)?.let { a -> List(a.length()) { a.optString(it) } }.orEmpty()
-    val city = o.optString("city")
-    val startDate = o.optString("startDate")
-    val days = o.optInt("days")
-    val halfDay = o.optBoolean("halfDay")
-    val company = o.optString("company")
-    val interests = list("interests")
-    val tastes = list("tastes")
-    val style = o.optString("style")
-    val pace = o.optString("pace")
-    val mobility = o.optString("mobility")
-    val diet = o.optString("diet")
-    val budget = o.optString("budget")
-    val arrivalTime = o.optString("arrivalTime")
-    val departureTime = o.optString("departureTime")
-    val wanted = list("wanted")
-    val avoid = list("avoid")
+    private fun list(o: JSONObject, k: String): List<String> {
+        val a = o.optJSONArray(k) ?: return emptyList()
+        return List(a.length()) { a.optString(it) }
+    }
+    val city: String = o.optString("city")
+    val startDate: String = o.optString("startDate")
+    val days: Int = o.optInt("days")
+    val halfDay: Boolean = o.optBoolean("halfDay")
+    val company: String = o.optString("company")
+    val interests: List<String> = list(o, "interests")
+    val tastes: List<String> = list(o, "tastes")
+    val style: String = o.optString("style")
+    val pace: String = o.optString("pace")
+    val mobility: String = o.optString("mobility")
+    val diet: String = o.optString("diet")
+    val budget: String = o.optString("budget")
+    val arrivalTime: String = o.optString("arrivalTime")
+    val departureTime: String = o.optString("departureTime")
+    val wanted: List<String> = list(o, "wanted")
+    val avoid: List<String> = list(o, "avoid")
 }
 
 /**
