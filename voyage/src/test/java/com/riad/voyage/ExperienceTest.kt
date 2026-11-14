@@ -18,7 +18,7 @@ class ExperienceTest {
     )
 
     private val pools = Category.entries.associateWith { c ->
-        (0 until 12).map { poi(c, it, if (c == Category.MUSEUMS) "Musée" else "Lieu", fame = 40 - it * 3) }
+        (0 until 12).map { poi(c, it, when (c) { Category.MUSEUMS -> "Musée"; Category.CAFES -> "Café"; else -> "Lieu ${c.name}" }, fame = 40 - it * 3) }
     }
 
     private fun minutes(t: String) = t.substringBefore('h').toInt() * 60 + t.substringAfter('h').toInt()
