@@ -265,6 +265,17 @@ object ExperienceBuilder {
     /** Restauration rapide, d'après le type et le nom du lieu. */
     fun isFastFood(p: PointOfInterest) = normalize("${p.kind} ${p.name}").let { t -> fastFood.any { it in t } }
 
+    /** Pause gourmande : café, salon de thé, pâtisserie ou glacier (pas un restaurant). */
+    fun isCafe(p: PointOfInterest) = normalize(p.kind).let { k ->
+        "restaurant" !in k && listOf("cafe", "salon de the", "patisserie", "glacier", "coffee", "tea", "boulangerie").any { it in k }
+    }
+
+    /** Visites au plus par jour selon le rythme. */
+    private fun maxVisits(pace: Quiz.Pace) = when (pace) { Quiz.Pace.RELAXED -> 3; Quiz.Pace.BALANCED -> 4; Quiz.Pace.INTENSE -> 6 }
+
+    /** Horaires arrondis aux 5 minutes (10h08 → 10h10). */
+    private fun round5(min: Int) = (min + 4) / 5 * 5
+
     /**
      * Correspondance entre un lieu et des goûts : le type du lieu compte le plus, puis son nom,
      * puis sa description (Wikipédia, guide). 0 = aucun rapport.
@@ -378,7 +389,8 @@ object ExperienceBuilder {
     /** Raison affichée sous une étape : notes, notoriété, goûts, météo. */
     fun reason(a: Quiz.Answers, city: String, category: ActivityLinks.Category, p: PointOfInterest, w: DayWeather?): String {
         val rating = p.ratings.maxByOrNull { it.count }
-        val taste = matchingTaste(p, tastesFor(a, category))
+        val label = (p.kind + " " + p.name).plain()
+        val taste = tastesFor(a, category).firstOrNull { tt -> tt.keywords.any { it.plain().trim() in label } }
         val base = when {
             rating != null -> tf("Noté {0} sur {1} ({2} avis)", "%.1f".format(rating.rating), rating.source.label, rating.count)
             p.sitelinks >= 60 -> tf("L'un des lieux les plus célèbres de {0}", t(city))
@@ -420,7 +432,7 @@ object ExperienceBuilder {
                 else -> travelMinutes(meters, a.mobility)
             }
             val buffer = if (prev != null && fixedStart(st.moment) == null) a.pace.bufferMin else 0
-            val start = max(clock + travel + buffer, fixedStart(st.moment) ?: 0)
+            val start = round5(max(clock + travel + buffer, fixedStart(st.moment) ?: 0))
             clock = start + st.durationMin
             val out = st.copy(time = fmt(start), fromPreviousM = meters, travelMin = if (prev == null) null else travel)
             prev = out
@@ -536,6 +548,9 @@ object ExperienceBuilder {
                 "grand magasin", "cathedrale", "basilique", "eglise", "mosquee", "synagogue", "halle").any { it in k }
         }
         var today: DayWeather? = null
+        var dayAnchor: PointOfInterest? = null                  // première visite du jour (quartier)
+        val kindsToday = mutableMapOf<String, Int>()            // au plus 2 lieux du même type par jour
+        var visitsToday = 0
         val usedToday = mutableSetOf<String>()
         val used = mutableSetOf<String>()
         val usedKinds = mutableSetOf<String>()
@@ -554,6 +569,7 @@ object ExperienceBuilder {
         fun candidates(category: ActivityLinks.Category): List<PointOfInterest> {
             val tastes = tastesFor(a, category)
             val fresh = pools[category].orEmpty().filter { it.id !in used }
+                .filter { category != ActivityLinks.Category.CAFES || isCafe(it) }
             val all = if (fresh.isEmpty() && category in venueCategories) pools[category].orEmpty().filter { it.id !in usedToday } else fresh
             val dietOk = if (category == ActivityLinks.Category.RESTAURANTS && a.diet.keywords.isNotEmpty()) {
                 val matching = all.filter { p -> a.diet.keywords.any { normalize("${p.name} ${p.kind} ${p.description.orEmpty()}").contains(it) } }
@@ -586,6 +602,12 @@ object ExperienceBuilder {
                 if (a.mobility == Quiz.Mobility.WALK && m > 3000) s -= 4.0
             }
             if (category == lastCategory && category !in venueCategories) s -= 1.5   // varier les plaisirs
+            // Rester dans le même quartier que la première visite du jour (lieux voisins regroupés).
+            val anchor = dayAnchor
+            if (anchor != null && anchor.hasCoordinates && p.hasCoordinates) {
+                val m = PlacesParser.distanceMeters(anchor.lat, anchor.lon, p.lat, p.lon)
+                s -= m / (if (a.mobility == Quiz.Mobility.WALK) 700.0 else 2500.0)
+            }
             val k = normalize(p.kind)
             if (("marche" in k || "halle" in k) && startMin < 12 * 60) s += 1.0           // les marchés le matin
             if (("tour" in k || "belvedere" in k || "observation" in k || "point de vue" in k) && startMin >= 16 * 60) s += 1.5 // la vue en fin de journée
@@ -613,6 +635,9 @@ object ExperienceBuilder {
             val date = a.startDate.plusDays((dayIndex - 1).toLong())
             today = weather[date]
             usedToday.clear()
+            kindsToday.clear()
+            dayAnchor = null
+            visitsToday = 0
             val steps = mutableListOf<ExperienceStep>()
             var last: PointOfInterest? = null
             var lastCategory: ActivityLinks.Category? = null
@@ -627,7 +652,7 @@ object ExperienceBuilder {
 
             fun place(category: ActivityLinks.Category, p: PointOfInterest, moment: String, minutes: Int, fixedStart: Int? = null) {
                 val (meters, travel) = travelFrom(p)
-                val start = max(clock + travel, fixedStart ?: 0)
+                val start = round5(max(clock + travel, fixedStart ?: 0))
                 steps += ExperienceStep(fmt(start), moment, category, p, why(category, p), meters, minutes, if (last == null) null else travel)
                 used += p.id
                 usedToday += p.id
@@ -640,8 +665,10 @@ object ExperienceBuilder {
             /** Remplit un créneau avec les meilleures visites qui tiennent avant [until]. */
             fun fillVisits(until: Int, moment: (Int) -> String) {
                 var guard = 0
-                while (guard++ < 6 && activities.isNotEmpty()) {
-                    val options = activities.flatMap { c -> candidates(c).take(25).map { c to it } }.mapNotNull { (c, p) ->
+                while (guard++ < 6 && activities.isNotEmpty() && visitsToday < maxVisits(a.pace)) {
+                    val options = activities.flatMap { c -> candidates(c).take(25).map { c to it } }
+                        .filter { (_, p) -> (kindsToday[normalize(p.kind)] ?: 0) < 2 }
+                        .mapNotNull { (c, p) ->
                         val (_, travel) = travelFrom(p)
                         val start = clock + travel + if (last == null) 0 else a.pace.bufferMin
                         val minutes = visitMinutes(p, c, a.depth)
@@ -652,7 +679,11 @@ object ExperienceBuilder {
                     }
                     val best = options.maxByOrNull { it.first.third } ?: break
                     if (last != null) clock += a.pace.bufferMin
-                    place(best.first.first, best.first.second, moment(clock), best.second)
+                    val p = best.first.second
+                    place(best.first.first, p, moment(clock), best.second)
+                    if (dayAnchor == null) dayAnchor = p
+                    kindsToday[normalize(p.kind)] = (kindsToday[normalize(p.kind)] ?: 0) + 1
+                    visitsToday++
                 }
             }
 
@@ -700,7 +731,14 @@ object ExperienceBuilder {
             ExperienceDay(if (a.duration.days > 1) tf("Jour {0}", dayIndex) else t(a.duration.label), steps, date, today)
         }.filter { it.steps.isNotEmpty() }
 
-        val themes = a.interests.map { i ->
+        val present = days.flatMap { d -> d.steps.map { it.category } }.toSet()
+        val themes = a.interests.filter { i ->
+            when (i) {
+                Quiz.Interest.FOOD -> ActivityLinks.Category.RESTAURANTS in present
+                Quiz.Interest.NIGHT -> ActivityLinks.Category.BARS in present || ActivityLinks.Category.NIGHTLIFE in present
+                else -> i.category in present
+            }
+        }.map { i ->
             t(a.tastes.filter { it.interest == i }.takeIf { it.size == 1 }?.first()?.short ?: i.theme)
         }.ifEmpty { listOf(t("découverte")) }
         val themeText = tlist(themes)

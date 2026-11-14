@@ -109,10 +109,20 @@ fun PracticalInfo(
         }
         item { InfoCard("💶 " + t("Pourboire")) { Text(t(info.tipping.label)) } }
         item {
+            InfoCard("🛂 " + t("Formalités")) {
+                val french = Locale.getDefault().country.ifBlank { "FR" } == "FR"
+                Text(if (french) t("Pour un passeport français : ") + t(info.entry.label) else t("Vérifiez les formalités d'entrée selon votre nationalité."))
+                if (info.cash) Text(t("Carte bancaire peu acceptée : prévoyez des espèces en euros à changer sur place."), color = MaterialTheme.colorScheme.error)
+                TextButton(onClick = {
+                    openUrl(context, if (french) "https://www.diplomatie.gouv.fr/fr/conseils-aux-voyageurs/conseils-par-pays-destination/"
+                    else "https://www.google.com/search?q=" + Net.enc("visa ${t(country)}"))
+                }, contentPadding = PaddingValues(0.dp)) { Text(t("Conseils officiels aux voyageurs ›")) }
+            }
+        }
+        item {
             InfoCard("🚨 " + t("Numéros d'urgence")) {
-                listOf(t("Urgences") to info.general, t("Police") to info.police, t("Ambulance") to info.ambulance, t("Pompiers") to info.fire)
-                    .distinctBy { it.second + it.first }
-                    .forEach { (label, number) ->
+                info.emergency.forEach { (labels, number) ->
+                        val label = labels.joinToString(", ") { t(it) }
                         Row(
                             Modifier.fillMaxWidth().clickable {
                                 runCatching { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$number")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
@@ -134,9 +144,11 @@ fun PracticalInfo(
             }
         }
         item {
-            val phrases = Practical.phrases(info.lang)
-            val language = Locale(info.lang).getDisplayLanguage(locale).replaceFirstChar { it.uppercase() }
+            val phrases = Practical.phrases(info.phrases)
+            val language = if (info.phrases in setOf("dz", "ma", "tn")) t("darija, parler local")
+                else Locale(info.lang).getDisplayLanguage(locale).replaceFirstChar { it.uppercase() }
             InfoCard("🗣️ " + tf("Phrases utiles ({0})", language)) {
+                if (info.french) Text(t("Le français est très compris."), color = MaterialTheme.colorScheme.primary)
                 phrases.forEach { p ->
                     Column(Modifier.padding(vertical = 3.dp)) {
                         Text(t(p.meaning), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

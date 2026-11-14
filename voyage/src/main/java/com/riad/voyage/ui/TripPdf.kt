@@ -32,6 +32,7 @@ object TripPdf {
         val packing: List<PackItem>,
         val budgetTotal: String?,
         val budgetPerPerson: String?,
+        val people: Int,
     )
 
     fun write(context: Context, c: Content): File {
@@ -80,7 +81,7 @@ private class Pages(private val context: Context, private val doc: PdfDocument) 
 
     private fun finishPage() {
         val p = page ?: return
-        val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 8f; color = GREY }
+        val paint = textPaint(8f, GREY, false)
         canvas.drawText(t("Préparé avec Envolée") + " · " + number, M, H - 24f, paint)
         doc.finishPage(p)
         page = null
@@ -92,9 +93,7 @@ private class Pages(private val context: Context, private val doc: PdfDocument) 
 
     fun text(s: String, size: Float, color: Int = INK, bold: Boolean = false, indent: Float = 0f, gapBefore: Float = 0f, gapAfter: Float = 3f) {
         if (s.isBlank()) return
-        val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-            textSize = size; this.color = color; typeface = if (bold) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
-        }
+        val paint = textPaint(size, color, bold)
         val layout = StaticLayout.Builder.obtain(s, 0, s.length, paint, (W - 2 * M - indent).toInt())
             .setAlignment(Layout.Alignment.ALIGN_NORMAL).build()
         ensure(gapBefore + layout.height)
@@ -104,6 +103,27 @@ private class Pages(private val context: Context, private val doc: PdfDocument) 
         layout.draw(canvas)
         canvas.restore()
         y += layout.height + gapAfter
+    }
+
+    /** Texte au tracé exact (sans arrondi des positions) : espacement des lettres régulier dans le PDF. */
+    private fun textPaint(size: Float, color: Int, bold: Boolean) =
+        TextPaint(Paint.ANTI_ALIAS_FLAG or Paint.SUBPIXEL_TEXT_FLAG or Paint.LINEAR_TEXT_FLAG).apply {
+            textSize = size; this.color = color; typeface = if (bold) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
+        }
+
+    /** Deux colonnes de lignes courtes (liste de bagages). */
+    private fun columns(items: List<String>, size: Float) {
+        val half = (W - 2 * M) / 2
+        val paint = textPaint(size, INK, false)
+        items.chunked(2).forEach { row ->
+            ensure(size + 6f)
+            row.forEachIndexed { i, item ->
+                val layout = StaticLayout.Builder.obtain(item, 0, item.length, paint, (half - 8).toInt()).setMaxLines(1)
+                    .setEllipsize(android.text.TextUtils.TruncateAt.END).build()
+                canvas.save(); canvas.translate(M + i * half, y); layout.draw(canvas); canvas.restore()
+            }
+            y += size + 6f
+        }
     }
 
     private fun section(title: String) {
@@ -132,7 +152,7 @@ private class Pages(private val context: Context, private val doc: PdfDocument) 
         val trip = c.trip
         text(listOfNotNull(
             trip.start?.let { s -> formatDay(s) + (trip.end?.takeIf { it != s }?.let { " → " + formatDay(it) } ?: "") },
-            trip.travellers?.let { tf("{0} voyageur(s)", it) },
+            tf("{0} voyageur(s)", c.people),
         ).joinToString(" · "), 14f, white)
         trip.programTitle?.let { text(it, 12f, 0xFFCFD8F0.toInt(), gapBefore = 6f) }
         y = band + 24f
@@ -148,7 +168,9 @@ private class Pages(private val context: Context, private val doc: PdfDocument) 
         c.trip.flights.forEach { f ->
             text("✈️ ${t(f.origin)} → ${t(f.destination)} · ${formatDateTime(f.departureAt)} · ${formatPrice(f.price, f.currency)}", 10f)
         }
-        c.trip.places.filter { it.kind.startsWith("Hôtel") }.forEach { h -> text("🏨 ${h.name} · ${tk(h.kind)}", 10f) }
+        c.trip.places.filter { it.kind.startsWith("Hôtel") }.forEach { h ->
+            text("🏨 ${h.name} · ${tk(h.kind.replace("Réf. test", "Réservation test (non valable)"))}", 10f)
+        }
         c.budgetTotal?.let { total ->
             text("💰 " + t("Budget estimé") + " : " + total + (c.budgetPerPerson?.let { " · " + tf("{0} par personne", it) } ?: ""), 10f, bold = true, gapBefore = 4f)
         }
@@ -166,6 +188,12 @@ private class Pages(private val context: Context, private val doc: PdfDocument) 
                 if (s.why.isNotBlank()) text(s.why, 9f, indent = 44f)
             }
         }
+        // Jour du départ (sans programme) : on l'indique plutôt que de le passer sous silence.
+        val trip = c.trip
+        val end = trip.end
+        if (end != null && trip.start != null && trip.program.size <= (trip.nights ?: 0)) {
+            text(formatDay(end) + " · " + t("Jour du départ : temps libre avant le trajet"), 12f, NAVY, bold = true, gapBefore = 8f)
+        }
     }
 
     fun practical(c: TripPdf.Content) {
@@ -174,12 +202,19 @@ private class Pages(private val context: Context, private val doc: PdfDocument) 
         text(t("Monnaie") + " : " + info.currency, 10f)
         text(tf("Prises {0} · {1} V", info.plugs, info.volts) + if (info.needsAdapter) " · " + t("Adaptateur de prise") else "", 10f)
         text(t("Pourboire") + " : " + t(info.tipping.label), 10f)
-        text(t("Numéros d'urgence") + " : " + listOf(t("Urgences") to info.general, t("Police") to info.police, t("Ambulance") to info.ambulance,
-            t("Pompiers") to info.fire).distinct().joinToString(" · ") { "${it.first} ${it.second}" }, 10f, bold = true)
-        val phrases = Practical.phrases(info.lang)
+        text(t("Formalités") + " : " + t(info.entry.label) + " " + t("(passeport français)"), 10f)
+        if (info.cash) text(t("Carte bancaire peu acceptée : prévoyez des espèces en euros à changer sur place."), 10f)
+        text(t("Numéros d'urgence") + " : " + info.emergency.joinToString(" · ") { (labels, n) -> labels.joinToString(", ") { t(it) } + " " + n },
+            10f, bold = true)
+        val phrases = Practical.phrases(info.phrases)
         if (phrases.isNotEmpty()) {
             text(t("Phrases utiles"), 11f, bold = true, gapBefore = 6f)
-            phrases.forEach { p -> text(t(p.meaning) + " : " + p.local, 10f, indent = 8f, gapAfter = 1f) }
+            if (info.french) text(t("Le français est très compris."), 10f, indent = 8f)
+            // Sens puis phrase locale sur sa propre ligne (pas de mélange de sens d'écriture).
+            phrases.forEach { p ->
+                text(t(p.meaning), 9f, GREY, indent = 8f, gapAfter = 0f)
+                text(p.local, 10f, bold = true, indent = 8f, gapAfter = 3f)
+            }
         }
     }
 
@@ -187,6 +222,6 @@ private class Pages(private val context: Context, private val doc: PdfDocument) 
         val all = c.packing.map { t(it.key) + (it.count?.let { n -> " × $n" } ?: "") to it.key } + c.trip.extraItems.map { it to it }
         if (all.isEmpty()) return
         section(t("Bagages"))
-        all.forEach { (label, key) -> text((if (key in c.trip.packed) "☑ " else "☐ ") + label, 10f, gapAfter = 1f) }
+        columns(all.map { (label, key) -> (if (key in c.trip.packed) "☑ " else "☐ ") + label }, 10f)
     }
 }

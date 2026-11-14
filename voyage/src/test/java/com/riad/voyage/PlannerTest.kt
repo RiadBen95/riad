@@ -40,6 +40,22 @@ class PlannerTest {
         assertEquals(k2.size, k2.distinct().size)
     }
 
+    @Test fun algeriaNeedsVisaCashAndDarija() {
+        val dz = Practical.of("Algérie")!!
+        assertEquals(com.riad.voyage.data.Entry.VISA, dz.entry)
+        assertTrue(dz.cash && dz.french)
+        assertEquals("Saha / Ya3tik saha", Practical.phrases(dz.phrases)[1].local)
+        assertEquals(listOf(listOf("Urgences", "Police") to "17", listOf("Ambulance", "Pompiers") to "14"), dz.emergency)
+        val keys = Packing.generate(3, emptyList(), listOf("Le Bardo Restaurant", "Mosquée Ketchaoua"), dz).map { it.key }
+        assertTrue("Visa ou autorisation d'entrée" in keys && "Espèces en euros à changer (carte peu acceptée)" in keys)
+        assertTrue("Une tenue pour sortir le soir" !in keys)          // « bar » n'est pas dans « Bardo »
+    }
+
+    @Test fun placeNamesAreCleaned() {
+        assertEquals("L'Audin", com.riad.voyage.data.PlaceText.cleanName("Le Audin"))
+        assertEquals("Musée central de l'Armée", com.riad.voyage.data.PlaceText.cleanName("Musée central de l 'Armée"))
+    }
+
     @Test fun tripJsonKeepsExpensesAndPacking() {
         val t = Trip("t1", "Rome", expenses = listOf(Expense(1, "Pizza", 24.5, "EUR", "MEALS", "2026-07-01")),
             packed = setOf("Pyjama"), extraItems = listOf("Livre"), travellers = 3, startDate = "2026-07-01", endDate = "2026-07-04")

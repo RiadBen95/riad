@@ -83,7 +83,12 @@ fun t(fr: String): String = I18n.translate(fr)
 /** Texte traduit avec des valeurs : tf("{0} nuits", 3). */
 fun tf(fr: String, vararg args: Any): String {
     var s = I18n.translate(fr)
-    args.forEachIndexed { i, a -> s = s.replace("{$i}", a.toString()) }
+    args.forEachIndexed { i, a ->
+        val v = a.toString()
+        // Élision française : « de Alger » → « d'Alger ».
+        if (I18n.lang == Lang.FR && v.firstOrNull()?.let { it.lowercaseChar() in "aeiouyhâàéèêîôû" } == true) s = s.replace("de {$i}", "d'{$i}")
+        s = s.replace("{$i}", v)
+    }
     return s
 }
 

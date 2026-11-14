@@ -26,10 +26,12 @@ object Packing {
     ): List<PackItem> {
         val days = (nights + 1).coerceAtLeast(1)
         val kinds = activityKinds.map { it.plain() }
-        fun any(vararg words: String) = kinds.any { k -> words.any { it in k } }
+        // Mots entiers (au pluriel près) : « bar » ne doit pas être trouvé dans « Bardo ».
+        fun any(vararg words: String) = kinds.any { k -> words.any { w -> Regex("\\b${Regex.escape(w)}(s|x)?\\b").containsMatchIn(k) } }
         return buildList {
             add(PackItem("Passeport ou carte d'identité", DOCS))
-            add(PackItem("Carte bancaire et un peu d'espèces", DOCS))
+            if (country?.entry != null && country.entry != Entry.NONE) add(PackItem("Visa ou autorisation d'entrée", DOCS))
+            add(PackItem(if (country?.cash == true) "Espèces en euros à changer (carte peu acceptée)" else "Carte bancaire et un peu d'espèces", DOCS))
             add(PackItem("Réservations enregistrées hors connexion", DOCS))
             if (nights >= 2) add(PackItem("Assurance voyage", DOCS))
 

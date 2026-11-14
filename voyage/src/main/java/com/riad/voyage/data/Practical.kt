@@ -9,6 +9,13 @@ enum class Tipping(val label: String) {
     PCT18("15 à 20 % attendus au restaurant"),
 }
 
+/** Formalités d'entrée pour un passeport français (court séjour touristique). */
+enum class Entry(val label: String) {
+    NONE("Pas de visa pour un court séjour touristique"),
+    ONLINE("Autorisation électronique à demander en ligne avant le départ"),
+    VISA("Visa obligatoire : à demander avant le départ (en ligne, au consulat ou à l'arrivée selon le cas)"),
+}
+
 /**
  * Infos pratiques d'un pays : devise, prises électriques, pourboire, numéros d'urgence, langue.
  * [police], [ambulance], [fire] : numéros nationaux ; [general] : numéro unique depuis un mobile.
@@ -23,9 +30,18 @@ data class CountryInfo(
     val ambulance: String,
     val fire: String,
     val lang: String,
+    val entry: Entry = Entry.NONE,     // formalités pour un passeport français
+    val cash: Boolean = false,         // carte bancaire peu acceptée : prévoir des espèces
+    val french: Boolean = false,       // le français est très compris
+    val phrases: String = lang,        // jeu de phrases utiles (parler local : darija…)
 ) {
     /** Prises C, E et F (françaises) absentes : adaptateur nécessaire depuis la France. */
     val needsAdapter get() = plugs.split(",").map { it.trim() }.none { it in setOf("C", "E", "F") }
+
+    /** Numéros d'urgence regroupés : un même numéro n'apparaît qu'une fois (« Urgences, Police : 17 »). */
+    val emergency: List<Pair<List<String>, String>>
+        get() = listOf("Urgences" to general, "Police" to police, "Ambulance" to ambulance, "Pompiers" to fire)
+            .groupBy({ it.second }, { it.first }).map { (number, labels) -> labels to number }
 }
 
 /** Phrase utile : sens (en français, traduit dans l'app) et version locale (avec prononciation). */
@@ -44,7 +60,7 @@ object Practical {
         put(c("EUR", "C, F", 230, Tipping.ROUND, eu112, "112", "112", "112", "pt"), "Portugal")
         put(c("EUR", "C, F, L", 230, Tipping.INCLUDED, eu112, "113", "118", "115", "it"), "Italie", "Italy", "Italia")
         put(c("EUR", "C, F", 230, Tipping.ROUND, eu112, "110", "112", "112", "de"), "Allemagne", "Germany", "Deutschland")
-        put(c("GBP", "G", 230, Tipping.PCT10, "999", "999", "999", "999", "en"),
+        put(c("GBP", "G", 230, Tipping.PCT10, "999", "999", "999", "999", "en").copy(entry = Entry.ONLINE),
             "Royaume-Uni", "United Kingdom", "Angleterre", "England", "Écosse", "Scotland")
         put(c("EUR", "C, F", 230, Tipping.ROUND, eu112, "112", "112", "112", "nl"), "Pays-Bas", "Netherlands", "Nederland")
         put(c("EUR", "C, E", 230, Tipping.INCLUDED, eu112, "101", "112", "112", "fr"), "Belgique", "Belgium")
@@ -60,27 +76,28 @@ object Practical {
         put(c("DKK", "C, E, F, K", 230, Tipping.INCLUDED, eu112, "112", "112", "112", "da"), "Danemark", "Denmark")
         put(c("EUR", "C, F", 230, Tipping.ROUND, eu112, "192", "194", "193", "hr"), "Croatie", "Croatia")
         put(c("TRY", "C, F", 230, Tipping.PCT10, eu112, "112", "112", "112", "tr"), "Turquie", "Turkey", "Türkiye")
-        put(c("MAD", "C, E", 220, Tipping.PCT10, eu112, "19", "15", "15", "ar"), "Maroc", "Morocco")
-        put(c("DZD", "C, F", 230, Tipping.ROUND, "17", "17", "14", "14", "ar"), "Algérie", "Algeria")
-        put(c("TND", "C, E", 230, Tipping.ROUND, "197", "197", "190", "198", "ar"), "Tunisie", "Tunisia")
-        put(c("EGP", "C, F", 220, Tipping.PCT10, "122", "122", "123", "180", "ar"), "Égypte", "Egypt")
+        put(c("MAD", "C, E", 220, Tipping.PCT10, eu112, "19", "15", "15", "ar").copy(cash = true, french = true, phrases = "ma"), "Maroc", "Morocco")
+        put(c("DZD", "C, F", 230, Tipping.ROUND, "17", "17", "14", "14", "ar").copy(entry = Entry.VISA, cash = true, french = true, phrases = "dz"),
+            "Algérie", "Algeria")
+        put(c("TND", "C, E", 230, Tipping.ROUND, "197", "197", "190", "198", "ar").copy(cash = true, french = true, phrases = "tn"), "Tunisie", "Tunisia")
+        put(c("EGP", "C, F", 220, Tipping.PCT10, "122", "122", "123", "180", "ar").copy(entry = Entry.VISA, cash = true), "Égypte", "Egypt")
         put(c("AED", "G", 230, Tipping.PCT10, "999", "999", "998", "997", "ar"), "Émirats arabes unis", "United Arab Emirates", "Dubaï")
-        put(c("SAR", "G", 230, Tipping.PCT10, "911", "999", "997", "998", "ar"), "Arabie saoudite", "Saudi Arabia")
+        put(c("SAR", "G", 230, Tipping.PCT10, "911", "999", "997", "998", "ar").copy(entry = Entry.VISA), "Arabie saoudite", "Saudi Arabia")
         put(c("QAR", "G", 240, Tipping.PCT10, "999", "999", "999", "999", "ar"), "Qatar")
         put(c("JPY", "A, B", 100, Tipping.NONE, "110", "110", "119", "119", "ja"), "Japon", "Japan")
         put(c("CNY", "A, C, I", 220, Tipping.NONE, "110", "110", "120", "119", "zh"), "Chine", "China")
         put(c("THB", "A, B, C, O", 220, Tipping.ROUND, "191", "191", "1669", "199", "th"), "Thaïlande", "Thailand")
-        put(c("INR", "C, D, M", 230, Tipping.PCT10, "112", "100", "108", "101", "hi"), "Inde", "India")
-        put(c("IDR", "C, F", 230, Tipping.ROUND, "112", "110", "118", "113", "id"), "Indonésie", "Indonesia")
-        put(c("VND", "A, C", 220, Tipping.ROUND, "113", "113", "115", "114", "vi"), "Vietnam", "Viêt Nam")
-        put(c("KRW", "C, F", 220, Tipping.NONE, "112", "112", "119", "119", "ko"), "Corée du Sud", "South Korea")
-        put(c("USD", "A, B", 120, Tipping.PCT18, "911", "911", "911", "911", "en"), "États-Unis", "United States", "USA")
-        put(c("CAD", "A, B", 120, Tipping.PCT18, "911", "911", "911", "911", "en"), "Canada")
+        put(c("INR", "C, D, M", 230, Tipping.PCT10, "112", "100", "108", "101", "hi").copy(entry = Entry.VISA, cash = true), "Inde", "India")
+        put(c("IDR", "C, F", 230, Tipping.ROUND, "112", "110", "118", "113", "id").copy(entry = Entry.VISA, cash = true), "Indonésie", "Indonesia")
+        put(c("VND", "A, C", 220, Tipping.ROUND, "113", "113", "115", "114", "vi").copy(cash = true), "Vietnam", "Viêt Nam")
+        put(c("KRW", "C, F", 220, Tipping.NONE, "112", "112", "119", "119", "ko").copy(entry = Entry.ONLINE), "Corée du Sud", "South Korea")
+        put(c("USD", "A, B", 120, Tipping.PCT18, "911", "911", "911", "911", "en").copy(entry = Entry.ONLINE), "États-Unis", "United States", "USA")
+        put(c("CAD", "A, B", 120, Tipping.PCT18, "911", "911", "911", "911", "en").copy(entry = Entry.ONLINE), "Canada")
         put(c("MXN", "A, B", 127, Tipping.PCT10, "911", "911", "911", "911", "es"), "Mexique", "Mexico", "México")
         put(c("BRL", "C, N", 220, Tipping.INCLUDED, "190", "190", "192", "193", "pt"), "Brésil", "Brazil", "Brasil")
-        put(c("ARS", "C, I", 220, Tipping.PCT10, "911", "911", "107", "100", "es"), "Argentine", "Argentina")
-        put(c("AUD", "I", 230, Tipping.ROUND, "000", "000", "000", "000", "en"), "Australie", "Australia")
-        put(c("XOF", "C, D, E, K", 230, Tipping.ROUND, "17", "17", "1515", "18", "fr"), "Sénégal", "Senegal")
+        put(c("ARS", "C, I", 220, Tipping.PCT10, "911", "911", "107", "100", "es").copy(cash = true), "Argentine", "Argentina")
+        put(c("AUD", "I", 230, Tipping.ROUND, "000", "000", "000", "000", "en").copy(entry = Entry.ONLINE), "Australie", "Australia")
+        put(c("XOF", "C, D, E, K", 230, Tipping.ROUND, "17", "17", "1515", "18", "fr").copy(cash = true), "Sénégal", "Senegal")
         put(c("ZAR", "C, D, M, N", 230, Tipping.PCT10, "112", "10111", "10177", "10177", "en"), "Afrique du Sud", "South Africa")
     }
 
@@ -92,6 +109,10 @@ object Practical {
     )
 
     private val phrasebook: Map<String, List<String>> = mapOf(
+        // Parler local (darija), écrit en lettres latines comme sur place.
+        "dz" to listOf("Salam", "Saha / Ya3tik saha", "3afak", "Smahli", "Bechhal ?", "Win … ?", "L'addition, 3afak", "3awnouni !"),
+        "ma" to listOf("Salam", "Choukran / Baraka llahou fik", "3afak", "Smeh liya", "Bchhal ?", "Fin kayn … ?", "L'addition, 3afak", "3teqni !"),
+        "tn" to listOf("Aslema", "Yaatik saha", "Brabbi", "Samahni", "Kaddech ?", "Win … ?", "L'addition brabbi", "3awnouni !"),
         "fr" to listOf("Bonjour", "Merci", "S'il vous plaît", "Excusez-moi", "Combien ça coûte ?", "Où est… ?", "L'addition, s'il vous plaît", "Au secours !"),
         "en" to listOf("Hello", "Thank you", "Please", "Excuse me", "How much is it?", "Where is…?", "The bill, please", "Help!"),
         "es" to listOf("Hola", "Gracias", "Por favor", "Perdón", "¿Cuánto cuesta?", "¿Dónde está…?", "La cuenta, por favor", "¡Socorro!"),

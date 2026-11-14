@@ -710,7 +710,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val forecast = weatherFor(trip.city).filter { w -> start == null || (!w.date.isBefore(start) && !w.date.isAfter(trip.end ?: start)) }
         val kinds = trip.program.flatMap { d -> d.steps.map { it.place.kind + " " + it.place.name } } + trip.places.map { it.kind + " " + it.name }
         val a = _experience.value.answers
-        val family = a.city.equals(trip.city, true) && a.company == com.riad.voyage.data.Quiz.Company.FAMILY
+        // En famille seulement si le programme de ce voyage a été fait « en famille ».
+        val family = _experience.value.tripId == trip.id && a.company == com.riad.voyage.data.Quiz.Company.FAMILY
         return com.riad.voyage.data.Packing.generate(nights, forecast, kinds, practicalFor(trip.city, trip.country), family)
     }
 
@@ -732,6 +733,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             packing = packingFor(trip),
             budgetTotal = money(totalEur),
             budgetPerPerson = money(totalEur / people),
+            people = people,
         )
         return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { com.riad.voyage.ui.TripPdf.write(getApplication(), content) }
     }
@@ -931,7 +933,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             _pendingBooking.value = null
             val trip = tripFor(p.city)
             val price = (ok.price ?: p.price)?.let { com.riad.voyage.ui.formatPrice(it.toInt(), ok.currency ?: p.currency ?: "EUR") }
-            val label = listOfNotNull("Hôtel réservé", "Réf. " + (ok.confirmation ?: ok.bookingId), price).joinToString(" · ")
+            val ref = if (com.riad.voyage.data.LitePayment.isSandbox(key)) t("Réservation test (non valable)") else "Réf. " + (ok.confirmation ?: ok.bookingId)
+            val label = listOfNotNull("Hôtel réservé", ref, price).joinToString(" · ")
             saveTrip(
                 trip.copy(
                     places = trip.places + SavedPlace(p.hotelName, label, p.lat, p.lon, p.lat != 0.0),
@@ -1379,11 +1382,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     .distinctBy { it.name.lowercase() }.take(30)
             }
         }
-        if (items.isNotEmpty()) placesCache[key] = PlacesState(items = items, city = city, category = category)
-        return items
+        val clean = com.riad.voyage.data.PlaceText.tidy(items)
+        if (clean.isNotEmpty()) placesCache[key] = PlacesState(items = clean, city = city, category = category)
+        return clean
     }
 
-    private fun publish(key: String, state: PlacesState) {
+    private fun publish(key: String, raw: PlacesState) {
+        val state = raw.copy(items = com.riad.voyage.data.PlaceText.tidy(raw.items))
         placesCache[key] = state
         if (_places.value.city.equals(state.city, ignoreCase = true) && _places.value.category == state.category) {
             _places.value = state
