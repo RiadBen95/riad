@@ -66,6 +66,7 @@ fun HomeScreen(
     onClearRecents: () -> Unit = {},
     onDestination: (Place) -> Unit,
     wiki: suspend (String) -> WikiSummary?,
+    weather: suspend (String) -> List<com.riad.voyage.data.DayWeather> = { emptyList() },
 ) {
     val hour = LocalTime.now().hour
     val greeting = if (hour in 5..17) t("Bonjour 👋") else t("Bonsoir 👋")
@@ -203,6 +204,14 @@ fun HomeScreen(
                         Text("›", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
                     }
                 }
+            }
+            // Météo de la destination pendant le séjour (si le départ est dans les 16 jours).
+            item {
+                val start = next.startDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+                val end = next.endDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+                if (start == null || !start.isBefore(LocalDate.now()) || (end != null && !end.isBefore(LocalDate.now())))
+                    WeatherStrip(next.city, weather, start?.coerceAtLeast(LocalDate.now()), end ?: start,
+                        Modifier.padding(horizontal = 16.dp).padding(bottom = 12.dp))
             }
         }
         if (demo) {

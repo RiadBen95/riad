@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.riad.voyage.data.Place
 import com.riad.voyage.t
+import com.riad.voyage.tf
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -219,5 +220,46 @@ fun SectionTitle(title: String, modifier: Modifier = Modifier, icon: androidx.co
             Spacer(Modifier.width(8.dp))
         }
         Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+    }
+}
+
+/**
+ * Météo des prochains jours pour une ville (une carte par jour). Avec [from]/[to], seuls les jours
+ * du séjour sont affichés, ou un message s'ils sont au-delà des 16 jours de prévision.
+ */
+@Composable
+fun WeatherStrip(
+    city: String,
+    load: suspend (String) -> List<com.riad.voyage.data.DayWeather>,
+    from: LocalDate? = null,
+    to: LocalDate? = null,
+    modifier: Modifier = Modifier,
+) {
+    if (city.isBlank()) return
+    val days by androidx.compose.runtime.produceState<List<com.riad.voyage.data.DayWeather>?>(null, city) { value = load(city) }
+    val all = days ?: return
+    if (all.isEmpty()) return
+    val shown = if (from == null) all.take(7) else all.filter { !it.date.isBefore(from) && !it.date.isAfter(to ?: from) }
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(tf("Météo à {0}", t(city)), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+        if (shown.isEmpty()) {
+            Text(t("Prévisions disponibles 16 jours avant le départ."), style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            return@Column
+        }
+        androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(shown.size) { i ->
+                val w = shown[i]
+                androidx.compose.material3.Card {
+                    Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(formatDay(w.date), style = MaterialTheme.typography.labelSmall)
+                        Text(w.emoji, style = MaterialTheme.typography.titleLarge)
+                        Text("${w.tMax.toInt()}° / ${w.tMin.toInt()}°", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                        if (w.rainProb >= 30) Text("💧 ${w.rainProb} %", style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            }
+        }
     }
 }

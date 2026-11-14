@@ -27,6 +27,7 @@ import com.riad.voyage.data.WikiSummary
 import com.riad.voyage.t
 import com.riad.voyage.tf
 import com.riad.voyage.tk
+import java.time.LocalDate
 
 @Composable
 fun TripsScreen(
@@ -42,12 +43,13 @@ fun TripsScreen(
     onHotels: (Trip) -> Unit = {},
     onBudget: (Trip) -> Unit = {},
     wiki: suspend (String) -> WikiSummary? = { null },
+    weather: suspend (String) -> List<com.riad.voyage.data.DayWeather> = { emptyList() },
     onReadArticle2: (String) -> Unit = {},
 ) {
     val trip = trips.firstOrNull { it.id == openId }
     when {
         article != null -> ArticleReader(article, onClose = { onReadArticle(null) })
-        trip != null -> TripDetail(trip, onBack = { onOpen(null) }, onDelete, onRemove, onReadArticle, onHotels, onBudget, wiki, onReadArticle2)
+        trip != null -> TripDetail(trip, onBack = { onOpen(null) }, onDelete, onRemove, onReadArticle, onHotels, onBudget, wiki, onReadArticle2, weather)
         else -> TripList(trips, onOpen, onAlerts, alertCount)
     }
 }
@@ -117,6 +119,7 @@ private fun TripDetail(
     onBudget: (Trip) -> Unit,
     wiki: suspend (String) -> WikiSummary?,
     onPlaceArticle: (String) -> Unit,
+    weather: suspend (String) -> List<com.riad.voyage.data.DayWeather>,
 ) {
     val context = LocalContext.current
     var detail by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Pair<SavedPlace, PlaceExtra>?>(null) }
@@ -133,6 +136,10 @@ private fun TripDetail(
             TextButton(onClick = onBack, contentPadding = PaddingValues(0.dp)) { Text(t("← Mes voyages")) }
             Text("✈️ " + t(trip.city), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             datesOf(trip)?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
+            val start = trip.startDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+            val end = trip.endDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+            if (start == null || !start.isBefore(LocalDate.now()) || (end != null && !end.isBefore(LocalDate.now())))
+                WeatherStrip(trip.city, weather, start?.coerceAtLeast(LocalDate.now()), end ?: start, Modifier.padding(top = 8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
                 Button(onClick = {
                     val send = Intent(Intent.ACTION_SEND).setType("text/plain")

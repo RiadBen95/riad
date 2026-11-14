@@ -70,6 +70,7 @@ fun ActivitiesScreen(
     onCategory: (ActivityLinks.Category) -> Unit,
     onSearch: () -> Unit,
     wiki: suspend (String) -> WikiSummary?,
+    weather: suspend (String) -> List<com.riad.voyage.data.DayWeather> = { emptyList() },
     isFavorite: (String) -> Boolean = { false },
     onFavorite: (PointOfInterest) -> Unit = {},
     onReadArticle: (String) -> Unit = {},
@@ -117,6 +118,8 @@ fun ActivitiesScreen(
                 Button(onClick = search, enabled = city.isNotBlank(), modifier = Modifier.padding(top = 8.dp)) { Text("OK") }
             }
         }
+        // Météo de la ville choisie (une fois la recherche lancée).
+        if (places.city.isNotBlank()) item { WeatherStrip(places.city, weather) }
         item {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ActivityLinks.Category.entries.forEach { c ->

@@ -1161,6 +1161,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Position de la ville : suggestion choisie, liste intégrée, cache, puis OpenStreetMap. */
+    private val weatherCache = mutableMapOf<String, List<DayWeather>>()
+
+    /** Prévisions à 16 jours d'une ville (Open-Meteo), gardées en mémoire. Vide si indisponible. */
+    suspend fun weatherFor(city: String): List<DayWeather> {
+        val key = city.trim().lowercase()
+        if (key.isBlank()) return emptyList()
+        weatherCache[key]?.let { return it }
+        val geo = resolveCity(city, null) ?: return emptyList()
+        return attempt(10_000) { WeatherApi.forecast(geo.lat, geo.lon) }?.getOrNull().orEmpty()
+            .also { if (it.isNotEmpty()) weatherCache[key] = it }
+    }
+
     private suspend fun resolveCity(city: String, chosen: Place?): GeoPoint? {
         val key = city.lowercase()
         geoCache[key]?.let { return it }

@@ -99,6 +99,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                     onClearRecents = vm::clearRecents,
                     onDestination = vm::pickDestination,
                     wiki = vm::wikiSummary,
+                    weather = vm::weatherFor,
                 )
 
                 Tab.FLIGHTS -> if (results.visible) {
@@ -153,6 +154,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         onCategory = vm::setActivityCategory,
                         onSearch = { vm.searchActivities(force = true) },
                         wiki = vm::wikiSummary,
+                        weather = vm::weatherFor,
                         isFavorite = { name -> trips.any { tr -> tr.places.any { it.name.equals(name, ignoreCase = true) } } },
                         onFavorite = { p -> vm.toggleFavorite(p, activityCity.ifBlank { places.city }) },
                         onReadArticle = vm::readPlaceArticle,
@@ -269,6 +271,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         onReadArticle = vm::readSavedArticle,
                         onAlerts = { vm.selectTab(Tab.ALERTS) },
                         wiki = vm::wikiSummary,
+                        weather = vm::weatherFor,
                         onReadArticle2 = vm::readPlaceArticle,
                         onBudget = vm::openBudgetForTrip,
                         onHotels = { tr ->
