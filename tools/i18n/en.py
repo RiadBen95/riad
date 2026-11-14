@@ -907,4 +907,8 @@ ROWS = [
     ['4 $ / 20 $ par million de jetons · ≈ 0,01 $ par demande', '$4 / $20 per million tokens · ≈ $0.01 per request'],
     ['2 $ / 10 $ par million de jetons · ≈ 0,005 $ par demande', '$2 / $10 per million tokens · ≈ $0.005 per request'],
     ['0,10 $ / 0,50 $ par million de jetons · ≈ 0,0003 $ par demande', '$0.10 / $0.50 per million tokens · ≈ $0.0003 per request'],
+    ['Site touristique', 'Tourist attraction'],
+    ['Jardin public', 'Public garden'],
+    ['Aréna', 'Arena'],
+    ['Musée en plein air', 'Open-air museum'],
 ]

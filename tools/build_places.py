@@ -47,7 +47,6 @@ CLASSES = [
     ("MONUMENTS", "Q57821", "Fortification", 6),
     ("MONUMENTS", "Q1785071", "Fort", 6),
     ("MONUMENTS", "Q12518", "Tour", 6),
-    ("MONUMENTS", "Q19860854", "Arc de triomphe", 4),
     ("MONUMENTS", "Q12280", "Pont", 15),
     ("MONUMENTS", "Q174782", "Place", 10),
     ("ATTRACTIONS", "Q570116", "Attraction", 4),
