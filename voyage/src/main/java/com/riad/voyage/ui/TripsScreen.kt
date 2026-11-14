@@ -219,7 +219,7 @@ private fun TripDetail(
         }
 
         if (trip.articles.isNotEmpty()) {
-            item { SectionHeader("📖 " + t("Articles (lecture hors connexion)")) }
+            item { SectionTitle("📖 " + t("Articles (lecture hors connexion)"), Modifier.padding(top = 10.dp)) }
             itemsIndexed(trip.articles) { i, a ->
                 Card(onClick = { onReadArticle(a) }, modifier = Modifier.fillMaxWidth()) {
                     Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
