@@ -55,7 +55,7 @@ fun ExperienceScreen(
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
                 CircularProgressIndicator()
                 Spacer(Modifier.height(16.dp))
-                Text(if (state.describing) t("Claude lit votre demande…") else t("Création de votre expérience…"), style = MaterialTheme.typography.titleMedium)
+                Text(if (state.describing) t("Envolée AI lit votre demande…") else t("Création de votre expérience…"), style = MaterialTheme.typography.titleMedium)
                 Text(state.stage, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
             }
         }
@@ -613,7 +613,7 @@ private fun FreeTextCard(onSend: (String) -> Unit) {
                 placeholder = { Text(t("Ex. 3 jours à Barcelone en famille fin mai, Gaudí et tapas, sans trop marcher")) },
             )
             Button(onClick = { onSend(text) }, enabled = text.isNotBlank(), modifier = Modifier.align(Alignment.End)) {
-                Text(t("Composer avec Claude"))
+                Text(t("Composer avec Envolée AI"))
             }
             Text(t("Ou répondez aux questions ci-dessous."), style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)

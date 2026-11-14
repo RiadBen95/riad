@@ -1259,7 +1259,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             val req = r?.getOrNull()
             if (req == null || (req.city.isBlank() && _experience.value.answers.city.isBlank())) {
                 val why = r?.exceptionOrNull()?.let { TravelpayoutsApi.userMessage(it) } ?: t("Précisez au moins la ville.")
-                _experience.update { it.copy(describing = false, error = t("Claude n'a pas pu lire la demande.") + " " + why) }
+                _experience.update { it.copy(describing = false, error = t("Envolée AI n'a pas pu lire la demande.") + " " + why) }
                 return@launch
             }
             updateAnswers { com.riad.voyage.data.ClaudeAssistant.toAnswers(req, it) }

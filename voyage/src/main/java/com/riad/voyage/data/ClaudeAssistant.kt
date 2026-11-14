@@ -10,13 +10,13 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.time.LocalDate
 
-/** Modèles Claude proposés dans les Réglages (prix de l'API par million de jetons : entrée / sortie). */
+/** Modèles (Anthropic) d'Envolée AI proposés dans les Réglages (prix de l'API par million de jetons : entrée / sortie). */
 enum class ClaudeModel(val id: String, val label: String, val strengths: String, val price: String) {
-    OPUS("claude-opus-5-5", "Claude Opus 5.5", "Le plus capable : comprend les demandes nuancées, vérifie avec le plus de soin",
+    OPUS("claude-opus-5-5", "Opus 5.5", "Le plus capable : comprend les demandes nuancées, vérifie avec le plus de soin",
         "4 $ / 20 $ par million de jetons · ≈ 0,01 $ par demande"),
-    SONNET("claude-sonnet-5-5", "Claude Sonnet 5.5", "Équilibre entre qualité, rapidité et coût",
+    SONNET("claude-sonnet-5-5", "Sonnet 5.5", "Équilibre entre qualité, rapidité et coût",
         "2 $ / 10 $ par million de jetons · ≈ 0,005 $ par demande"),
-    HAIKU("claude-haiku-5-5", "Claude Haiku 5.5", "Le plus rapide et le plus économique",
+    HAIKU("claude-haiku-5-5", "Haiku 5.5", "Le plus rapide et le plus économique",
         "0,10 $ / 0,50 $ par million de jetons · ≈ 0,0003 $ par demande"),
     ;
 

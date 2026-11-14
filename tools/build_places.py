@@ -28,7 +28,7 @@ CLASSES = [
     ("MUSEUMS", "Q2772772", "Musée militaire", 3),
     ("MUSEUMS", "Q588140", "Musée des sciences", 3),
     ("MUSEUMS", "Q16735822", "Musée d'histoire", 3),
-    ("MUSEUMS", "Q756102", "Écomusée", 3),
+    ("MUSEUMS", "Q756102", "Musée en plein air", 3),
     ("MUSEUMS", "Q2087181", "Maison-musée", 3),
     ("MONUMENTS", "Q23413", "Château", 5),
     ("MONUMENTS", "Q16560", "Palais", 5),
@@ -111,10 +111,33 @@ def wiki_title(url):
     return urllib.parse.unquote(url.rsplit("/wiki/", 1)[1]) if url and "/wiki/" in url else None
 
 
+def plain(s):
+    import unicodedata
+    return "".join(c for c in unicodedata.normalize("NFD", s.lower()) if unicodedata.category(c) != "Mn")
+
+
+def checked_labels():
+    """
+    Libellé affiché = vrai nom de la classe Wikidata. Si le libellé écrit ici ne correspond pas
+    (identifiant erroné, comme une « arène » affichée « Arc de triomphe »), le nom Wikidata le remplace.
+    """
+    ids = " ".join(f"wd:{c}" for _, c, _, _ in CLASSES)
+    rows = run(f'SELECT ?c ?fr WHERE {{ VALUES ?c {{ {ids} }} ?c rdfs:label ?fr FILTER(LANG(?fr) = "fr") }}') or []
+    names = {val(r, "c").rsplit("/", 1)[-1]: val(r, "fr") for r in rows}
+    fixed = []
+    for cat, cls, label, minimum in CLASSES:
+        real = names.get(cls)
+        if real and plain(label.split()[0]) not in plain(real) and plain(real.split()[0]) not in plain(label):
+            print(f"!! {cls} : « {label} » ne correspond pas à Wikidata (« {real} ») → corrigé", flush=True)
+            label = real[:1].upper() + real[1:]
+        fixed.append((cat, cls, label, minimum))
+    return fixed
+
+
 def main(out):
     kinds = []
     items = {}
-    for cat, cls, label, minimum in CLASSES:
+    for cat, cls, label, minimum in checked_labels():
         print(f"{cat:12} {cls:10} {label} (≥ {minimum})", flush=True)
         rows = run(QUERY % {"cls": cls, "min": minimum})
         if rows is None:

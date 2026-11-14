@@ -864,21 +864,21 @@ Visa ou autorisation d'entrée	Visa or entry authorisation
 Vérifiez les formalités d'entrée selon votre nationalité.	Check the entry requirements for your nationality.
 aujourd'hui mosquée	now a mosque
 darija, parler local	darija, local dialect
-Activer Claude	Enable Claude
+Activer Envolée AI	Enable Envolée AI
 Arrivée : {0}	Arrival: {0}
 Arrivée et installation	Arrival and check-in
-Avec une clé API Anthropic (console.anthropic.com, payée à l'usage), Claude peut lire vos envies écrites librement et vérifier les lieux du programme. Sans clé, l'app fonctionne comme avant.	With an Anthropic API key (console.anthropic.com, pay as you go), Claude can read your wishes written freely and check the places in the itinerary. Without a key, the app works as before.
-Claude (facultatif)	Claude (optional)
-Claude lit votre demande…	Claude is reading your request…
-Claude n'a pas pu lire la demande.	Claude could not read the request.
-Clé API Claude	Claude API key
-Composer avec Claude	Plan with Claude
-Décrivez le séjour souhaité en une phrase ; Claude remplit le questionnaire.	Describe the trip you want in one sentence; Claude fills in the questionnaire.
+Avec une clé API Anthropic (console.anthropic.com, payée à l'usage), Envolée AI peut lire vos envies écrites librement et vérifier les lieux du programme. Sans clé, l'app fonctionne comme avant.	With an Anthropic API key (console.anthropic.com, pay as you go), Envolée AI can read your wishes written freely and check the places in the itinerary. Without a key, the app works as before.
+Envolée AI (facultatif)	Envolée AI (optional)
+Envolée AI lit votre demande…	Envolée AI is reading your request…
+Envolée AI n'a pas pu lire la demande.	Envolée AI could not read the request.
+Clé API Anthropic	Anthropic API key
+Composer avec Envolée AI	Plan with Envolée AI
+Décrivez le séjour souhaité en une phrase ; Envolée AI remplit le questionnaire.	Describe the trip you want in one sentence; Envolée AI fills in the questionnaire.
 Décrivez votre séjour	Describe your trip
 Départ : {0} · quitter l'hôtel vers {1}	Departure: {0} · leave the hotel around {1}
 Départ pour l'aéroport ou la gare	Leave for the airport or station
 Ex. 3 jours à Barcelone en famille fin mai, Gaudí et tapas, sans trop marcher	E.g. 3 days in Barcelona with the family in late May, Gaudí and tapas, not too much walking
-Google vérifie ouverture, horaires et avis ; Claude cherche sur le web les lieux inconnus et résume les avis. Un lieu fermé est remplacé.	Google checks opening, hours and reviews; Claude searches the web for unknown places and summarises reviews. A closed place is replaced.
+Google vérifie ouverture, horaires et avis ; Envolée AI cherche sur le web les lieux inconnus et résume les avis. Un lieu fermé est remplacé.	Google checks opening, hours and reviews; Envolée AI searches the web for unknown places and summarises reviews. A closed place is replaced.
 Heure d'arrivée (facultatif, HH:MM)	Arrival time (optional, HH:MM)
 Heure de départ (facultatif, HH:MM)	Departure time (optional, HH:MM)
 Heure de départ le dernier jour (facultatif, HH:MM)	Departure time on the last day (optional, HH:MM)

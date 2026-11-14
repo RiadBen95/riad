@@ -141,27 +141,27 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        Text(t("Claude (facultatif)"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
+        Text(t("Envolée AI (facultatif)"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
         Text(
-            t("Avec une clé API Anthropic (console.anthropic.com, payée à l'usage), Claude peut lire vos envies écrites librement et vérifier les lieux du programme. Sans clé, l'app fonctionne comme avant."),
+            t("Avec une clé API Anthropic (console.anthropic.com, payée à l'usage), Envolée AI peut lire vos envies écrites librement et vérifier les lieux du programme. Sans clé, l'app fonctionne comme avant."),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         OutlinedTextField(
             value = claudeKey,
             onValueChange = { claudeKey = it },
-            label = { Text(t("Clé API Claude")) },
+            label = { Text(t("Clé API Anthropic")) },
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
         )
         if (claudeKey.isNotBlank()) {
-            SwitchRow(t("Activer Claude"), null, claudeOn, true) { claudeOn = it }
-            SwitchRow(t("Saisie libre des envies"), t("Décrivez le séjour souhaité en une phrase ; Claude remplit le questionnaire."),
+            SwitchRow(t("Activer Envolée AI"), null, claudeOn, true) { claudeOn = it }
+            SwitchRow(t("Saisie libre des envies"), t("Décrivez le séjour souhaité en une phrase ; Envolée AI remplit le questionnaire."),
                 claudeFreeText, claudeOn) { claudeFreeText = it }
             val hasGoogle = googleKey.isNotBlank()
             SwitchRow(t("Vérification des lieux (3 étages)"),
-                if (hasGoogle) t("Google vérifie ouverture, horaires et avis ; Claude cherche sur le web les lieux inconnus et résume les avis. Un lieu fermé est remplacé.")
+                if (hasGoogle) t("Google vérifie ouverture, horaires et avis ; Envolée AI cherche sur le web les lieux inconnus et résume les avis. Un lieu fermé est remplacé.")
                 else t("Nécessite une clé Google Places (ci-dessus)."),
                 claudeVerify && hasGoogle, claudeOn && hasGoogle) { claudeVerify = it }
             if (claudeOn) {
