@@ -80,6 +80,9 @@ object Quiz {
         STREET(Interest.FOOD, "Street food et sur le pouce", "street food", listOf("street", "burger", "kebab", "snack", "fast", "sandwich", "tacos", "food truck"), "street food"),
         VEGGIE(Interest.FOOD, "Végétarien et vegan", "cuisine végétarienne", listOf("vegetarien", "vegan", "vegetarian", "vegetal", "veggie"), "restaurants végétariens"),
         FINE(Interest.FOOD, "Gastronomique", "gastronomie", listOf("gastronom", "etoile", "michelin", "fine dining", "chef"), "restaurants gastronomiques"),
+        ORIENTAL(Interest.FOOD, "Libanais et oriental", "cuisine orientale",
+            listOf("libanais", "oriental", "marocain", "tunisien", "algerien", "couscous", "tajine", "mezze", "lebanese", "syrien", "turc"),
+            "restaurants libanais"),
         SEAFOOD(Interest.FOOD, "Poissons et fruits de mer", "fruits de mer", listOf("poisson", "fruits de mer", "seafood", "bouillabaisse", "huitre", "fish"), "restaurants de fruits de mer"),
 
         COCKTAILS(Interest.NIGHT, "Bars à cocktails", "cocktails", listOf("cocktail", "speakeasy", "mixolog", "lounge"), "bars à cocktails"),
@@ -87,6 +90,9 @@ object Quiz {
         PUBS(Interest.NIGHT, "Pubs et bières", "pubs", listOf("pub", "biere", "beer", "brasserie", "craft", "taproom"), "pubs"),
         LIVE(Interest.NIGHT, "Musique live et jazz", "musique live", listOf("live", "concert", "jazz", "musique", "blues"), "bars musique live"),
         CLUBS(Interest.NIGHT, "Boîtes de nuit", "boîtes de nuit", listOf("club", "discotheque", "boite", "dj", "dancing")),
+
+        LIVELY_BEACH(Interest.BEACH, "Plages animées", "plages animées", listOf("plage", "beach", "lido", "promenade", "station balneaire")),
+        QUIET_BEACH(Interest.BEACH, "Criques et plages calmes", "criques", listOf("crique", "calanque", "anse", "cove", "sauvage")),
 
         MARKETS(Interest.SHOPPING, "Marchés et produits locaux", "marchés", listOf("marche", "halle", "souk", "bazar", "market", "medina")),
         MALLS(Interest.SHOPPING, "Centres commerciaux", "centres commerciaux", listOf("centre commercial", "mall", "galeries", "shopping")),
@@ -198,9 +204,11 @@ object ExperienceBuilder {
     )
 
     fun activityCategories(a: Quiz.Answers): List<ActivityLinks.Category> {
-        val base = a.interests.mapNotNull { it.category }.ifEmpty { defaultActivities }
-        // En famille, on glisse un parc ou une attraction pour les enfants.
-        return if (a.company == Quiz.Company.FAMILY && base.none { it == ActivityLinks.Category.PARKS || it == ActivityLinks.Category.ATTRACTIONS }) {
+        // Les envies choisies décident des visites ; les visites par défaut seulement si rien n'est coché.
+        if (a.interests.isEmpty()) return defaultActivities
+        val base = a.interests.mapNotNull { it.category }
+        // En famille, on glisse un parc ou une attraction pour les enfants (s'il y a des visites).
+        return if (base.isNotEmpty() && a.company == Quiz.Company.FAMILY && base.none { it == ActivityLinks.Category.PARKS || it == ActivityLinks.Category.ATTRACTIONS }) {
             base + ActivityLinks.Category.PARKS
         } else base
     }
@@ -209,8 +217,7 @@ object ExperienceBuilder {
         a.pace == Quiz.Pace.RELAXED || Quiz.Interest.FOOD in a.interests || a.company == Quiz.Company.FAMILY
 
     private fun wantsBar(a: Quiz.Answers) = !a.duration.halfDay && a.company != Quiz.Company.FAMILY &&
-        a.diet != Quiz.Diet.NO_ALCOHOL &&
-        (Quiz.Interest.NIGHT in a.interests || a.company == Quiz.Company.COUPLE || a.company == Quiz.Company.FRIENDS)
+        a.diet != Quiz.Diet.NO_ALCOHOL && Quiz.Interest.NIGHT in a.interests
 
     private fun wantsClub(a: Quiz.Answers) = !a.duration.halfDay && Quiz.Interest.NIGHT in a.interests &&
         a.company != Quiz.Company.FAMILY && a.diet != Quiz.Diet.NO_ALCOHOL &&
@@ -236,15 +243,24 @@ object ExperienceBuilder {
 
     /** Précision de recherche en ligne quand un seul goût est choisi (ex. « restaurants italiens »). */
     fun searchHint(a: Quiz.Answers, category: ActivityLinks.Category): String? {
-        if (category == ActivityLinks.Category.RESTAURANTS) {
-            if (a.diet == Quiz.Diet.HALAL) return "restaurants halal"
-            if (a.diet == Quiz.Diet.VEGETARIAN) return "restaurants végétariens"
-        }
         if (category != ActivityLinks.Category.RESTAURANTS && category != ActivityLinks.Category.BARS) return null
-        return tastesFor(a, category).mapNotNull { it.hint }.singleOrNull()
+        val taste = tastesFor(a, category).mapNotNull { it.hint }.singleOrNull()
+        if (category == ActivityLinks.Category.BARS) return taste
+        // Le régime s'ajoute au goût (« restaurants traditionnels halal ») au lieu de le remplacer.
+        val diet = when (a.diet) { Quiz.Diet.HALAL -> "halal"; Quiz.Diet.VEGETARIAN -> "végétariens"; else -> null }
+        return when {
+            diet == null -> taste
+            taste == null -> "restaurants $diet"
+            else -> "$taste $diet"
+        }
     }
 
     private fun normalize(s: String) = s.plain()
+
+    private val fastFood = listOf("kebab", "burger", "snack", "fast food", "fast-food", "tacos", "sandwich", "friterie", "doner")
+
+    /** Restauration rapide, d'après le type et le nom du lieu. */
+    fun isFastFood(p: PointOfInterest) = normalize("${p.kind} ${p.name}").let { t -> fastFood.any { it in t } }
 
     /**
      * Correspondance entre un lieu et des goûts : le type du lieu compte le plus, puis son nom,
@@ -496,9 +512,8 @@ object ExperienceBuilder {
         var today: DayWeather? = null
         val usedToday = mutableSetOf<String>()
         val used = mutableSetOf<String>()
-        val activities = activityCategories(a).filter { !pools[it].isNullOrEmpty() }.ifEmpty {
-            defaultActivities.filter { !pools[it].isNullOrEmpty() }
-        }
+        val usedKinds = mutableSetOf<String>()
+        val activities = activityCategories(a).filter { !pools[it].isNullOrEmpty() }
 
         fun budgetOk(p: PointOfInterest): Boolean {
             val level = priceLevel(p) ?: return true
@@ -519,9 +534,12 @@ object ExperienceBuilder {
                 if (matching.size >= 2) matching else all
             } else all
             val affordable = dietOk.filter { budgetOk(it) }.ifEmpty { dietOk }
-            if (tastes.isEmpty()) return affordable
-            val matching = affordable.filter { tasteScore(it, tastes) > 0 }
-            return if (matching.size >= 2) matching else affordable
+            // Restauration rapide (kebab, burger…) seulement si « Street food » est choisi.
+            val wanted = if (category == ActivityLinks.Category.RESTAURANTS && Quiz.Taste.STREET !in a.tastes) {
+                affordable.filterNot { isFastFood(it) }.takeIf { it.size >= 2 } ?: affordable
+            } else affordable
+            if (tastes.isEmpty()) return wanted
+            return wanted.filter { tasteScore(it, tastes) > 0 }.ifEmpty { wanted }
         }
 
         /** Note d'un lieu pour l'étape : goûts, notoriété (selon le style), proximité, moment de la journée. */
@@ -587,6 +605,7 @@ object ExperienceBuilder {
                 steps += ExperienceStep(fmt(start), moment, category, p, why(category, p), meters, minutes, if (last == null) null else travel)
                 used += p.id
                 usedToday += p.id
+                if (category in venueCategories) usedKinds += normalize(p.kind)
                 last = p
                 lastCategory = category
                 clock = start + minutes
@@ -614,6 +633,7 @@ object ExperienceBuilder {
             fun meal(category: ActivityLinks.Category, moment: String, at: Int) {
                 val best = candidates(category).take(30).maxByOrNull { p ->
                     tasteScore(p, tastesFor(a, category)) * 1.5 + emblem(p) -
+                        (if (normalize(p.kind) in usedKinds) 3.0 else 0.0) -          // varier les cuisines
                         (travelFrom(p).second / (if (a.mobility == Quiz.Mobility.WALK) 6.0 else 12.0)) -
                         (if (p.id in avoid) 6.0 else 0.0)
                 } ?: return
@@ -621,7 +641,12 @@ object ExperienceBuilder {
             }
 
             val lateStart = a.start == Quiz.Start.LATE
-            // Matin
+            // Matin (sans visite choisie, par exemple « Gastronomie » seule : petit-déjeuner dans un café).
+            if (activities.isEmpty() && wantsCafe(a)) {
+                candidates(ActivityLinks.Category.CAFES).take(20).maxByOrNull { p ->
+                    tasteScore(p, tastesFor(a, ActivityLinks.Category.CAFES)) + emblem(p)
+                }?.let { place(ActivityLinks.Category.CAFES, it, "Petit-déjeuner", 60) }
+            }
             fillVisits(12 * 60 + 30) { if (it < 11 * 60) "Matin" else "Fin de matinée" }
             meal(ActivityLinks.Category.RESTAURANTS, "Déjeuner", 12 * 60 + 30)
             val halfDayDone = a.duration.halfDay && !lateStart

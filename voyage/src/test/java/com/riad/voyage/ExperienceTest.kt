@@ -25,7 +25,7 @@ class ExperienceTest {
 
     @Test
     fun coupleDayHasVisitsMealsAndADrinkInOrder() {
-        val a = Quiz.Answers(city = "Paris", interests = setOf(Quiz.Interest.ART, Quiz.Interest.FOOD), company = Quiz.Company.COUPLE)
+        val a = Quiz.Answers(city = "Paris", interests = setOf(Quiz.Interest.ART, Quiz.Interest.FOOD, Quiz.Interest.NIGHT), company = Quiz.Company.COUPLE)
         val exp = ExperienceBuilder.build(a, "Paris", pools)
         val steps = exp.days.single().steps
         val cats = steps.map { it.category }
@@ -91,11 +91,22 @@ class ExperienceTest {
     fun questionnaireHasFineQuestions() {
         val a = Quiz.Answers(interests = setOf(Quiz.Interest.FOOD, Quiz.Interest.BEACH, Quiz.Interest.ART))
         assertEquals(
-            listOf("city", "date", "duration", "company", "interests", "taste:ART", "taste:FOOD",
+            listOf("city", "date", "duration", "company", "interests", "taste:ART", "taste:BEACH", "taste:FOOD",
                 "style", "pace", "depth", "start", "mobility", "diet", "budget"),
             Quiz.steps(a),
         )
         assertEquals("restaurants halal", ExperienceBuilder.searchHint(a.copy(diet = Quiz.Diet.HALAL), Category.RESTAURANTS))
+        // Le régime s'ajoute au goût au lieu de le remplacer.
+        assertEquals("restaurants traditionnels halal",
+            ExperienceBuilder.searchHint(a.copy(diet = Quiz.Diet.HALAL, tastes = setOf(Quiz.Taste.LOCAL_FOOD)), Category.RESTAURANTS))
+    }
+
+    @Test
+    fun onlyChosenInterestsMakeTheDay() {
+        val a = Quiz.Answers(city = "Paris", interests = setOf(Quiz.Interest.FOOD), company = Quiz.Company.SOLO)
+        val cats = ExperienceBuilder.build(a, "Paris", pools).days.single().steps.map { it.category }.toSet()
+        assertTrue(cats.isNotEmpty())
+        assertTrue("$cats", cats.all { it == Category.RESTAURANTS || it == Category.CAFES })
     }
 
     @Test
