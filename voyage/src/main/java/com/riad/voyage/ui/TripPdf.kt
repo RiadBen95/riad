@@ -162,6 +162,7 @@ private class Pages(private val context: Context, private val doc: PdfDocument) 
     fun glance(c: TripPdf.Content) {
         section(t("En un coup d'œil"))
         val trip = c.trip
+        trip.storyIntro?.let { text(it, 10f, gapAfter = 6f) }   // introduction écrite par Envolée AI
         listOfNotNull(
             trip.arrivalTime?.let { tf("Arrivée : {0}", it) + if (trip.restAfterArrival) " (" + t("soirée à l'hôtel") + ")" else "" },
             trip.departureMin?.let { m -> tf("Départ : {0} · quitter l'hôtel vers {1}", trip.departureTime!!, com.riad.voyage.data.hhmm(m - 180)!!) },
@@ -185,8 +186,9 @@ private class Pages(private val context: Context, private val doc: PdfDocument) 
     fun program(c: TripPdf.Content) {
         if (c.trip.program.isEmpty()) return
         section(t("Programme"))
-        c.trip.program.forEach { day ->
+        c.trip.program.forEachIndexed { d, day ->
             text(day.title + (day.weather?.let { " · $it" } ?: ""), 12f, NAVY, bold = true, gapBefore = 8f)
+            c.trip.storyDays.getOrNull(d)?.let { text(it, 9f, GREY, gapAfter = 2f) }
             day.steps.forEachIndexed { i, s ->
                 text("${s.time}   ${s.emoji} ${s.place.name.take(90)}", 11f, bold = true, gapBefore = 3f, gapAfter = 1f)
                 text(listOf(t(s.moment), tk(s.place.kind), "⏱ " + ExperienceBuilder.formatDuration(s.durationMin)).filter { it.isNotBlank() }
@@ -219,13 +221,13 @@ private class Pages(private val context: Context, private val doc: PdfDocument) 
         text(t("Numéros d'urgence") + " : " + info.emergency.joinToString(" · ") { (labels, n) -> labels.joinToString(", ") { t(it) } + " " + n },
             10f, bold = true)
         val phrases = Practical.phrases(info.phrases)
-        if (phrases.isNotEmpty()) {
+        if (phrases.isNotEmpty() || c.trip.extraPhrases.isNotEmpty()) {
             text(t("Phrases utiles"), 11f, bold = true, gapBefore = 6f)
             if (info.french) text(t("Le français est très compris."), 10f, indent = 8f)
             // Sens puis phrase locale sur sa propre ligne (pas de mélange de sens d'écriture).
-            phrases.forEach { p ->
-                text(t(p.meaning), 9f, GREY, indent = 8f, gapAfter = 0f)
-                text(p.local, 10f, bold = true, indent = 8f, gapAfter = 3f)
+            (phrases.map { t(it.meaning) to it.local } + c.trip.extraPhrases).forEach { (meaning, local) ->
+                text(meaning, 9f, GREY, indent = 8f, gapAfter = 0f)
+                text(local, 10f, bold = true, indent = 8f, gapAfter = 3f)
             }
         }
     }

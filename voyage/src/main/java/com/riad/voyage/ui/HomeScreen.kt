@@ -136,7 +136,7 @@ fun HomeScreen(
                     }
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(t("Créer mon séjour sur mesure"), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                        Text(t("Nouvelle envolée"), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                         Text(
                             t("Programme jour par jour selon vos goûts, la météo et votre budget"),
                             style = MaterialTheme.typography.bodySmall,

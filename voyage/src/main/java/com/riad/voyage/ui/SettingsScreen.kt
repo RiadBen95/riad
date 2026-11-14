@@ -50,6 +50,8 @@ fun SettingsScreen(
     var liteApiKey by remember(settings) { mutableStateOf(settings.liteApiKey) }
     var tiqetsPartner by remember(settings) { mutableStateOf(settings.tiqetsPartner) }
     var claudeKey by remember(settings) { mutableStateOf(settings.claudeKey) }
+    var geminiKey by remember(settings) { mutableStateOf(settings.geminiKey) }
+    var aiOff by remember(settings) { mutableStateOf(settings.aiOff) }
     var claudeOn by remember(settings) { mutableStateOf(settings.claudeOn) }
     var claudeFreeText by remember(settings) { mutableStateOf(settings.claudeFreeText) }
     var claudeVerify by remember(settings) { mutableStateOf(settings.claudeVerify) }
@@ -144,7 +146,7 @@ fun SettingsScreen(
 
         Text(t("Envolée AI (facultatif)"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
         Text(
-            t("Avec une clé API Anthropic (console.anthropic.com, payée à l'usage), Envolée AI peut lire vos envies écrites librement et vérifier les lieux du programme. Sans clé, l'app fonctionne comme avant."),
+            t("Avec une clé API Anthropic (console.anthropic.com, payée à l'usage) ou Google Gemini (aistudio.google.com, gratuite dans la limite d'un quota), Envolée AI lit vos envies, vos billets, modifie le programme en parlant et le vérifie. Sans clé, l'app fonctionne comme avant."),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -156,20 +158,34 @@ fun SettingsScreen(
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
         )
-        if (claudeKey.isNotBlank()) {
+        OutlinedTextField(
+            value = geminiKey,
+            onValueChange = { geminiKey = it },
+            label = { Text(t("Clé API Gemini (gratuite)")) },
+            singleLine = true,
+            visualTransformation = PasswordVisualTransformation(),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        if (claudeKey.isNotBlank() || geminiKey.isNotBlank()) {
             SwitchRow(t("Activer Envolée AI"), null, claudeOn, true) { claudeOn = it }
             SwitchRow(t("Saisie libre des envies"), t("Décrivez le séjour souhaité en une phrase ; Envolée AI remplit le questionnaire."),
                 claudeFreeText, claudeOn) { claudeFreeText = it }
-            val hasGoogle = googleKey.isNotBlank()
-            SwitchRow(t("Vérification des lieux (3 étages)"),
-                if (hasGoogle) t("Google vérifie ouverture, horaires et avis ; Envolée AI cherche sur le web les lieux inconnus et résume les avis. Un lieu fermé est remplacé.")
-                else t("Nécessite une clé Google Places (ci-dessus)."),
-                claudeVerify && hasGoogle, claudeOn && hasGoogle) { claudeVerify = it }
+            SwitchRow(t("Recherches sur le web"),
+                t("Vérifie les lieux inconnus, les dates (jours fériés, événements, fermetures), l'accessibilité et ajoute des conseils pratiques. ≈ 30 centimes par séjour complet avec Claude ; quota gratuit limité avec Gemini."),
+                claudeVerify, claudeOn) { claudeVerify = it }
+            if (claudeOn) {
+                Text(t("Fonctions"), style = MaterialTheme.typography.titleSmall)
+                com.riad.voyage.data.AiFeature.entries.forEach { f ->
+                    SwitchRow(t(f.label), t(f.description), f.name !in aiOff, true) { on -> aiOff = if (on) aiOff - f.name else aiOff + f.name }
+                }
+            }
             if (claudeOn) {
                 Text(t("Modèle"), style = MaterialTheme.typography.titleSmall)
                 com.riad.voyage.data.ClaudeModel.entries.forEach { m ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(selected = claudeModel == m.id, onClick = { claudeModel = m.id })
+                        // Le moteur choisi doit avoir sa clé (Anthropic pour Claude, Google pour Gemini).
+                        RadioButton(selected = claudeModel == m.id, onClick = { claudeModel = m.id },
+                            enabled = if (m.gemini) geminiKey.isNotBlank() else claudeKey.isNotBlank())
                         Column(Modifier.weight(1f)) {
                             Text(m.label, fontWeight = FontWeight.Bold)
                             Text(t(m.strengths), style = MaterialTheme.typography.bodySmall)
@@ -184,8 +200,8 @@ fun SettingsScreen(
             token = token.trim(), marker = marker.trim(), currency = currency,
             googleKey = googleKey.trim(), tripadvisorKey = tripadvisorKey.trim(), foursquareKey = foursquareKey.trim(),
             liteApiKey = liteApiKey.trim(), tiqetsPartner = tiqetsPartner.trim(),
-            claudeKey = claudeKey.trim(), claudeOn = claudeOn, claudeFreeText = claudeFreeText,
-            claudeVerify = claudeVerify, claudeModel = claudeModel,
+            claudeKey = claudeKey.trim(), geminiKey = geminiKey.trim(), claudeOn = claudeOn, claudeFreeText = claudeFreeText,
+            claudeVerify = claudeVerify, claudeModel = claudeModel, aiOff = aiOff,
         )
         val unchanged = edited == settings
         Button(

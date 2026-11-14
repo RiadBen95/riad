@@ -72,6 +72,9 @@ data class Trip(
     val departureTime: String? = null,    // « 13:40 » : départ (avion, train) le dernier jour
     val restAfterArrival: Boolean = false, // soirée libre à l'hôtel le jour de l'arrivée
     val programNotes: List<String> = emptyList(), // compromis du programme (régime introuvable, envie écartée…)
+    val storyIntro: String? = null,                // carnet : introduction écrite par Envolée AI
+    val storyDays: List<String> = emptyList(),     // carnet : une phrase par jour
+    val extraPhrases: List<Pair<String, String>> = emptyList(), // phrases utiles sur mesure (sens, phrase locale)
     val programTitle: String? = null,
     val programSubtitle: String? = null,  // réglages du programme (compagnie, rythme, régime…)
     val program: List<SavedDay> = emptyList(),
@@ -132,6 +135,8 @@ object TripJson {
         .put("startDate", t.startDate).put("endDate", t.endDate).put("travellers", t.travellers ?: JSONObject.NULL)
         .put("arrivalTime", t.arrivalTime).put("departureTime", t.departureTime).put("programSubtitle", t.programSubtitle).put("programTitle", t.programTitle).put("updated", t.updated)
         .put("restAfterArrival", t.restAfterArrival).put("programNotes", JSONArray(t.programNotes))
+        .put("storyIntro", t.storyIntro).put("storyDays", JSONArray(t.storyDays))
+        .put("extraPhrases", t.extraPhrases.arr { (m, l) -> JSONObject().put("m", m).put("l", l) })
         .put("program", t.program.arr { d ->
             JSONObject().put("title", d.title).put("weather", d.weather).put("steps", d.steps.arr { st ->
                 JSONObject().put("time", st.time).put("moment", st.moment).put("emoji", st.emoji).put("why", st.why)
@@ -165,6 +170,9 @@ object TripJson {
         departureTime = o.s("departureTime"),
         restAfterArrival = o.optBoolean("restAfterArrival"),
         programNotes = o.optJSONArray("programNotes")?.let { a -> List(a.length()) { a.optString(it) } }.orEmpty(),
+        storyIntro = o.s("storyIntro"),
+        storyDays = o.optJSONArray("storyDays")?.let { a -> List(a.length()) { a.optString(it) } }.orEmpty(),
+        extraPhrases = o.optJSONArray("extraPhrases").list { it.optString("m") to it.optString("l") },
         programSubtitle = o.s("programSubtitle"),
         programTitle = o.s("programTitle"),
         program = o.optJSONArray("program").list { d ->

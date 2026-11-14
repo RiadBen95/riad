@@ -14,21 +14,30 @@ data class Settings(
     val liteApiKey: String = "",
     val tiqetsPartner: String = "",
     val claudeKey: String = "",
-    val claudeOn: Boolean = false,          // Claude activé (si une clé est saisie)
+    val geminiKey: String = "",
+    val claudeOn: Boolean = false,          // Envolée AI activée (si la clé du moteur choisi est saisie)
     val claudeFreeText: Boolean = true,     // saisie libre des envies
-    val claudeVerify: Boolean = false,      // vérification des lieux (nécessite aussi une clé Google)
+    val claudeVerify: Boolean = false,      // recherches sur le web (vérifications, dates, accessibilité, conseils)
     val claudeModel: String = ClaudeModel.OPUS.id,
+    val aiOff: Set<String> = emptySet(),    // fonctions d'Envolée AI désactivées (noms d'AiFeature)
 ) {
     val isDemo get() = token.isBlank()
-    private val claude get() = claudeOn && claudeKey.isNotBlank()
-    val claudeDescribe get() = claude && claudeFreeText
-    val claudeChecks get() = claude && claudeVerify && googleKey.isNotBlank()
+    val aiModel get() = ClaudeModel.of(claudeModel)
+    private val aiKey get() = if (aiModel.gemini) geminiKey else claudeKey
+    val ai get() = claudeOn && aiKey.isNotBlank()
+    /** Moteur et clé d'Envolée AI (null si elle est désactivée). */
+    val aiConfig get() = if (ai) ClaudeAssistant.Config(aiModel, aiKey) else null
+    fun has(f: AiFeature) = ai && f.name !in aiOff
+    val claudeDescribe get() = ai && claudeFreeText
+    val aiWeb get() = ai && claudeVerify
+    /** Vérification des lieux : Google (ouverture, horaires, avis) et, si autorisé, recherche web. */
+    val placeChecks get() = ai && (googleKey.isNotBlank() || claudeVerify)
 }
 
 class SettingsStore(context: Context) {
     private val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
 
-    private val SECRETS = listOf("token", "googleKey", "tripadvisorKey", "foursquareKey", "liteApiKey", "claudeKey")
+    private val SECRETS = listOf("token", "googleKey", "tripadvisorKey", "foursquareKey", "liteApiKey", "claudeKey", "geminiKey")
 
     /** Clés d'API : chiffrées sur le téléphone (Keystore Android). */
     private fun secret(name: String) = SecretBox.decrypt(prefs.getString(name, "").orEmpty())
@@ -43,6 +52,8 @@ class SettingsStore(context: Context) {
         liteApiKey = secret("liteApiKey"),
         tiqetsPartner = prefs.getString("tiqetsPartner", "").orEmpty(),
         claudeKey = secret("claudeKey"),
+        geminiKey = secret("geminiKey"),
+        aiOff = prefs.getString("aiOff", "").orEmpty().split(',').filter { it.isNotBlank() }.toSet(),
         claudeOn = prefs.getBoolean("claudeOn", false),
         claudeFreeText = prefs.getBoolean("claudeFreeText", true),
         claudeVerify = prefs.getBoolean("claudeVerify", false),
@@ -63,6 +74,8 @@ class SettingsStore(context: Context) {
             .putString("liteApiKey", SecretBox.encrypt(s.liteApiKey.trim()))
             .putString("tiqetsPartner", s.tiqetsPartner.trim())
             .putString("claudeKey", SecretBox.encrypt(s.claudeKey.trim()))
+            .putString("geminiKey", SecretBox.encrypt(s.geminiKey.trim()))
+            .putString("aiOff", s.aiOff.joinToString(","))
             .putBoolean("claudeOn", s.claudeOn).putBoolean("claudeFreeText", s.claudeFreeText)
             .putBoolean("claudeVerify", s.claudeVerify).putString("claudeModel", s.claudeModel)
             .apply()
@@ -210,32 +223,45 @@ class PendingBookingStore(context: Context) {
     fun clear() = prefs.edit().remove("p").apply()
 }
 
-/** Dernières réponses de l'Expérience : valeurs de départ du questionnaire rapide. */
-class AnswersStore(context: Context) {
+/**
+ * Préférences personnelles des 5 dernières envolées (régime, budget, déplacements, rythme, style, début de journée).
+ * « Reprendre mes préférences » prend, pour chacune, la valeur la plus fréquente (la plus récente en cas d'égalité).
+ * Jamais la ville, les dates, les heures, les voyageurs ni les envies.
+ */
+class PreferenceStore(context: Context) {
     private val prefs = context.getSharedPreferences("experience", Context.MODE_PRIVATE)
+    private val keys = listOf("diet", "budget", "mobility", "pace", "style", "start")
 
-    private inline fun <reified E : Enum<E>> JSONObject.enum(key: String, default: E): E =
-        runCatching { enumValueOf<E>(getString(key)) }.getOrDefault(default)
+    /** La puce reste allumée d'une envolée à l'autre une fois choisie. */
+    var use: Boolean
+        get() = prefs.getBoolean("usePrefs", false)
+        set(v) = prefs.edit().putBoolean("usePrefs", v).apply()
 
-    private inline fun <reified E : Enum<E>> JSONObject.enums(key: String): Set<E> =
-        optJSONArray(key)?.let { a -> (0 until a.length()).mapNotNull { runCatching { enumValueOf<E>(a.getString(it)) }.getOrNull() }.toSet() }.orEmpty()
+    private fun history(): List<JSONObject> = runCatching { JSONArray(prefs.getString("history", "[]")) }.getOrDefault(JSONArray())
+        .let { a -> List(a.length()) { a.optJSONObject(it) }.filterNotNull() }
 
-    fun load(): Quiz.Answers {
-        val d = Quiz.Answers()
-        val o = runCatching { JSONObject(prefs.getString("last", null) ?: return d) }.getOrNull() ?: return d
-        return d.copy(
-            company = o.enum("company", d.company), interests = o.enums("interests"), tastes = o.enums("tastes"),
-            style = o.enum("style", d.style), pace = o.enum("pace", d.pace), depth = o.enum("depth", d.depth),
-            start = o.enum("start", d.start), mobility = o.enum("mobility", d.mobility), diet = o.enum("diet", d.diet),
-            budget = o.enum("budget", d.budget),
+    fun record(a: Quiz.Answers) {
+        val o = JSONObject().put("diet", a.diet.name).put("budget", a.budget.name).put("mobility", a.mobility.name)
+            .put("pace", a.pace.name).put("style", a.style.name).put("start", a.start.name)
+        prefs.edit().putString("history", JSONArray(history().takeLast(4) + o).toString()).apply()
+    }
+
+    /** Préférences habituelles appliquées à [a] (null s'il n'y a encore aucune envolée). */
+    fun applyTo(a: Quiz.Answers): Quiz.Answers? {
+        val h = history().reversed().ifEmpty { return null }   // la plus récente d'abord
+        fun mode(k: String): String {
+            val values = h.map { it.optString(k) }
+            return values.groupingBy { it }.eachCount().maxWithOrNull(compareBy<Map.Entry<String, Int>> { it.value }
+                .thenByDescending { e -> values.indexOf(e.key) })!!.key
+        }
+        val m = keys.associateWith(::mode)
+        fun <E : Enum<E>> pick(values: Array<E>, k: String, d: E) = values.firstOrNull { it.name == m[k] } ?: d
+        return a.copy(
+            diet = pick(Quiz.Diet.entries.toTypedArray(), "diet", a.diet), budget = pick(Quiz.Budget.entries.toTypedArray(), "budget", a.budget),
+            mobility = pick(Quiz.Mobility.entries.toTypedArray(), "mobility", a.mobility), pace = pick(Quiz.Pace.entries.toTypedArray(), "pace", a.pace),
+            style = pick(Quiz.Style.entries.toTypedArray(), "style", a.style), start = pick(Quiz.Start.entries.toTypedArray(), "start", a.start),
         )
     }
 
-    fun save(a: Quiz.Answers) {
-        val o = JSONObject().put("company", a.company.name).put("style", a.style.name).put("pace", a.pace.name)
-            .put("depth", a.depth.name).put("start", a.start.name).put("mobility", a.mobility.name)
-            .put("diet", a.diet.name).put("budget", a.budget.name)
-            .put("interests", JSONArray(a.interests.map { it.name })).put("tastes", JSONArray(a.tastes.map { it.name }))
-        prefs.edit().putString("last", o.toString()).apply()
-    }
+    fun clear() = prefs.edit().remove("history").remove("usePrefs").apply()
 }

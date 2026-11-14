@@ -20,7 +20,7 @@ object OpeningHours {
      * Plages d'ouverture du jour en minutes ; liste vide = fermé ; null = inconnu.
      * Un jour qu'aucune règle ne cite est fermé (règle d'OpenStreetMap), sauf s'il n'y a aucune règle par jour.
      */
-    fun ranges(spec: String?, day: DayOfWeek, month: Int? = null): List<IntRange>? {
+    fun ranges(spec: String?, day: DayOfWeek, month: Int? = null, holiday: Boolean = false): List<IntRange>? {
         if (spec.isNullOrBlank()) return null
         var result: List<IntRange>? = null
         var hasDayRules = false
@@ -35,8 +35,9 @@ object OpeningHours {
             val withDays = isDays(head)
             val body = if (withDays) rule.substringAfter(' ', "") else rule
             if (withDays) {
-                hasDayRules = true
-                if (!covers(head, day)) continue
+                val holidayOnly = head.uppercase() == "PH"
+                if (!holidayOnly) hasDayRules = true
+                if (!covers(head, day, holiday)) continue
             }
             result = when {
                 body.contains("24/7") -> listOf(0..24 * 60)
@@ -57,15 +58,15 @@ object OpeningHours {
     }
 
     /** Plage du jour, de la première ouverture à la dernière fermeture ; vide = fermé ; null = inconnu. */
-    fun forDay(spec: String?, day: DayOfWeek, month: Int? = null): IntRange? =
-        ranges(spec, day, month)?.let { r -> if (r.isEmpty()) IntRange.EMPTY else r.minOf { it.first }..r.maxOf { it.last } }
+    fun forDay(spec: String?, day: DayOfWeek, month: Int? = null, holiday: Boolean = false): IntRange? =
+        ranges(spec, day, month, holiday)?.let { r -> if (r.isEmpty()) IntRange.EMPTY else r.minOf { it.first }..r.maxOf { it.last } }
 
     /**
      * Première heure ≥ [at] où l'on peut rester [minutes] sans fermeture (pause de midi comprise).
      * [at] si les horaires sont inconnus ; null si le lieu est fermé ou ferme trop tôt.
      */
-    fun nextStart(spec: String?, day: DayOfWeek, at: Int, minutes: Int, month: Int? = null): Int? {
-        val r = ranges(spec, day, month) ?: return at
+    fun nextStart(spec: String?, day: DayOfWeek, at: Int, minutes: Int, month: Int? = null, holiday: Boolean = false): Int? {
+        val r = ranges(spec, day, month, holiday) ?: return at
         return r.mapNotNull { range -> maxOf(at, range.first).takeIf { it + minutes <= range.last } }.minOrNull()
     }
 
@@ -96,7 +97,9 @@ object OpeningHours {
         }
     }
 
-    private fun covers(spec: String, day: DayOfWeek): Boolean = spec.split(',').any { part ->
+    /** Le jour (ou « PH », jour férié) est-il cité par la règle ? */
+    private fun covers(spec: String, day: DayOfWeek, holiday: Boolean = false): Boolean = spec.split(',').any { part ->
+        if (part.uppercase() == "PH") return@any holiday
         val bounds = part.split('-').map(::cap)
         val from = days.indexOf(bounds[0])
         val to = days.indexOf(bounds.getOrElse(1) { bounds[0] })

@@ -13,6 +13,8 @@ import com.riad.voyage.AppViewModel
 import com.riad.voyage.CitySection
 import com.riad.voyage.Tab
 import com.riad.voyage.data.LitePayment
+import com.riad.voyage.t
+import com.riad.voyage.tf
 import com.riad.voyage.data.NotablePlaces
 
 @Composable
@@ -20,6 +22,8 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
     val context = LocalContext.current
     val tab by vm.tab.collectAsStateWithLifecycle()
     val settings by vm.settings.collectAsStateWithLifecycle()
+    val bookingImport by vm.bookingImport.collectAsStateWithLifecycle()
+    bookingImport?.let { BookingImportDialog(it, onConfirm = vm::applyBooking, onDismiss = vm::cancelBookingImport) }
     val form by vm.form.collectAsStateWithLifecycle()
     val results by vm.results.collectAsStateWithLifecycle()
     val alerts by vm.alerts.collectAsStateWithLifecycle()
@@ -90,7 +94,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                     demo = settings.isDemo,
                     onOpenFlights = { vm.selectTab(Tab.FLIGHTS) },
                     onOpenActivities = { vm.selectTab(Tab.ACTIVITIES) },
-                    onOpenExperience = { vm.selectTab(Tab.EXPERIENCE) },
+                    onOpenExperience = vm::newEnvolee,
                     onOpenBlog = { vm.selectTab(Tab.BLOG) },
                     onOpenHotels = { vm.openHotels(null, null, null, null) },
                     onOpenBudget = { vm.selectTab(Tab.BUDGET) },
@@ -244,6 +248,13 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                             openTrip = { experience.tripId?.let(vm::openTrip) },
                             describe = if (settings.claudeDescribe) vm::describeTrip else null,
                             setTime = vm::setExperienceStepTime,
+                            newEnvolee = vm::newEnvolee,
+                            prefsSummary = vm.preferenceSummary(),
+                            usePrefs = vm.usePreferences,
+                            setUsePrefs = vm::setUsePreferences,
+                            askChange = if (settings.has(com.riad.voyage.data.AiFeature.EDIT)) vm::askChange else null,
+                            undo = vm::undoChange,
+                            recapStep = vm::editRecapStep, recapDone = vm::doneRecapStep, recapApply = vm::applyRecap, recapClose = vm::closeRecap,
                         ),
                     )
                 }
@@ -314,6 +325,8 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                             addPackItem = vm::addPackItem, removePackItem = vm::removePackItem, practical = vm::openPractical,
                             create = vm::createTrip, updateInfo = vm::updateTripInfo, plan = vm::planTrip, suggestCities = vm::suggestCities,
                             pdf = vm::tripPdf,
+                            importBooking = if (settings.has(com.riad.voyage.data.AiFeature.IMPORT)) { uri, mime -> vm.importBooking(uri, mime, null) } else null,
+                            souvenir = if (settings.has(com.riad.voyage.data.AiFeature.SOUVENIR)) vm::souvenir else null,
                         ),
                     )
                 }
@@ -344,6 +357,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                             onAddExpense = budgetTrip?.let { tr -> { label, amount, cur, item -> vm.addExpense(tr.id, label, amount, cur, item) } },
                             onRemoveExpense = { id -> budgetTrip?.let { vm.removeExpense(it.id, id) } },
                             rates = vm::rates,
+                            onAdvice = if (settings.has(com.riad.voyage.data.AiFeature.BUDGET)) vm::budgetAdvice else null,
                         )
                     }
                 }
@@ -374,4 +388,35 @@ private fun tabIcon(t: Tab) = when (t) {
     Tab.ALERTS -> AppIcons.Bell
     Tab.BUDGET -> AppIcons.Wallet
     Tab.SETTINGS -> AppIcons.Settings
+}
+
+/** Billet lu par Envolée AI : récapitulatif à confirmer avant de remplir le voyage. */
+@androidx.compose.runtime.Composable
+private fun BookingImportDialog(state: com.riad.voyage.BookingImport, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { androidx.compose.material3.Text(t("Réservation")) },
+        text = {
+            androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
+                when {
+                    state.loading -> androidx.compose.material3.Text(t("Envolée AI lit votre réservation…"))
+                    state.error != null -> androidx.compose.material3.Text(state.error)
+                    else -> state.booking?.let { b ->
+                        b.segments.forEach { s ->
+                            androidx.compose.material3.Text("✈️ ${s.fromCity} → ${s.toCity} · ${s.depDate?.let(::formatDay).orEmpty()} · " +
+                                "${com.riad.voyage.data.hhmm(s.depTime) ?: "?"} → ${com.riad.voyage.data.hhmm(s.arrTime) ?: "?"} · ${s.number}")
+                        }
+                        androidx.compose.material3.Text("👥 " + tf("{0} voyageur(s)", b.passengers) +
+                            (b.price?.let { " · 💶 ${it.toInt()} ${b.currency}" } ?: "") + (b.reference.takeIf { it.isNotBlank() }?.let { " · $it" } ?: ""))
+                        androidx.compose.material3.Text(tf("Le voyage « {0} » sera rempli avec ces dates et ces heures.", t(b.outbound?.toCity.orEmpty())),
+                            style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            if (state.booking != null) androidx.compose.material3.TextButton(onClick = onConfirm) { androidx.compose.material3.Text(t("Ajouter à mon voyage")) }
+        },
+        dismissButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { androidx.compose.material3.Text(t("Annuler")) } },
+    )
 }

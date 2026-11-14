@@ -47,6 +47,8 @@ class TripActions(
     val plan: (Trip) -> Unit = {},
     val suggestCities: suspend (String) -> List<com.riad.voyage.data.Place> = { emptyList() },
     val pdf: suspend (Trip) -> java.io.File? = { null },
+    val importBooking: ((android.net.Uri?, String?) -> Unit)? = null,   // billet lu par Envolée AI (null = désactivé)
+    val souvenir: (suspend (Trip) -> String?)? = null,                    // souvenir écrit par Envolée AI
 )
 
 @Composable
@@ -104,7 +106,7 @@ private fun TripList(trips: List<Trip>, onOpen: (String?) -> Unit, onAlerts: () 
             item {
                 Card(Modifier.fillMaxWidth()) {
                     Text(
-                        t("Aucun voyage pour l'instant. Gardez un vol (♡), un programme Expérience, un lieu ou un article : il apparaîtra ici."),
+                        t("Aucun voyage pour l'instant. Gardez un vol (♡), une envolée, un lieu ou un article : il apparaîtra ici."),
                         modifier = Modifier.padding(16.dp),
                     )
                 }
@@ -190,9 +192,14 @@ private fun TripDetail(
             Button(onClick = { actions.plan(trip) }, modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
                 Text(if (trip.program.isEmpty()) t("✨ Créer le programme sur mesure") else t("✨ Refaire le programme sur mesure"))
             }
+            actions.importBooking?.let { import ->
+                val picker = androidx.activity.compose.rememberLauncherForActivityResult(
+                    androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri -> if (uri != null) import(uri, null) }
+                OutlinedButton(onClick = { picker.launch("*/*") }, modifier = Modifier.fillMaxWidth()) { Text(t("🎫 Importer une réservation")) }
+            }
             TripWeather(trip, weather, Modifier.padding(top = 8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
-                ShareButton(trip, actions.pdf)
+                ShareButton(trip, actions.pdf, actions.souvenir)
                 OutlinedButton(onClick = { onDelete(trip.id) }) { Text(t("Supprimer")) }
             }
             OutlinedButton(onClick = { onHotels(trip) }, modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
@@ -448,7 +455,7 @@ private fun TripInfoDialog(
 
 /** Partager le voyage : carnet PDF aux couleurs d'Envolée, ou simple texte. */
 @Composable
-private fun ShareButton(trip: Trip, pdf: suspend (Trip) -> java.io.File?) {
+private fun ShareButton(trip: Trip, pdf: suspend (Trip) -> java.io.File?, souvenir: (suspend (Trip) -> String?)? = null) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var open by remember { mutableStateOf(false) }
@@ -470,6 +477,21 @@ private fun ShareButton(trip: Trip, pdf: suspend (Trip) -> java.io.File?) {
                     }
                 }
             })
+            souvenir?.let { write ->
+                DropdownMenuItem(text = { Text(t("✨ Souvenir du voyage")) }, onClick = {
+                    open = false
+                    busy = true
+                    scope.launch {
+                        val text = write(trip)
+                        busy = false
+                        if (text != null) {
+                            val send = Intent(Intent.ACTION_SEND).setType("text/plain")
+                                .putExtra(Intent.EXTRA_SUBJECT, "Envolée · " + t(trip.city)).putExtra(Intent.EXTRA_TEXT, text)
+                            runCatching { context.startActivity(Intent.createChooser(send, t("Partager mon voyage"))) }
+                        }
+                    }
+                })
+            }
             DropdownMenuItem(text = { Text(t("💬 Texte")) }, onClick = {
                 open = false
                 val send = Intent(Intent.ACTION_SEND).setType("text/plain")

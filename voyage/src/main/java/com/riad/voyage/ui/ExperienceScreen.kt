@@ -52,15 +52,16 @@ fun ExperienceScreen(
     edits: ExperienceEdits = ExperienceEdits(),
 ) {
     when {
+        state.recap && state.editStep == null -> RecapScreen(state.answers, edits)
         state.loading || state.describing -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
                 CircularProgressIndicator()
                 Spacer(Modifier.height(16.dp))
-                Text(if (state.describing) t("Envolée AI lit votre demande…") else t("Création de votre expérience…"), style = MaterialTheme.typography.titleMedium)
+                Text(if (state.describing) t("Envolée AI lit votre demande…") else t("Création de votre envolée…"), style = MaterialTheme.typography.titleMedium)
                 Text(state.stage, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
             }
         }
-        state.result != null -> ExperienceResult(state, onRegenerate, onEdit, onSave, alternatives, onReplace, onHotels, onBudget,
+        state.result != null && !state.recap -> ExperienceResult(state, onRegenerate, onEdit, onSave, alternatives, onReplace, onHotels, onBudget,
             wiki, isFavorite, onFavorite, onReadArticle, edits)
         else -> Questionnaire(state, onAnswers, onStep, onGenerate, suggestCities, edits)
     }
@@ -76,6 +77,16 @@ class ExperienceEdits(
     val openTrip: () -> Unit = {},
     val describe: ((String) -> Unit)? = null,   // saisie libre avec Claude (null = désactivée)
     val setTime: (Int, Int, Int) -> Unit = { _, _, _ -> },   // nouvelle heure d'une étape (jour, étape, minutes)
+    val newEnvolee: () -> Unit = {},
+    val prefsSummary: String? = null,                        // préférences habituelles (null : aucune envolée passée)
+    val usePrefs: Boolean = false,
+    val setUsePrefs: (Boolean) -> Unit = {},
+    val askChange: ((String) -> Unit)? = null,               // modifier en parlant (null = désactivé)
+    val undo: () -> Unit = {},
+    val recapStep: (String) -> Unit = {},
+    val recapDone: () -> Unit = {},
+    val recapApply: () -> Unit = {},
+    val recapClose: () -> Unit = {},
 )
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -89,8 +100,9 @@ private fun Questionnaire(
     edits: ExperienceEdits,
 ) {
     val a = state.answers
-    val steps = state.steps
-    val step = state.step.coerceIn(0, steps.size - 1)
+    val single = state.editStep                 // question ouverte depuis « Ajuster mes réponses »
+    val steps = single?.let { listOf(it) } ?: state.steps
+    val step = if (single != null) 0 else state.step.coerceIn(0, steps.size - 1)
     val id = steps[step]
     val canContinue = when (id) {
         "city" -> a.city.isNotBlank()
@@ -105,7 +117,8 @@ private fun Questionnaire(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(t("Votre expérience sur mesure"), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            if (single == null) {
+            Text(t("Votre envolée sur mesure"), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             Text(
                 t("Quelques questions sur vos envies et vos goûts : nous composons un programme qui mêle visites, balades, restaurants et sorties."),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -118,11 +131,17 @@ private fun Questionnaire(
                     Text(if (state.quick) t("Personnaliser en détail ›") else t("Version rapide ›"))
                 }
             }
+            }
 
             when {
                 id == "city" -> {
-                    edits.describe?.let { describe -> FreeTextCard(describe) }
-                    QuestionTitle(t("Où voulez-vous vivre l'expérience ?"))
+                    // Discret : reprendre ses préférences habituelles, ou partir d'une page vierge (par défaut).
+                    if (single == null) edits.prefsSummary?.let { summary ->
+                        FilterChip(selected = edits.usePrefs, onClick = { edits.setUsePrefs(!edits.usePrefs) },
+                            label = { Text("✨ " + t("Reprendre mes préférences") + " · " + summary, style = MaterialTheme.typography.labelMedium) })
+                    }
+                    if (single == null) edits.describe?.let { describe -> FreeTextCard(describe, state.aiQuestion) }
+                    QuestionTitle(t("Où voulez-vous vous envoler ?"))
                     PlaceField(
                         label = t("Ville"),
                         selected = a.place,
@@ -176,6 +195,10 @@ private fun Questionnaire(
                     QuestionTitle(t("Avec qui partez-vous ?"))
                     Quiz.Company.entries.forEach { c ->
                         ChoiceCard("${c.emoji}  ${t(c.label)}", null, a.company == c) { onAnswers { it.copy(company = c) } }
+                    }
+                    if (a.company == Quiz.Company.FAMILY) {
+                        CheckRow(t("Avec un enfant de moins de 6 ans (rythme doux, sieste)"), a.youngKids) { v -> onAnswers { it.copy(youngKids = v) } }
+                        CheckRow(t("Avec une poussette"), a.stroller) { v -> onAnswers { it.copy(stroller = v) } }
                     }
                 }
                 id == "interests" -> {
@@ -256,7 +279,8 @@ private fun Questionnaire(
         ) {
             if (step > 0) OutlinedButton(onClick = { onStep(-1) }, modifier = Modifier.weight(1f)) { Text(t("Retour")) }
             val last = step == steps.size - 1
-            Button(
+            if (single != null) Button(onClick = edits.recapDone, enabled = canContinue, modifier = Modifier.weight(1f)) { Text(t("Valider")) }
+            else Button(
                 onClick = { if (last) onGenerate() else onStep(1) },
                 enabled = canContinue,
                 modifier = Modifier.weight(if (step > 0) 1.6f else 1f),
@@ -264,11 +288,73 @@ private fun Questionnaire(
                 if (last) {
                     Icon(AppIcons.Sparkle, null)
                     Spacer(Modifier.width(8.dp))
-                    Text(t("Créer mon expérience"))
+                    Text(t("Créer mon envolée"))
                 } else Text(t("Suivant"))
             }
         }
     }
+}
+
+@Composable
+private fun CheckRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Checkbox(checked = checked, onCheckedChange = onChange)
+        Text(label)
+    }
+}
+
+/** « Ajuster mes réponses » : toutes les réponses d'un coup d'œil ; une ligne touchée ouvre sa question. */
+@Composable
+private fun RecapScreen(a: Quiz.Answers, edits: ExperienceEdits) {
+    Column(Modifier.fillMaxSize()) {
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(t("Ajuster mes réponses"), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Text(t("Touchez une ligne pour la changer, puis recomposez."), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Quiz.steps(a, quick = false).forEach { id ->
+                val (label, value) = recapLine(id, a)
+                OutlinedCard(onClick = { edits.recapStep(id) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
+                    Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(value.ifBlank { "—" }, fontWeight = FontWeight.Medium)
+                        }
+                        Text("›", color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            }
+        }
+        Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedButton(onClick = edits.recapClose, modifier = Modifier.weight(1f)) { Text(t("Annuler")) }
+            Button(onClick = edits.recapApply, modifier = Modifier.weight(1.6f)) {
+                Icon(AppIcons.Sparkle, null)
+                Spacer(Modifier.width(8.dp))
+                Text(t("Recomposer"))
+            }
+        }
+    }
+}
+
+/** Libellé et valeur d'une ligne du récapitulatif. */
+private fun recapLine(id: String, a: Quiz.Answers): Pair<String, String> = when {
+    id == "city" -> t("Ville") to t(a.city)
+    id == "date" -> t("Premier jour") to formatDay(a.startDate)
+    id == "duration" -> t("Durée et horaires") to listOfNotNull(t(a.duration.label),
+        a.arrivalMin?.let { tf("arrivée {0}", com.riad.voyage.data.hhmm(it)!!) } , a.departureMin?.let { tf("départ {0}", com.riad.voyage.data.hhmm(it)!!) },
+        t("soirée à l'hôtel").takeIf { a.restAfterArrival && a.arrivalMin != null }).joinToString(" · ")
+    id == "company" -> t("Avec qui") to listOfNotNull(t(a.company.label), t("jeune enfant").takeIf { a.youngKids }, t("poussette").takeIf { a.stroller }).joinToString(" · ")
+    id == "interests" -> t("Envies") to a.interests.joinToString(", ") { t(it.label) }
+    id.startsWith("taste:") -> {
+        val i = Quiz.Interest.valueOf(id.removePrefix("taste:"))
+        t(i.label) to a.tastes.filter { it.interest == i }.joinToString(", ") { t(it.label) }.ifBlank { t("Tout") }
+    }
+    id == "style" -> t("Style") to t(a.style.label)
+    id == "pace" -> t("Rythme") to t(a.pace.label)
+    id == "depth" -> t("Temps de visite") to t(a.depth.label)
+    id == "start" -> t("Début de journée") to t(a.start.label)
+    id == "mobility" -> t("Déplacements") to t(a.mobility.label)
+    id == "diet" -> t("Régime") to t(a.diet.label)
+    id == "budget" -> t("Budget") to t(a.budget.label)
+    else -> id to ""
 }
 
 @Composable
@@ -378,13 +464,15 @@ private fun ExperienceResult(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(AppIcons.Sparkle, null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(8.dp))
-                        Text(t("Votre expérience"), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                        Text(t("Votre envolée"), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.weight(1f))
+                        TextButton(onClick = edits.newEnvolee) { Text("＋ " + t("Nouvelle envolée")) }
                     }
                     Text(exp.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     Text(exp.subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 6.dp)) {
                         Button(onClick = onRegenerate) { Text(t("Autre proposition")) }
-                        OutlinedButton(onClick = onEdit) { Text(t("Modifier")) }
+                        OutlinedButton(onClick = onEdit) { Text(t("Ajuster mes réponses")) }
                     }
                     // Ce qu'Envolée AI a compris, à corriger d'un geste.
                     state.aiSummary?.let { summary ->
@@ -403,6 +491,8 @@ private fun ExperienceResult(
                 }
             }
         }
+        // Modifier en parlant (et replanifier le jour même).
+        edits.askChange?.let { ask -> item { AskChangeCard(state, ask, edits.undo) } }
         // Compromis faits pour composer le programme : dits clairement plutôt que découverts dans le PDF.
         if (exp.notes.isNotEmpty()) item {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer), modifier = Modifier.fillMaxWidth()) {
@@ -664,13 +754,42 @@ private fun TimeField(label: String, minutes: Int?, onChange: (Int?) -> Unit) {
     )
 }
 
-/** Demande en langage libre : Claude remplit le questionnaire puis le programme est composé. */
+/** Modifier le programme en parlant ; raccourcis pour replanifier le jour même ; annulation. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun FreeTextCard(onSend: (String) -> Unit) {
+private fun AskChangeCard(state: ExperienceState, onSend: (String) -> Unit, onUndo: () -> Unit) {
     var text by remember { mutableStateOf("") }
+    Card(shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(t("Modifier avec Envolée AI"), fontWeight = FontWeight.Bold)
+            OutlinedTextField(value = text, onValueChange = { text = it }, modifier = Modifier.fillMaxWidth(), enabled = !state.editing,
+                placeholder = { Text(t("Ex. demain plus tranquille, remplace le musée par un parc")) })
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf(t("Il pleut"), t("On a 1 h de retard"), t("On est fatigués")).forEach { quick ->
+                    AssistChip(onClick = { onSend(quick + " (" + t("replanifie la suite de la journée") + ")") }, label = { Text(quick) }, enabled = !state.editing)
+                }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (state.editing) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                Spacer(Modifier.weight(1f))
+                Button(onClick = { onSend(text); text = "" }, enabled = text.isNotBlank() && !state.editing) { Text(t("Appliquer")) }
+            }
+            state.changeSummary?.let { done ->
+                Text("✓ $done", style = MaterialTheme.typography.bodySmall)
+                if (state.undo != null) TextButton(onClick = onUndo, contentPadding = PaddingValues(0.dp)) { Text(t("Annuler cette modification")) }
+            }
+        }
+    }
+}
+
+/** Demande en langage libre : Envolée AI remplit le questionnaire puis le programme est composé. */
+@Composable
+private fun FreeTextCard(onSend: (String) -> Unit, question: String? = null) {
+    var text by remember(question) { mutableStateOf("") }
     Card(shape = RoundedCornerShape(16.dp)) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(t("Décrivez votre séjour"), fontWeight = FontWeight.Bold)
+            question?.let { Text("🤔 $it", color = MaterialTheme.colorScheme.primary) }   // question de précision
             OutlinedTextField(
                 value = text, onValueChange = { text = it }, modifier = Modifier.fillMaxWidth(), minLines = 2,
                 placeholder = { Text(t("Ex. 3 jours à Barcelone en famille fin mai, Gaudí et tapas, sans trop marcher")) },

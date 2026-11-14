@@ -73,7 +73,10 @@ import com.riad.voyage.ui.formatPrice
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.temporal.ChronoUnit
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.withContext
+import com.riad.voyage.data.plain
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -87,11 +90,14 @@ import kotlinx.coroutines.withTimeoutOrNull
  * cœur (barre du bas) ; Vols et Hôtels sont des compléments réservables (depuis l'accueil et le voyage).
  */
 enum class Tab(val label: String, val inBottomBar: Boolean = true) {
-    HOME("Accueil"), EXPERIENCE("Expérience"), CITY("Ville"), TRIPS("Voyages"), BUDGET("Budget"),
+    HOME("Accueil"), EXPERIENCE("Envolée"), CITY("Ville"), TRIPS("Voyages"), BUDGET("Budget"),
     FLIGHTS("Vols", inBottomBar = false), HOTELS("Hôtels", inBottomBar = false),
     ACTIVITIES("Sorties", inBottomBar = false), BLOG("Blogue", inBottomBar = false),   // sections de la page Ville
     ALERTS("Alertes", inBottomBar = false), SETTINGS("Réglages", inBottomBar = false),
 }
+
+/** Billet ou confirmation en cours de lecture par Envolée AI, puis à confirmer. */
+data class BookingImport(val booking: com.riad.voyage.data.Booking? = null, val loading: Boolean = false, val error: String? = null)
 
 /** Sections de la page Ville. */
 enum class CitySection(val label: String) { PLACES("Lieux"), ARTICLES("Articles"), INFO("Infos pratiques") }
@@ -221,6 +227,8 @@ data class BudgetState(
     val rates: Map<String, Double> = emptyMap(),
     val from: Tab = Tab.HOME,
     val tripId: String? = null,          // voyage dont on suit les dépenses
+    val advice: String? = null,          // commentaire d'Envolée AI
+    val advising: Boolean = false,
 ) {
     val lines get() = BudgetCalculator.compute(input, overrides)
     val totalEur get() = lines.sumOf { it.amountEur }
@@ -251,6 +259,13 @@ data class ExperienceState(
     val tripId: String? = null,           // voyage relié : le programme y est enregistré automatiquement
     val aiSummary: String? = null,        // ce qu'Envolée AI a compris de la demande libre
     val aiIgnored: List<String> = emptyList(), // ce qu'elle n'a pas compris
+    val aiQuestion: String? = null,       // question de précision d'Envolée AI
+    val lastRequest: String = "",         // dernière demande libre (complétée par la réponse à la question)
+    val recap: Boolean = false,           // page « Ajuster mes réponses »
+    val editStep: String? = null,         // question ouverte depuis le récapitulatif
+    val changeSummary: String? = null,    // ce qu'Envolée AI vient de modifier en parlant
+    val undo: Pair<Quiz.Answers, Experience>? = null,   // état avant cette modification
+    val editing: Boolean = false,         // modification en parlant en cours
 ) {
     val steps get() = Quiz.steps(answers, quick)
 }
@@ -312,8 +327,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val wikiCache = mutableMapOf<String, WikiSummary?>()
     private val guideCache = mutableMapOf<String, Set<String>>()
 
-    private val answersStore = com.riad.voyage.data.AnswersStore(app)
-    private val _experience = MutableStateFlow(ExperienceState(answers = answersStore.load()))
+    private val prefStore = com.riad.voyage.data.PreferenceStore(app)
+    /** Page vierge, ou préférences habituelles si la puce « Reprendre mes préférences » est allumée. */
+    private fun blankAnswers() = Quiz.Answers().let { if (prefStore.use) prefStore.applyTo(it) ?: it else it }
+    private val _experience = MutableStateFlow(ExperienceState(answers = blankAnswers()))
     val experience: StateFlow<ExperienceState> = _experience.asStateFlow()
     private var experiencePools: Map<ActivityLinks.Category, List<PointOfInterest>> = emptyMap()
     private var experienceWeather: Map<LocalDate, DayWeather> = emptyMap()
@@ -406,6 +423,47 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun clearRecents() {
         recentStore.clear()
         _recents.value = emptyList()
+        prefStore.clear()   // préférences mémorisées des envolées passées
+    }
+
+    // ---------- Nouvelle envolée et préférences ----------
+
+    /** Nouvelle envolée : tout repart de zéro (le programme précédent reste dans « Voyages »). */
+    fun newEnvolee() {
+        verifiedIds.clear()
+        advisedIds.clear()
+        _experience.value = ExperienceState(answers = blankAnswers())
+        _tab.value = Tab.EXPERIENCE
+    }
+
+    val usePreferences get() = prefStore.use
+
+    /** Résumé des préférences habituelles (null s'il n'y a encore aucune envolée). */
+    fun preferenceSummary(): String? = prefStore.applyTo(Quiz.Answers())?.let { p ->
+        listOfNotNull(t(p.diet.label).takeIf { p.diet != Quiz.Diet.NONE }, t(p.budget.label), t(p.mobility.label),
+            tf("rythme {0}", t(p.pace.label).lowercase()), t(p.style.label)).joinToString(" · ") { it.lowercase() }
+    }
+
+    fun setUsePreferences(on: Boolean) {
+        prefStore.use = on
+        val d = Quiz.Answers()
+        updateAnswers { a ->
+            if (on) prefStore.applyTo(a) ?: a
+            else a.copy(diet = d.diet, budget = d.budget, mobility = d.mobility, pace = d.pace, style = d.style, start = d.start)
+        }
+    }
+
+    // ---------- Ajuster mes réponses ----------
+
+    fun editExperience() = _experience.update { it.copy(recap = true, editStep = null) }
+    fun closeRecap() = _experience.update { it.copy(recap = false, editStep = null) }
+    fun editRecapStep(id: String) = _experience.update { it.copy(editStep = id) }
+    fun doneRecapStep() = _experience.update { it.copy(editStep = null) }
+
+    /** Recompose avec les réponses ajustées (sans nouvelle recherche si les goûts et le régime n'ont pas changé). */
+    fun applyRecap() {
+        _experience.update { it.copy(recap = false, editStep = null) }
+        if (_experience.value.result == null) generateExperience() else refineExperience { it }
     }
 
     fun setActivityCity(city: String) { _activityCity.value = city }
@@ -591,6 +649,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Budget du programme Expérience affiché (+ vols et hôtel choisis pour la même ville). */
     fun openBudgetForExperience() = openBudget(linkedTrip(_experience.value)?.id) { rates ->
+        _experience.value.answers.budgetEur?.let { stated -> _budget.update { it?.copy(targetEur = it.targetEur ?: stated.toDouble()) } }
         val st = _experience.value
         val a = st.answers
         val city = st.result?.city ?: a.city
@@ -750,7 +809,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Carnet de voyage en PDF (charte Envolée), prêt à partager. */
-    suspend fun tripPdf(trip: Trip): java.io.File {
+    suspend fun tripPdf(source: Trip): java.io.File {
+        val trip = tripStory(source)   // textes du carnet par Envolée AI, si activé
         val rates = rates()
         val people = trip.travellers ?: 2
         val totalEur = com.riad.voyage.data.BudgetCalculator.compute(
@@ -1029,7 +1089,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun saveExperience(silent: Boolean = false) {
         val st = _experience.value
         val exp = st.result ?: return
-        val trip = linkedTrip(st) ?: tripFor(exp.city, st.answers.place?.country.orEmpty())
+        val trip = linkedTrip(st) ?: Trip(id = "trip-${System.currentTimeMillis()}", city = exp.city.trim(), country = st.answers.place?.country.orEmpty())
         val program = exp.days.map { d ->
             SavedDay(d.title, d.weather?.label, d.steps.map { s ->
                 SavedStep(s.time, t(s.moment), s.category.emoji, s.why, s.durationMin,
@@ -1041,7 +1101,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val a = st.answers
         val end = a.startDate.plusDays((a.duration.days - 1).toLong())
         val c = a.company
-        val travellers = if (c == Quiz.Company.SOLO || c == Quiz.Company.COUPLE) travellersFor(c) else trip.travellers ?: travellersFor(c)
+        val travellers = a.travellers ?: if (c == Quiz.Company.SOLO || c == Quiz.Company.COUPLE) travellersFor(c) else trip.travellers ?: travellersFor(c)
         val updated = trip.copy(programTitle = exp.title, programSubtitle = exp.subtitle, program = program, travellers = travellers,
             startDate = a.startDate.toString(), endDate = end.toString(), arrivalTime = hhmm(a.arrivalMin) ?: trip.arrivalTime,
             departureTime = hhmm(a.departureMin) ?: trip.departureTime,
@@ -1084,16 +1144,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     /** « Programme sur mesure » depuis un voyage : ville, dates et voyageurs déjà remplis ; reste les envies. */
     fun planTrip(trip: Trip) {
-        val days = ((trip.nights ?: 0) + 1).coerceIn(1, Quiz.Duration.MAX_DAYS)
-        updateAnswers { a ->
-            a.copy(
-                city = trip.city, place = null, startDate = trip.start ?: LocalDate.now(), duration = Quiz.Duration(days),
-                arrivalMin = trip.arrivalMin, departureMin = trip.departureMin, restAfterArrival = trip.restAfterArrival,
-                company = trip.travellers?.let { companyFor(it, a.company) } ?: a.company,
-            )
-        }
-        _experience.update { it.copy(quick = true, step = it.steps.indexOf("interests"), result = null, error = null, tripId = trip.id,
-            aiSummary = null, aiIgnored = emptyList()) }
+        // Repart de zéro (ou des préférences), avec la ville, les dates, les heures et les voyageurs du voyage.
+        verifiedIds.clear()
+        advisedIds.clear()
+        val fresh = ExperienceState(answers = freshAnswers(trip), tripId = trip.id)
+        _experience.value = fresh.copy(step = fresh.steps.indexOf("interests").coerceAtLeast(0))
         _tab.value = Tab.EXPERIENCE
     }
 
@@ -1156,7 +1211,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 ?: return
             out += c to why
         }
-        add(_experience.value.answers.place, _experience.value.answers.city, "D'après votre expérience")
+        add(_experience.value.answers.place, _experience.value.answers.city, "D'après votre envolée")
         add(_results.value.query?.destination, null, "D'après votre vol")
         add(_form.value.destination, null, "D'après votre vol")
         add(_activityPlace.value, _activityCity.value, "D'après vos sorties")
@@ -1273,11 +1328,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         updateAnswers(transform)
         val a = _experience.value.answers
         if (a.diet != old.diet || a.tastes != old.tastes || experiencePools.isEmpty()) return generateExperience()
-        answersStore.save(a)
-        val exp = ExperienceBuilder.build(a, a.city.trim(), experiencePools, weather = experienceWeather)
-        _experience.update { it.copy(result = exp, previous = emptySet()) }
-        autosave()
-        verifyExperience()
+        showProgram(ExperienceBuilder.build(a, a.city.trim(), experiencePools, weather = experienceWeather))
     }
 
     fun moveExperienceStep(dayIndex: Int, stepIndex: Int, delta: Int) = editResult {
@@ -1299,13 +1350,22 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Saisie libre : Claude traduit la demande en réponses du questionnaire, puis le programme est composé. */
     fun describeTrip(text: String) {
         val s = _settings.value
+        val c = s.aiConfig ?: return
         if (!s.claudeDescribe || text.isBlank()) return
-        _experience.update { it.copy(describing = true, error = null) }
+        // Réponse à la question de précision : on complète la demande précédente.
+        val full = _experience.value.aiQuestion?.let { _experience.value.lastRequest + "\n" + text } ?: text
+        _experience.update { it.copy(describing = true, error = null, aiQuestion = null, lastRequest = full) }
         viewModelScope.launch {
-            val r = attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.describe(s.claudeKey, com.riad.voyage.data.ClaudeModel.of(s.claudeModel), text, LocalDate.now()) }
+            val r = attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.describe(c, full, LocalDate.now(), s.has(com.riad.voyage.data.AiFeature.QUESTIONS)) }
             val req = r?.getOrNull()
-            val trip = linkedTrip(_experience.value)
+            // Seul « Programme sur mesure » depuis un voyage (pas encore de programme) part de ce voyage, et pour la même ville.
+            val st = _experience.value
+            val trip = linkedTrip(st)?.takeIf { st.result == null && (req?.city.isNullOrBlank() || it.city.equals(req?.city?.trim(), true)) }
             val base = freshAnswers(trip)
+            if (req != null && req.question.isNotBlank() && (req.city.isBlank() && base.city.isBlank() || req.startDate.isBlank())) {
+                _experience.update { it.copy(describing = false, aiQuestion = req.question) }
+                return@launch
+            }
             if (req == null || (req.city.isBlank() && base.city.isBlank())) {
                 val why = r?.exceptionOrNull()?.let { TravelpayoutsApi.userMessage(it) } ?: t("Précisez au moins la ville.")
                 _experience.update { it.copy(describing = false, error = t("Envolée AI n'a pas pu lire la demande.") + " " + why) }
@@ -1313,8 +1373,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             }
             val (answers, ignored) = com.riad.voyage.data.ClaudeAssistant.toAnswers(req, base)
             updateAnswers { answers }
-            if (trip != null && req.travellers > 0) updateTrip(trip.id) { it.copy(travellers = req.travellers) }
-            _experience.update { it.copy(describing = false, aiSummary = summaryOf(answers), aiIgnored = ignored) }
+            _experience.update { it.copy(describing = false, aiSummary = summaryOf(answers), aiIgnored = ignored, tripId = trip?.id) }
             generateExperience()
         }
     }
@@ -1324,13 +1383,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
      * et les préférences personnelles (rythme, budget, régime, déplacements). Rien d'une demande précédente.
      */
     private fun freshAnswers(trip: Trip?): Quiz.Answers {
-        val a = _experience.value.answers
-        return Quiz.Answers(
-            city = trip?.city.orEmpty(), startDate = trip?.start ?: LocalDate.now(),
-            duration = trip?.nights?.let { Quiz.Duration((it + 1).coerceIn(1, Quiz.Duration.MAX_DAYS)) } ?: Quiz.Duration.DAY,
-            company = trip?.travellers?.let { companyFor(it, Quiz.Company.COUPLE) } ?: Quiz.Company.COUPLE,
-            arrivalMin = trip?.arrivalMin, departureMin = trip?.departureMin, restAfterArrival = trip?.restAfterArrival == true,
-            pace = a.pace, budget = a.budget, diet = a.diet, mobility = a.mobility, style = a.style,
+        val a = blankAnswers()
+        if (trip == null) return a
+        return a.copy(
+            city = trip.city, startDate = trip.start ?: LocalDate.now(),
+            duration = trip.nights?.let { Quiz.Duration((it + 1).coerceIn(1, Quiz.Duration.MAX_DAYS)) } ?: Quiz.Duration.DAY,
+            company = trip.travellers?.let { companyFor(it, a.company) } ?: a.company, travellers = trip.travellers,
+            arrivalMin = trip.arrivalMin, departureMin = trip.departureMin, restAfterArrival = trip.restAfterArrival,
         )
     }
 
@@ -1361,29 +1420,30 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private fun verifyExperience() {
         val s = _settings.value
         val exp = _experience.value.result ?: return
-        if (!s.claudeChecks || verifying) return
+        val c = s.aiConfig ?: return
+        if (!s.placeChecks || verifying) return
         val todo = exp.days.flatMap { d -> d.steps.map { d.date to it.place } }
             .filter { (_, p) -> p.id !in verifiedIds && !p.id.startsWith("transfer/") && !p.id.startsWith("custom/") }
         if (todo.isEmpty()) return
         verifying = true
         _experience.update { it.copy(checking = true) }
         viewModelScope.launch {
-            val model = com.riad.voyage.data.ClaudeModel.of(s.claudeModel)
             val checks = mutableMapOf<String, com.riad.voyage.data.PlaceCheck>()
             val unknown = mutableListOf<Pair<LocalDate?, PointOfInterest>>()
             for ((date, p) in todo) {
+                if (s.googleKey.isBlank()) { unknown += date to p; continue }
                 if (quotas.remaining(com.riad.voyage.data.RatingSource.GOOGLE) <= 0) break
                 quotas.spend(com.riad.voyage.data.RatingSource.GOOGLE)
                 val c = attempt(10_000) { com.riad.voyage.data.GoogleRatings.check(s.googleKey, p.name, exp.city, (date ?: LocalDate.now()).dayOfWeek) }?.getOrNull()
                 if (c != null) checks[p.id] = c else unknown += date to p
             }
-            unknown.take(4).forEach { (date, p) ->
-                attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.webCheck(s.claudeKey, model, p.name, exp.city, date) }?.getOrNull()?.let { checks[p.id] = it }
+            if (s.aiWeb) unknown.take(4).forEach { (date, p) ->
+                attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.webCheck(c, p.name, exp.city, date) }?.getOrNull()?.let { checks[p.id] = it }
             }
             val names = todo.associate { it.second.id to it.second.name }
             val withReviews = checks.filter { it.value.reviews.isNotEmpty() }.map { (id, c) -> Triple(id, names[id].orEmpty(), c.reviews) }
             val summaries = if (withReviews.isEmpty()) emptyMap()
-                else attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.summarize(s.claudeKey, model, withReviews) }?.getOrNull().orEmpty()
+                else attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.summarize(c, withReviews) }?.getOrNull().orEmpty()
             verifiedIds += todo.map { it.second.id }
             applyChecks(checks, summaries)
             verifying = false
@@ -1399,7 +1459,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val closedThen = exp.days.flatMap { it.steps }.filter { st ->
             checks[st.place.id]?.hoursToday?.let { !com.riad.voyage.data.OpeningHours.fits(it, minutesOf(st.time) ?: 0, st.durationMin) } == true
         }.map { it.place.id }
-        (checks.filter { it.value.closedForGood || it.value.closedToday }.keys + closedThen).forEach { id ->
+        (checks.filter { it.value.isClosed }.keys + closedThen).forEach { id ->
             exp.days.forEachIndexed { d, day ->
                 val i = day.steps.indexOfFirst { it.place.id == id }
                 if (i >= 0) exp = ExperienceBuilder.replaceStep(a, exp, d, i,
@@ -1408,7 +1468,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
         exp = exp.copy(days = exp.days.map { day ->
             day.copy(steps = day.steps.map { st ->
-                val c = checks[st.place.id] ?: return@map st
+                val c = checks[st.place.id]?.takeIf { !it.isClosed } ?: return@map st
                 val note = listOfNotNull(
                     "✓ " + (c.hoursToday?.let { tf("Ouvert ce jour-là : {0}", it) } ?: t("Ouvert (vérifié)")),
                     summaries[st.place.id]?.let { "« $it »" },
@@ -1420,16 +1480,277 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         autosave()
     }
 
+
+    // ---------- Envolée AI : modifier en parlant, conseils, dates ----------
+
+    /** Modification demandée en parlant (« demain plus tranquille », « il pleut », « 1 h de retard »). */
+    fun askChange(request: String) {
+        val s = _settings.value
+        val c = s.aiConfig ?: return
+        val st = _experience.value
+        val exp = st.result ?: return
+        if (!s.has(com.riad.voyage.data.AiFeature.EDIT) || request.isBlank()) return
+        _experience.update { it.copy(editing = true, error = null) }
+        viewModelScope.launch {
+            val program = exp.days.mapIndexed { d, day ->
+                "${day.title} (${day.date ?: ""}) :\n" + day.steps.mapIndexed { i, x -> "  ${d + 1}/${i + 1} ${x.time} ${t(x.moment)} · ${x.place.name} (${x.place.kind})" }.joinToString("\n")
+            }.joinToString("\n")
+            val now = java.time.LocalDateTime.now().withSecond(0).withNano(0).toString().replace('T', ' ')
+            val plan = attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.edit(c, request, program, summaryOf(st.answers), now) }?.getOrNull()
+            if (plan == null) {
+                _experience.update { it.copy(editing = false, error = t("Envolée AI n'a pas pu appliquer cette demande.")) }
+                return@launch
+            }
+            val a = plan.answers?.let { com.riad.voyage.data.ClaudeAssistant.patch(it, st.answers) } ?: st.answers
+            var result = if (a != st.answers && experiencePools.isNotEmpty())
+                ExperienceBuilder.build(a, a.city.trim(), experiencePools, weather = experienceWeather) else exp
+            plan.ops.forEach { op -> result = applyOp(a, result, op) }
+            updateAnswers { a }
+            _experience.update { it.copy(result = result, editing = false, undo = st.answers to exp, changeSummary = plan.summary.ifBlank { t("Programme modifié.") }) }
+            autosave()
+            verifyExperience()
+        }
+    }
+
+    /** Annule la dernière modification faite en parlant. */
+    fun undoChange() {
+        val (a, exp) = _experience.value.undo ?: return
+        updateAnswers { a }
+        _experience.update { it.copy(result = exp, undo = null, changeSummary = null) }
+        autosave()
+    }
+
+    /** Une opération du plan d'Envolée AI (jours et étapes numérotés à partir de 1). */
+    private fun applyOp(a: Quiz.Answers, exp: Experience, op: org.json.JSONObject): Experience {
+        val d = op.optInt("day") - 1
+        val i = op.optInt("step") - 1
+        val day = exp.days.getOrNull(d) ?: return exp
+        val step = day.steps.getOrNull(i)
+        return when (op.optString("op")) {
+            "time" -> minutesOf(op.optString("time"))?.let { ExperienceBuilder.setStepTime(a, exp, d, i, it) } ?: exp
+            "shift" -> step?.time?.let(::minutesOf)?.let { ExperienceBuilder.setStepTime(a, exp, d, i, it + op.optInt("minutes")) } ?: exp
+            "remove" -> if (step == null || ExperienceBuilder.isAnchored(step)) exp else ExperienceBuilder.replaceStep(a, exp, d, i, null)
+            "replace" -> {
+                if (step == null || ExperienceBuilder.isAnchored(step) && step.category !in ExperienceBuilder.venues) return exp
+                val alts = ExperienceBuilder.alternatives(a, exp, experiencePools, d, i)
+                val pick = when (op.optString("prefer")) {
+                    "indoor" -> alts.firstOrNull { (c, p) -> ExperienceBuilder.isIndoor(p, c) }
+                    "outdoor" -> alts.firstOrNull { (c, p) -> ExperienceBuilder.isOutdoor(p, c) }
+                    else -> null
+                } ?: alts.firstOrNull()
+                if (pick == null) exp else ExperienceBuilder.replaceStep(a, exp, d, i, pick)
+            }
+            "add" -> ExperienceBuilder.addStep(a, exp, d, op.optString("name"))
+            else -> exp
+        }
+    }
+
+    private val advisedIds = mutableSetOf<String>()
+
+    /** Conseils par étape, accessibilité et restaurants qui ne collent pas (remplacés), selon les Réglages. */
+    private fun adviseExperience() {
+        val s = _settings.value
+        val c = s.aiConfig ?: return
+        val st = _experience.value
+        val exp = st.result ?: return
+        val a = st.answers
+        val tips = s.has(com.riad.voyage.data.AiFeature.TIPS)
+        val food = s.has(com.riad.voyage.data.AiFeature.FOOD)
+        val access = s.has(com.riad.voyage.data.AiFeature.ACCESS) && (a.stroller || a.youngKids)
+        if (!tips && !food && !access) return
+        val todo = exp.days.flatMap { it.steps }.filter { st0 -> st0.place.id !in advisedIds && listOf("transfer/", "pause/", "custom/").none { st0.place.id.startsWith(it) } }
+        if (todo.isEmpty()) return
+        advisedIds += todo.map { it.place.id }
+        val constraints = listOfNotNull(
+            a.avoidNames.takeIf { it.isNotEmpty() }?.let { "à éviter : " + it.joinToString(", ") },
+            a.diet.takeIf { it != Quiz.Diet.NONE }?.label,
+            a.tastes.takeIf { it.isNotEmpty() }?.joinToString(", ") { it.label }?.let { "envies : $it" },
+            "jeunes enfants".takeIf { a.youngKids }, "poussette".takeIf { a.stroller },
+        ).joinToString(" ; ")
+        viewModelScope.launch {
+            val adv = attempt(90_000) {
+                com.riad.voyage.data.ClaudeAssistant.advise(c, exp.city, todo.map { it.place.id to "${it.place.name} · ${it.place.kind} · ${t(it.moment)}" }, constraints,
+                    tips, access, food, web = s.aiWeb && (tips || access))
+            }?.getOrNull() ?: return@launch
+            var r = _experience.value.result?.takeIf { it.city == exp.city } ?: return@launch
+            val notes = mutableListOf<String>()
+            adv.filterValues { it.unsuitable != null }.forEach { (id, v) ->
+                r.days.forEachIndexed { d, day ->
+                    val i = day.steps.indexOfFirst { it.place.id == id }
+                    if (i >= 0 && day.steps[i].category == ActivityLinks.Category.RESTAURANTS) {
+                        notes += tf("« {0} » remplacé : {1}", day.steps[i].place.name, v.unsuitable!!)
+                        r = ExperienceBuilder.replaceStep(a, r, d, i, ExperienceBuilder.alternatives(a, r, experiencePools, d, i)
+                            .firstOrNull { it.second.id !in adv.filterValues { x -> x.unsuitable != null }.keys })
+                    }
+                }
+            }
+            r = r.copy(notes = r.notes + notes, days = r.days.map { day ->
+                day.copy(steps = day.steps.map { x ->
+                    val v = adv[x.place.id] ?: return@map x
+                    x.copy(why = (listOf(x.why) + listOfNotNull(v.tip?.let { "💡 $it" }, v.access?.let { "♿ $it" })).filter { it.isNotBlank() }.joinToString(" · "))
+                })
+            })
+            _experience.update { it.copy(result = r) }
+            autosave()
+            verifyExperience()   // restaurants de remplacement
+        }
+    }
+
+    /** Jours fériés, fermetures, grèves et événements sur les dates du séjour (recherche web). */
+    private fun checkTripDates() {
+        val s = _settings.value
+        val c = s.aiConfig ?: return
+        if (!s.has(com.riad.voyage.data.AiFeature.DATES) || !s.aiWeb) return
+        val a = _experience.value.answers
+        val exp = _experience.value.result ?: return
+        viewModelScope.launch {
+            val notes = attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.checkDates(c, exp.city, a.startDate, a.startDate.plusDays((a.duration.days - 1).toLong())) }?.getOrNull().orEmpty()
+            if (notes.isEmpty()) return@launch
+            _experience.update { st -> st.result?.takeIf { it.city == exp.city }?.let { st.copy(result = it.copy(notes = (it.notes + notes).distinct())) } ?: st }
+            autosave()
+        }
+    }
+
+    // ---------- Envolée AI : billets, budget, carnet, souvenir ----------
+
+    private val _bookingImport = MutableStateFlow<BookingImport?>(null)
+    val bookingImport: StateFlow<BookingImport?> = _bookingImport.asStateFlow()
+
+    /** Billet ou confirmation partagé avec l'appli (fichier ou texte) : lu, puis à confirmer. */
+    fun importBooking(uri: android.net.Uri?, mime: String?, text: String?) {
+        val s = _settings.value
+        val c = s.aiConfig
+        if (c == null || !s.has(com.riad.voyage.data.AiFeature.IMPORT)) {
+            _message.value = t("Activez Envolée AI et « Lire les réservations » dans les Réglages pour importer un billet.")
+            return
+        }
+        _bookingImport.value = BookingImport(loading = true)
+        viewModelScope.launch {
+            val r = attempt(90_000) {
+                val (file, fileText) = withContext(Dispatchers.IO) { uri?.let { readAttachment(it, mime) } ?: (null to null) }
+                com.riad.voyage.data.ClaudeAssistant.readBooking(c, listOfNotNull(text, fileText).joinToString("\n").ifBlank { null }, file)
+            }
+            _bookingImport.value = r?.getOrNull()?.let { BookingImport(it) }
+                ?: BookingImport(error = t("Envolée AI n'a pas pu lire ce document.") + (r?.exceptionOrNull()?.let { " " + TravelpayoutsApi.userMessage(it) } ?: ""))
+        }
+    }
+
+    fun cancelBookingImport() { _bookingImport.value = null }
+
+    /** PDF tel quel ; image redimensionnée en JPEG ; texte lu comme texte. */
+    private fun readAttachment(uri: android.net.Uri, mime: String?): Pair<com.riad.voyage.data.ClaudeAssistant.Attachment?, String?> {
+        val resolver = getApplication<Application>().contentResolver
+        val type = mime ?: resolver.getType(uri).orEmpty()
+        val bytes = resolver.openInputStream(uri)?.use { it.readBytes() } ?: return null to null
+        return when {
+            type == "application/pdf" -> com.riad.voyage.data.ClaudeAssistant.Attachment(bytes, type) to null
+            type.startsWith("image/") -> {
+                val bmp = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return null to null
+                val k = minOf(1.0, 2000.0 / maxOf(bmp.width, bmp.height))
+                val scaled = android.graphics.Bitmap.createScaledBitmap(bmp, (bmp.width * k).toInt(), (bmp.height * k).toInt(), true)
+                val out = java.io.ByteArrayOutputStream().also { scaled.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, it) }
+                com.riad.voyage.data.ClaudeAssistant.Attachment(out.toByteArray(), "image/jpeg") to null
+            }
+            else -> null to String(bytes).take(20_000)
+        }
+    }
+
+    /** Billet confirmé : le voyage de la ville d'arrivée se remplit (dates, heures, voyageurs, vol). */
+    fun applyBooking() {
+        val b = _bookingImport.value?.booking ?: return
+        val out = b.outbound ?: return
+        val back = b.inbound
+        val first = b.segments.first()
+        fun iso(d: LocalDate?, m: Int?) = d?.let { "%sT%02d:%02d:00+00:00".format(it, (m ?: 0) / 60, (m ?: 0) % 60) }
+        val base = _trips.value.firstOrNull { it.city.plain() == out.toCity.plain() } ?: Trip(id = "trip-${System.currentTimeMillis()}", city = out.toCity)
+        val flight = SavedFlight(first.fromCity, out.toCity, iso(first.depDate, first.depTime).orEmpty(), back?.let { iso(it.depDate, it.depTime) },
+            b.price?.toInt() ?: 0, b.currency, b.segments.map { it.number }.filter { it.isNotBlank() }.joinToString(" · "),
+            "booking:" + b.reference.ifBlank { first.number })
+        val trip = base.copy(
+            startDate = out.arrDate?.toString() ?: base.startDate, endDate = back?.depDate?.toString() ?: base.endDate,
+            arrivalTime = hhmm(out.arrTime) ?: base.arrivalTime, departureTime = hhmm(back?.depTime) ?: base.departureTime,
+            travellers = b.passengers, flights = if (base.flights.any { it.url == flight.url }) base.flights else base.flights + flight,
+        )
+        saveTrip(trip, tf("Billet ajouté à votre voyage : {0}", t(trip.city)))
+        _bookingImport.value = null
+        val start = trip.start
+        val end = trip.end
+        if (start != null && end != null && _experience.value.tripId == trip.id)
+            updateTripInfo(trip.id, start, end, b.passengers, trip.arrivalTime, trip.departureTime)
+        openTrip(trip.id)
+    }
+
+    /** Commentaire du budget par Envolée AI. */
+    fun budgetAdvice() {
+        val s = _settings.value
+        val c = s.aiConfig ?: return
+        val b = _budget.value ?: return
+        if (!s.has(com.riad.voyage.data.AiFeature.BUDGET)) return
+        _budget.update { it?.copy(advising = true) }
+        val summary = b.lines.joinToString("\n") { "${t(it.item.label)} : ${it.amountEur.toInt()} €${if (it.missing) " (estimation)" else ""}" } +
+            "\nTotal : ${b.totalEur.toInt()} € pour ${b.input.travellers} voyageur(s), ${b.input.nights} nuit(s) à ${b.input.city}" +
+            (b.targetEur?.let { "\nBudget annoncé : ${it.toInt()} €" } ?: "")
+        viewModelScope.launch {
+            val text = attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.budgetAdvice(c, summary) }?.getOrNull()
+            _budget.update { it?.copy(advising = false, advice = text ?: t("Envolée AI n'a pas pu commenter le budget.")) }
+        }
+    }
+
+    /** Souvenir du voyage à partager (null si Envolée AI ne peut pas l'écrire). */
+    suspend fun souvenir(trip: Trip): String? {
+        val s = _settings.value
+        val c = s.aiConfig?.takeIf { s.has(com.riad.voyage.data.AiFeature.SOUVENIR) } ?: return null
+        val spent = trip.expenses.joinToString("\n") { "${it.label} : ${it.amount} ${it.currency}" }
+        return attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.souvenir(c, TripText.share(trip) { t(it) } + "\nDépenses :\n" + spent) }?.getOrNull()
+    }
+
+    val souvenirEnabled get() = _settings.value.has(com.riad.voyage.data.AiFeature.SOUVENIR)
+
+    /** Textes du carnet (introduction, jours, phrases sur mesure), écrits une fois puis gardés dans le voyage. */
+    private suspend fun tripStory(trip: Trip): Trip {
+        val s = _settings.value
+        val c = s.aiConfig?.takeIf { s.has(com.riad.voyage.data.AiFeature.STORY) } ?: return trip
+        if (trip.storyIntro != null || trip.program.isEmpty()) return trip
+        val a = _experience.value.answers.takeIf { _experience.value.tripId == trip.id }
+        val needs = listOfNotNull(a?.diet?.takeIf { it != Quiz.Diet.NONE }?.label, "jeunes enfants".takeIf { a?.youngKids == true },
+            "poussette".takeIf { a?.stroller == true }).joinToString(", ")
+        val local = practicalFor(trip.city, trip.country)?.phrases?.let { "la langue locale de ${trip.city}" } ?: "la langue locale"
+        val story = attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.story(c, TripText.share(trip) { t(it) }, trip.program.size, local, needs) }?.getOrNull() ?: return trip
+        val updated = trip.copy(storyIntro = story.intro, storyDays = story.days, extraPhrases = story.phrases)
+        tripStore.upsert(updated)
+        refreshTrips()
+        return updated
+    }
+
     /** Programme relié à un voyage : chaque changement y est enregistré sans action de la personne. */
     private fun autosave() = saveExperience(silent = true)
+
+    /** Nouveau programme composé : affiché, enregistré, puis vérifié et enrichi par Envolée AI selon les Réglages. */
+    private fun showProgram(exp: Experience, avoid: Set<String> = emptySet()) {
+        _experience.update { it.copy(result = exp.copy(notes = exp.notes + budgetNote(exp)), previous = avoid, undo = null, changeSummary = null) }
+        autosave()
+        verifyExperience()
+        adviseExperience()
+        checkTripDates()
+    }
+
+    /** Budget annoncé comparé à l'estimation (en euros). */
+    private fun budgetNote(exp: Experience): List<String> {
+        val st = _experience.value
+        val a = st.answers
+        val stated = a.budgetEur ?: return emptyList()
+        val program = exp.days.flatMap { d -> d.steps.map { PlannedActivity(it.place.name, it.place.kind, it.category) } }
+        val est = com.riad.voyage.data.BudgetCalculator.compute(budgetFor(exp.city, a.country, linkedTrip(st), emptyMap(),
+            if (a.duration.halfDay) 0 else a.duration.days - 1, a.travellers ?: travellersFor(a.company), program)).sumOf { it.amountEur }.toInt()
+        return listOf(if (est <= stated) tf("Budget estimé {0} € pour {1} € prévus ✓", est, stated)
+            else tf("Budget estimé {0} € pour {1} € prévus : plus cher que prévu, voyez le budget pour ajuster.", est, stated))
+    }
 
     /** Voyage relié au programme affiché (même ville), s'il y en a un. */
     private fun linkedTrip(st: ExperienceState): Trip? {
         val city = st.result?.city ?: st.answers.city
         return _trips.value.firstOrNull { it.id == st.tripId && it.city.equals(city.trim(), ignoreCase = true) }
     }
-
-    fun editExperience() = _experience.update { it.copy(result = null, step = 0, error = null, aiSummary = null, aiIgnored = emptyList()) }
 
     /** Nouvelle heure pour une étape ; les suivantes sont décalées, rien n'est recomposé. */
     fun setExperienceStepTime(dayIndex: Int, stepIndex: Int, minutes: Int) = editResult {
@@ -1483,15 +1804,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             _experience.update { it.copy(stage = t("Composition du programme…")) }
             experienceWeather = weatherJob.await()
             val exp = ExperienceBuilder.build(a, city, analysed, weather = experienceWeather)
-            answersStore.save(a)
-            _experience.update {
-                if (exp.days.isEmpty()) it.copy(loading = false, error =
+            prefStore.record(a)
+            if (exp.days.isEmpty()) _experience.update {
+                it.copy(loading = false, error =
                     if (analysed.values.any { l -> l.isNotEmpty() }) tf("Les lieux trouvés à {0} sont fermés à ces dates. Essayez d'autres dates ou d'autres envies.", t(city))
                     else tf("Pas assez de lieux trouvés pour {0}. Essayez d'autres envies ou une grande ville proche.", t(city)))
-                else it.copy(loading = false, result = exp, previous = emptySet())
+            } else {
+                _experience.update { it.copy(loading = false) }
+                showProgram(exp)
             }
-            autosave()
-            verifyExperience()
         }
     }
 
@@ -1509,8 +1830,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         // L'expérience couvre tout le séjour : du jour d'arrivée au jour du départ.
         val duration = if (end == null) Quiz.Duration.DAY
         else Quiz.Duration((nights + 1).toInt().coerceIn(1, Quiz.Duration.MAX_DAYS))
-        updateAnswers { it.copy(city = dest.name, place = dest, startDate = start, duration = duration) }
-        _experience.update { it.copy(step = it.steps.indexOf("interests").coerceAtLeast(0), result = null, error = null) }
+        val fresh = ExperienceState(answers = blankAnswers().copy(city = dest.name, place = dest, startDate = start, duration = duration))
+        _experience.value = fresh.copy(step = fresh.steps.indexOf("interests").coerceAtLeast(0))
         _activityCity.value = dest.name
         _activityPlace.value = dest
         _blog.update { BlogState() }
@@ -1538,10 +1859,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val st = _experience.value
         if (experiencePools.isEmpty()) return generateExperience()
         val avoid = st.previous + (st.result?.placeIds ?: emptySet())
-        val exp = ExperienceBuilder.build(st.answers, st.answers.city.trim(), experiencePools, avoid, experienceWeather)
-        _experience.update { it.copy(result = exp, previous = avoid) }
-        autosave()
-        verifyExperience()
+        showProgram(ExperienceBuilder.build(st.answers, st.answers.city.trim(), experiencePools, avoid, experienceWeather), avoid)
     }
 
     /** Meilleurs lieux d'une catégorie (même logique que l'onglet Sorties, sans l'afficher). */

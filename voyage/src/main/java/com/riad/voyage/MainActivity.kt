@@ -16,7 +16,16 @@ import com.riad.voyage.ui.VoyageApp
 import com.riad.voyage.ui.theme.VoyageTheme
 
 class MainActivity : ComponentActivity() {
+    /** Billet ou confirmation partagé avec l'appli, en attente de lecture. */
+    private val shared = androidx.compose.runtime.mutableStateOf<android.content.Intent?>(null)
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        shared.value = intent
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        if (savedInstanceState == null) shared.value = intent
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         I18n.init(this)
@@ -25,6 +34,14 @@ class MainActivity : ComponentActivity() {
             VoyageTheme {
               run {
                 val vm: AppViewModel = viewModel()
+                shared.value?.takeIf { it.action == android.content.Intent.ACTION_SEND }?.let { i ->
+                    androidx.compose.runtime.LaunchedEffect(i) {
+                        @Suppress("DEPRECATION")
+                        val uri = i.getParcelableExtra<android.net.Uri>(android.content.Intent.EXTRA_STREAM)
+                        vm.importBooking(uri, i.type?.takeIf { uri != null }, i.getStringExtra(android.content.Intent.EXTRA_TEXT))
+                        shared.value = null
+                    }
+                }
                 val notifLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
                 VoyageApp(
                     vm = vm,

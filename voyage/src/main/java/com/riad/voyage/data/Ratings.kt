@@ -91,7 +91,11 @@ data class PlaceCheck(
     val closedToday: Boolean,
     val rating: Double?,
     val reviews: List<String>,
-)
+) {
+    /** Fermé : définitivement, ce jour-là, ou horaires du jour qui disent « Fermé ». */
+    val isClosed get() = closedForGood || closedToday ||
+        hoursToday?.let { Regex("ferm|closed|geschlossen|cerrado|chiuso|fechado", RegexOption.IGNORE_CASE).containsMatchIn(it) } == true
+}
 
 object GoogleRatings {
     /** Vérifie un lieu précis (1 recherche Google) : statut, horaires du jour donné, note et avis. */

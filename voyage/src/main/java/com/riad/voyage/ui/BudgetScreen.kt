@@ -44,6 +44,7 @@ fun BudgetScreen(
     onAddExpense: ((String, Double, String, BudgetItem) -> Unit)? = null,   // null : séjour pas encore enregistré
     onRemoveExpense: (Long) -> Unit = {},
     rates: suspend () -> Map<String, Double> = { emptyMap() },
+    onAdvice: (() -> Unit)? = null,   // commentaire d'Envolée AI (null = désactivé)
 ) {
     // Conversion euro → devise affichée (euro si le taux n'est pas encore connu).
     val rate = if (currency.equals("EUR", true)) 1.0 else state.rates[currency.uppercase()]
@@ -97,6 +98,12 @@ fun BudgetScreen(
                     }
                     TextButton(onClick = { editingTarget = true }, contentPadding = PaddingValues(0.dp)) {
                         Text(if (state.targetEur == null) t("Fixer un budget maximum ›") else t("Modifier le budget maximum ›"))
+                    }
+                    onAdvice?.let { ask ->
+                        state.advice?.let { Text("✨ $it", style = MaterialTheme.typography.bodySmall) }
+                        TextButton(onClick = ask, enabled = !state.advising, contentPadding = PaddingValues(0.dp)) {
+                            Text(if (state.advising) t("Envolée AI réfléchit…") else t("✨ Conseils d'Envolée AI ›"))
+                        }
                     }
                 }
             }
@@ -347,7 +354,7 @@ fun BudgetPicker(trips: List<Trip>, experienceCity: String?, onTrip: (Trip) -> U
         experienceCity?.let { city ->
             item {
                 Card(onClick = onExperience, modifier = Modifier.fillMaxWidth()) {
-                    Text("✨ " + tf("Mon expérience à {0}", t(city)), fontWeight = FontWeight.Bold, modifier = Modifier.padding(16.dp))
+                    Text("✨ " + tf("Mon envolée à {0}", t(city)), fontWeight = FontWeight.Bold, modifier = Modifier.padding(16.dp))
                 }
             }
         }
