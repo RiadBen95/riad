@@ -775,9 +775,9 @@ object ExperienceBuilder {
 
             /** Heure de début possible d'un lieu à partir de [at] selon ses horaires (null : fermé à ce moment). */
             fun openAt(p: PointOfInterest, at: Int, minutes: Int): Int? {
-                val hours = OpeningHours.forDay(p.openingHours, todayDate.dayOfWeek) ?: return at
-                val start = max(at, hours.first)
-                return start.takeIf { it + minutes <= hours.last && it + minutes <= dayEnd }
+                val hours = OpeningHours.forDay(p.openingHours, todayDate.dayOfWeek)   // null : horaires inconnus
+                val start = max(at, hours?.first ?: 0)
+                return start.takeIf { it + minutes <= (hours?.last ?: 24 * 60 * 2) && it + minutes <= dayEnd }
             }
 
             /** Café, bar ou sortie : le mieux noté parmi ceux ouverts à l'heure prévue. */
