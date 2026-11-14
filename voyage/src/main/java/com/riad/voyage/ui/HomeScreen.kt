@@ -177,7 +177,7 @@ fun HomeScreen(
         // Prochain voyage (ou le dernier modifié) : accès direct au carnet.
         val next = trips.filter { !it.isEmpty }.sortedWith(
             compareBy<Trip> { tr ->
-                tr.startDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }?.takeIf { !it.isBefore(LocalDate.now()) } ?: LocalDate.MAX
+                tr.start?.takeIf { !it.isBefore(LocalDate.now()) } ?: LocalDate.MAX
             }.thenByDescending { it.updated },
         ).firstOrNull()
         if (next != null) {
@@ -208,13 +208,7 @@ fun HomeScreen(
                 }
             }
             // Météo de la destination pendant le séjour (si le départ est dans les 16 jours).
-            item {
-                val start = next.startDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-                val end = next.endDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-                if (start == null || !start.isBefore(LocalDate.now()) || (end != null && !end.isBefore(LocalDate.now())))
-                    WeatherStrip(next.city, weather, start?.coerceAtLeast(LocalDate.now()), end ?: start,
-                        Modifier.padding(horizontal = 16.dp).padding(bottom = 12.dp))
-            }
+            item { TripWeather(next, weather, Modifier.padding(horizontal = 16.dp).padding(bottom = 12.dp)) }
         }
         if (demo) {
             item {

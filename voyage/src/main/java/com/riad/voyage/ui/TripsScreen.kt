@@ -110,8 +110,8 @@ private fun TripList(trips: List<Trip>, onOpen: (String?) -> Unit, onAlerts: () 
 }
 
 private fun datesOf(tr: Trip): String? {
-    val s = tr.startDate?.let { runCatching { formatDay(java.time.LocalDate.parse(it)) }.getOrNull() } ?: return null
-    val e = tr.endDate?.let { runCatching { formatDay(java.time.LocalDate.parse(it)) }.getOrNull() }
+    val s = tr.start?.let(::formatDay) ?: return null
+    val e = tr.end?.let(::formatDay)
     return if (e != null && e != s) "$s → $e" else s
 }
 
@@ -161,10 +161,7 @@ private fun TripDetail(
             TextButton(onClick = onBack, contentPadding = PaddingValues(0.dp)) { Text(t("← Mes voyages")) }
             Text("✈️ " + t(trip.city), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             datesOf(trip)?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
-            val start = trip.startDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-            val end = trip.endDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-            if (start == null || !start.isBefore(LocalDate.now()) || (end != null && !end.isBefore(LocalDate.now())))
-                WeatherStrip(trip.city, weather, start?.coerceAtLeast(LocalDate.now()), end ?: start, Modifier.padding(top = 8.dp))
+            TripWeather(trip, weather, Modifier.padding(top = 8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
                 Button(onClick = {
                     val send = Intent(Intent.ACTION_SEND).setType("text/plain")

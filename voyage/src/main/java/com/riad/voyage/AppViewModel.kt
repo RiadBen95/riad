@@ -564,11 +564,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Budget d'un voyage enregistré, à partir de ce qui y a été choisi. */
     fun openBudgetForTrip(trip0: Trip) = openBudget(trip0.id) { rates ->
         val trip = _trips.value.firstOrNull { it.id == trip0.id } ?: trip0
-        val nights = runCatching {
-            ChronoUnit.DAYS.between(LocalDate.parse(trip.startDate!!), LocalDate.parse(trip.endDate!!)).toInt()
-        }.getOrNull()?.coerceAtLeast(0) ?: 3
         val a = _experience.value.answers
-        budgetFor(trip.city, countryOf(trip.city, trip.country), trip, rates, nights,
+        budgetFor(trip.city, countryOf(trip.city, trip.country), trip, rates, trip.nights ?: 3,
             if (a.city.equals(trip.city, true)) travellersFor(a.company) else 2)
     }
 
@@ -603,8 +600,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         when (item) {
             BudgetItem.HOTEL -> {
                 val trip = _trips.value.firstOrNull { it.city.equals(city, true) }
-                openHotels(city, null, trip?.startDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() },
-                    trip?.endDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }, b.input.travellers)
+                openHotels(city, null, trip?.start, trip?.end, b.input.travellers)
             }
             BudgetItem.ACTIVITIES -> {
                 _activityCity.value = city
@@ -695,11 +691,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Liste de bagages d'un voyage : durée, météo du séjour (si prévue), activités, pays, enfants. */
     suspend fun packingFor(trip: Trip): List<com.riad.voyage.data.PackItem> {
-        val start = trip.startDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-        val end = trip.endDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-        val nights = if (start != null && end != null) ChronoUnit.DAYS.between(start, end).toInt().coerceAtLeast(0)
-            else (trip.program.size - 1).coerceAtLeast(2)
-        val forecast = weatherFor(trip.city).filter { w -> start == null || (!w.date.isBefore(start) && !w.date.isAfter(end ?: start)) }
+        val start = trip.start
+        val nights = trip.nights ?: (trip.program.size - 1).coerceAtLeast(2)
+        val forecast = weatherFor(trip.city).filter { w -> start == null || (!w.date.isBefore(start) && !w.date.isAfter(trip.end ?: start)) }
         val kinds = trip.program.flatMap { d -> d.steps.map { it.place.kind + " " + it.place.name } } + trip.places.map { it.kind + " " + it.name }
         val a = _experience.value.answers
         val family = a.city.equals(trip.city, true) && a.company == com.riad.voyage.data.Quiz.Company.FAMILY

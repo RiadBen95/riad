@@ -290,8 +290,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         onReadArticle2 = vm::readPlaceArticle,
                         onBudget = vm::openBudgetForTrip,
                         onHotels = { tr ->
-                            vm.openHotels(tr.city, null, tr.startDate?.let { runCatching { java.time.LocalDate.parse(it) }.getOrNull() },
-                                tr.endDate?.let { runCatching { java.time.LocalDate.parse(it) }.getOrNull() })
+                            vm.openHotels(tr.city, null, tr.start, tr.end)
                         },
                         alertCount = alerts.size,
                         actions = TripActions(

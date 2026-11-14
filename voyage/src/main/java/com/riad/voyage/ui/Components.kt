@@ -263,3 +263,13 @@ fun WeatherStrip(
         }
     }
 }
+
+/** Météo d'un voyage : les jours du séjour à venir (rien si le séjour est passé). */
+@Composable
+fun TripWeather(trip: com.riad.voyage.data.Trip, load: suspend (String) -> List<com.riad.voyage.data.DayWeather>, modifier: Modifier = Modifier) {
+    val today = LocalDate.now()
+    val start = trip.start
+    val last = trip.end ?: start
+    if (last != null && last.isBefore(today)) return
+    WeatherStrip(trip.city, load, start?.coerceAtLeast(today), last, modifier)
+}

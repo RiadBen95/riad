@@ -78,6 +78,10 @@ data class Trip(
     val updated: Long = System.currentTimeMillis(),
 ) {
     val isEmpty get() = program.isEmpty() && flights.isEmpty() && places.isEmpty() && articles.isEmpty()
+    val start: java.time.LocalDate? get() = startDate?.let { runCatching { java.time.LocalDate.parse(it) }.getOrNull() }
+    val end: java.time.LocalDate? get() = endDate?.let { runCatching { java.time.LocalDate.parse(it) }.getOrNull() }
+    /** Nombre de nuits (dates connues), sinon null. */
+    val nights: Int? get() = start?.let { s -> end?.let { e -> java.time.temporal.ChronoUnit.DAYS.between(s, e).toInt().coerceAtLeast(0) } }
 }
 
 /** Voyages enregistrés sur le téléphone : consultables hors connexion. */
