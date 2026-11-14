@@ -471,36 +471,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         return Triple(flights, hotel, acts)
     }
 
-    /** Estimations quand rien n'est choisi : vol (recherche ou distance), hôtel (recherche). */
-    private fun estimatesFor(city: String, rates: Map<String, Double>): Triple<Double?, Boolean, Double?> {
-        val r = _results.value
-        val q = r.query
-        val fromSearch = if (q?.destination?.let { it.name.equals(city, true) || it.cityName.equals(city, true) } == true)
-            r.flights.minOfOrNull { it.price }?.let { com.riad.voyage.data.Fx.toEur(it.toDouble(), r.currency, rates) } else null
-        val flight = fromSearch ?: run {
-            val o = _form.value.origin
-            val d = com.riad.voyage.data.Blog.city(city)?.let { it.lat to it.lon }
-                ?: PopularPlaces.all.firstOrNull { it.name.equals(city, true) }?.let { p -> p.lat?.let { la -> p.lon?.let { lo -> la to lo } } }
-            val oLat = o?.lat ?: o?.let { PopularPlaces.find(it.code)?.lat }
-            val oLon = o?.lon ?: o?.let { PopularPlaces.find(it.code)?.lon }
-            if (d == null || oLat == null || oLon == null) null
-            else com.riad.voyage.data.BudgetCalculator.flightEstimate(haversineKm(oLat, oLon, d.first, d.second)).takeIf { it > 0 }
-        }
-        val h = _hotels.value
-        val night = if (h.city.equals(city, true) && h.nights > 0) {
-            h.offers.mapNotNull { o -> o.totalPrice?.let { com.riad.voyage.data.Fx.toEur(it, o.currency, rates) / h.nights } }
-                .sorted().let { it.getOrNull(it.size / 2) }
-        } else null
-        return Triple(flight, fromSearch != null, night)
-    }
-
-    private fun haversineKm(a: Double, b: Double, c: Double, d: Double): Double {
-        val r = 6371.0
-        val dLat = Math.toRadians(c - a); val dLon = Math.toRadians(d - b)
-        val x = Math.sin(dLat / 2).let { it * it } + Math.cos(Math.toRadians(a)) * Math.cos(Math.toRadians(c)) * Math.sin(dLon / 2).let { it * it }
-        return 2 * r * Math.asin(Math.sqrt(x))
-    }
-
     /** Budget d'un voyage enregistré, à partir de ce qui y a été choisi. */
     fun openBudgetForTrip(trip0: com.riad.voyage.data.Trip) = openBudget { rates ->
         val trip = _trips.value.firstOrNull { it.id == trip0.id } ?: trip0
@@ -508,14 +478,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             ChronoUnit.DAYS.between(LocalDate.parse(trip.startDate!!), LocalDate.parse(trip.endDate!!)).toInt()
         }.getOrNull()?.coerceAtLeast(0) ?: 3
         val (flights, hotel, acts) = choicesOf(trip, rates)
-        val (fEst, fSearch, hEst) = estimatesFor(trip.city, rates)
         val answers = _experience.value.answers
             com.riad.voyage.data.BudgetInput(
                 city = trip.city, country = countryOf(trip.city, trip.country),
                 travellers = if (answers.city.equals(trip.city, true)) travellersFor(answers.company) else 2,
                 nights = nights, level = answers.budget, mobility = answers.mobility,
                 flights = flights, hotel = hotel?.first, hotelBooked = hotel?.second == true, activities = acts,
-                flightEstimateEur = fEst, flightEstimateFromSearch = fSearch, hotelNightEstimateEur = hEst,
             )
     }
 
@@ -526,7 +494,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val city = st.result?.city ?: a.city
         val trip = _trips.value.firstOrNull { it.city.equals(city, true) }
         val (flights, hotel, saved) = choicesOf(trip, rates)
-        val (fEst, fSearch, hEst) = estimatesFor(city, rates)
         val program = st.result?.days.orEmpty().flatMap { d ->
             d.steps.map { com.riad.voyage.data.PlannedActivity(it.place.name, it.place.kind, it.category) }
         }
@@ -537,7 +504,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 level = a.budget, mobility = a.mobility,
                 flights = flights, hotel = hotel?.first, hotelBooked = hotel?.second == true,
                 activities = program + saved,
-                flightEstimateEur = fEst, flightEstimateFromSearch = fSearch, hotelNightEstimateEur = hEst,
             )
     }
 

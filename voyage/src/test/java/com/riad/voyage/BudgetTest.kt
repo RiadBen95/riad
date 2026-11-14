@@ -23,42 +23,44 @@ class BudgetTest {
         assertEquals(0.9, CostIndex.of("Pays inconnu"), 0.0)
     }
 
-    @Test fun budgetIsTheSumOfWhatWasChosen() {
+    @Test fun onlyWhatIsInTheTripIsCounted() {
         val i = BudgetInput("Rome", "Italie", travellers = 2, nights = 2, includeDaily = false,
             flights = listOf(Chosen("Paris → Rome", 300.0)), hotel = Chosen("Hotel Roma", 250.0),
             activities = listOf(PlannedActivity("Musées du Vatican", "Musée", ActivityLinks.Category.MUSEUMS),
                 PlannedActivity("Basilique Saint-Pierre", "Basilique", ActivityLinks.Category.MONUMENTS),
-                PlannedActivity("Colisée", "Monument")))
+                PlannedActivity("Piazza Navona", "Place", ActivityLinks.Category.MONUMENTS),
+                PlannedActivity("Pont Saint-Ange", "Pont")))
         val l = BudgetCalculator.compute(i)
-        assertEquals(3, l.size)                                    // seulement vols, hôtel, activités
         assertEquals(300.0, line(l, BudgetItem.FLIGHT).amountEur, 0.0)
         assertEquals(250.0, line(l, BudgetItem.HOTEL).amountEur, 0.0)
-        // musée 15 + basilique gratuite + monument 10, × indice Italie 0,9 × 2 personnes
-        assertEquals((15.0 + 0 + 10.0) * 0.9 * 2, line(l, BudgetItem.ACTIVITIES).amountEur, 0.01)
-        assertEquals(3, line(l, BudgetItem.ACTIVITIES).details.size)
-        assertEquals(l.sumOf { it.amountEur }, 300.0 + 250.0 + 45.0, 0.01)
+        val acts = line(l, BudgetItem.ACTIVITIES)
+        assertEquals(15.0 * 0.9 * 2, acts.amountEur, 0.01)   // seul le musée est payant
+        assertEquals(1, acts.details.size)
+        assertEquals(3, acts.freeCount)
     }
 
-    @Test fun nothingChosenFallsBackToEstimates() {
-        val l = BudgetCalculator.compute(BudgetInput("Paris", "France", travellers = 2, nights = 3, includeDaily = false))
-        assertEquals(0.0, line(l, BudgetItem.FLIGHT).amountEur, 0.0)        // pas de ville de départ connue
-        assertEquals(130.0 * 3, line(l, BudgetItem.HOTEL).amountEur, 0.01)  // 1 chambre, 3 nuits, budget moyen
-        assertTrue(line(l, BudgetItem.ACTIVITIES).amountEur > 0)
-        l.forEach { assertTrue(it.missing) }
-        val withEst = BudgetCalculator.compute(BudgetInput("Rome", "Italie", travellers = 2, nights = 2, includeDaily = false,
-            flightEstimateEur = 200.0, hotelNightEstimateEur = 90.0))
-        assertEquals(400.0, line(withEst, BudgetItem.FLIGHT).amountEur, 0.0)
-        assertEquals(180.0, line(withEst, BudgetItem.HOTEL).amountEur, 0.0)
-        assertEquals(0.0, BudgetCalculator.flightEstimate(50.0), 0.0)
-        assertTrue(BudgetCalculator.flightEstimate(1100.0) in 150.0..350.0)
+    @Test fun nothingChosenAddsNoFlightNorHotel() {
+        val l = BudgetCalculator.compute(BudgetInput("Paris", "France", travellers = 2, nights = 3))
+        assertTrue(l.none { it.item == BudgetItem.FLIGHT || it.item == BudgetItem.HOTEL || it.item == BudgetItem.ACTIVITIES })
+        assertEquals(55.0 * 2 * 4, line(l, BudgetItem.MEALS).amountEur, 0.01)
+        assertTrue(BudgetCalculator.compute(BudgetInput("Paris", "France", includeDaily = false)).isEmpty())
     }
 
-    @Test fun dailyEstimatesAndOverrides() {
+    @Test fun restaurantsCountAsMealsNotFree() {
+        val chouchou = PlannedActivity("Chouchou", "Restaurant · française")
+        assertEquals(BudgetCalculator.CostKind.FOOD, BudgetCalculator.costKind(chouchou))
+        val i = BudgetInput("Paris", "France", travellers = 2, nights = 0, activities = listOf(chouchou))
+        val meals = line(BudgetCalculator.compute(i), BudgetItem.MEALS)
+        assertEquals(55.0 * 2, meals.amountEur, 0.01)          // le restaurant remplace une part des repas estimés
+        assertEquals(32.0 * 2, meals.details.first().amountEur, 0.01)
+        assertTrue(BudgetCalculator.compute(i).none { it.item == BudgetItem.ACTIVITIES })
+    }
+
+    @Test fun overridesWin() {
         val i = BudgetInput("Paris", "France", travellers = 2, nights = 3)
         val l = BudgetCalculator.compute(i, mapOf(BudgetItem.FLIGHT to 400.0))
-        assertEquals(55.0 * 2 * 4, line(l, BudgetItem.MEALS).amountEur, 0.01)
         assertEquals(400.0, line(l, BudgetItem.FLIGHT).amountEur, 0.0)
-        val onSite = l.filter { it.item != BudgetItem.FLIGHT && it.item != BudgetItem.EXTRAS }.sumOf { it.amountEur }
+        val onSite = l.filter { it.item == BudgetItem.MEALS || it.item == BudgetItem.TRANSPORT }.sumOf { it.amountEur }
         assertEquals(onSite * 0.1, line(l, BudgetItem.EXTRAS).amountEur, 0.01)
     }
 

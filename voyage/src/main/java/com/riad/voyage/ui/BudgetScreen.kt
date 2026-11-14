@@ -138,13 +138,30 @@ fun BudgetScreen(
 
         item { Text(t("Détail par poste"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
         items(lines, key = { it.item.name }) { line ->
-            BudgetRow(line, money(line.amountEur), if (total > 0) (line.amountEur / total).toFloat() else 0f, ::money,
-                onChoose = { onChoose(line.item) }) { editing = line }
+            BudgetRow(line, money(line.amountEur), if (total > 0) (line.amountEur / total).toFloat() else 0f, ::money) { editing = line }
+        }
+
+        // Ce qui n'est pas encore dans le voyage n'est pas compté : proposer de l'ajouter.
+        val absent = listOf(BudgetItem.FLIGHT, BudgetItem.HOTEL, BudgetItem.ACTIVITIES).filter { item -> lines.none { it.item == item } }
+        if (absent.isNotEmpty()) item {
+            Text(t("Pas encore dans votre voyage (non compté) :"), style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                absent.forEach { item ->
+                    TextButton(onClick = { onChoose(item) }, contentPadding = PaddingValues(horizontal = 4.dp)) {
+                        Text(when (item) {
+                            BudgetItem.FLIGHT -> t("+ Vol")
+                            BudgetItem.HOTEL -> t("+ Hôtel")
+                            else -> t("+ Activités")
+                        })
+                    }
+                }
+            }
         }
 
         item {
             Text(
-                t("Le budget additionne ce que vous avez choisi ; sans choix, une estimation est affichée. Touchez un poste pour saisir votre propre montant."),
+                t("Le budget ne compte que ce qui est dans votre voyage : vols gardés, hôtel choisi, activités. Les lieux en accès libre sont gratuits ; les restaurants comptent dans les repas. Touchez un poste pour saisir votre propre montant."),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -176,7 +193,7 @@ fun BudgetScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun BudgetRow(line: BudgetLine, amount: String, share: Float, money: (Double) -> String, onChoose: () -> Unit, onClick: () -> Unit) {
+private fun BudgetRow(line: BudgetLine, amount: String, share: Float, money: (Double) -> String, onClick: () -> Unit) {
     Card(onClick = onClick, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -190,22 +207,16 @@ private fun BudgetRow(line: BudgetLine, amount: String, share: Float, money: (Do
             }
             line.details.take(12).forEach { d ->
                 Row(Modifier.padding(start = 34.dp)) {
-                    Text("• " + d.name, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f), maxLines = 1,
+                    Text("• " + t(d.name), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f), maxLines = 1,
                         overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                     Text(if (d.amountEur > 0) money(d.amountEur) else t("Gratuit"), style = MaterialTheme.typography.bodySmall)
                 }
             }
             if (line.details.size > 12) Text(tf("+ {0} autres", line.details.size - 12), style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(start = 34.dp))
-            if (line.missing) {
-                androidx.compose.material3.OutlinedButton(onClick = onChoose, modifier = Modifier.padding(start = 34.dp)) {
-                    Text(when (line.item) {
-                        BudgetItem.FLIGHT -> t("Choisir un vol ›")
-                        BudgetItem.HOTEL -> t("Choisir un hôtel ›")
-                        else -> t("Choisir des activités ›")
-                    })
-                }
-            }
+            if (line.freeCount > 0) Text(tf("+ {0} lieu(x) en accès libre (places, ponts, jardins…)", line.freeCount),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 34.dp))
             Box(Modifier.fillMaxWidth().height(6.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(3.dp))) {
                 Box(Modifier.fillMaxWidth(share.coerceIn(0f, 1f)).height(6.dp)
                     .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(3.dp)))

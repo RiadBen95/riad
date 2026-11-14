@@ -59,9 +59,6 @@ data class BudgetInput(
     val hotelBooked: Boolean = false,
     val activities: List<PlannedActivity> = emptyList(),
     val includeDaily: Boolean = true,               // ajouter repas, transports et imprévus estimés
-    val flightEstimateEur: Double? = null,          // estimation par personne (aller-retour) si aucun vol choisi
-    val flightEstimateFromSearch: Boolean = false,  // estimation tirée d'une recherche de vols
-    val hotelNightEstimateEur: Double? = null,      // prix par nuit des hôtels trouvés, si aucun hôtel choisi
 )
 
 /**
@@ -75,6 +72,7 @@ data class BudgetLine(
     val fromData: Boolean,
     val details: List<Chosen> = emptyList(),
     val missing: Boolean = false,
+    val freeCount: Int = 0,          // lieux gratuits inclus (places, ponts, jardins…), non listés
 )
 
 object BudgetCalculator {
@@ -82,95 +80,115 @@ object BudgetCalculator {
 
     fun days(nights: Int) = (nights + 1).coerceAtLeast(1)
 
-    /** Ordre de grandeur d'un aller-retour en avion par personne, selon la distance (km). */
-    fun flightEstimate(km: Double): Double = if (km < 150) 0.0 else 60.0 + 0.16 * km
+    /** Ce que coûte une activité : entrée payante, consommation (restaurant, café, bar) ou rien. */
+    enum class CostKind { FREE, TICKET, FOOD, DRINK }
 
-    /** Catégorie devinée d'après le type de lieu (pour les lieux ajoutés depuis Sorties). */
-    fun categoryOfKind(kind: String): ActivityLinks.Category? {
-        val k = norm(kind)
-        return when {
-            "musee" in k || "museum" in k || "galerie" in k -> ActivityLinks.Category.MUSEUMS
-            "zoo" in k || "aquarium" in k || "attraction" in k -> ActivityLinks.Category.ATTRACTIONS
-            "boite" in k || "club" in k || "discotheque" in k -> ActivityLinks.Category.NIGHTLIFE
-            "bar" in k || "pub" in k -> ActivityLinks.Category.BARS
-            "cafe" in k || "salon de the" in k -> ActivityLinks.Category.CAFES
-            "monument" in k || "chateau" in k || "palais" in k || "tour" in k || "site" in k -> ActivityLinks.Category.MONUMENTS
-            else -> null
-        }
-    }
+    private val foodWords = listOf("restaurant", "brasserie", "bistrot", "bistro", "pizzeria", "creperie", "trattoria",
+        "taverne", "gastronom", "cuisine", "fast food", "fast-food", "snack", "boulangerie", "patisserie", "traiteur")
 
-    /** Prix d'un billet par personne (en France), selon le type de lieu. */
-    fun ticketPrice(a: PlannedActivity): Double {
+    fun costKind(a: PlannedActivity): CostKind {
         val k = norm(a.kind)
         return when {
-            "eglise" in k || "cathedrale" in k || "basilique" in k || "mosquee" in k || "synagogue" in k || "temple" in k -> 0.0
-            "parc d'attractions" in k || "disney" in k -> 60.0
-            "zoo" in k || "aquarium" in k -> 25.0
-            "tour" in k || "observation" in k -> 15.0
-            else -> when (a.category ?: categoryOfKind(a.kind)) {
-                ActivityLinks.Category.MUSEUMS -> 15.0
-                ActivityLinks.Category.MONUMENTS -> 10.0
-                ActivityLinks.Category.ATTRACTIONS -> 20.0
-                ActivityLinks.Category.CAFES -> 8.0
-                ActivityLinks.Category.BARS -> 15.0
-                ActivityLinks.Category.NIGHTLIFE -> 25.0
-                else -> 0.0   // parcs, plages, balades, restaurants (comptés dans les repas)
-            }
+            a.category == ActivityLinks.Category.RESTAURANTS || foodWords.any { it in k } -> CostKind.FOOD
+            a.category in setOf(ActivityLinks.Category.CAFES, ActivityLinks.Category.BARS, ActivityLinks.Category.NIGHTLIFE) ||
+                "cafe" in k || "salon de the" in k || Regex("\\b(bar|pub)\\b").containsMatchIn(k) || "boite" in k || "club" in k -> CostKind.DRINK
+            ticketPrice(a) > 0 -> CostKind.TICKET
+            else -> CostKind.FREE
         }
     }
 
     /**
-     * Budget du séjour, en euros, calculé à partir de ce qui a été choisi : vols gardés,
-     * hôtel réservé ou mis en favori, activités. Repas, transports et imprévus s'ajoutent
-     * en estimation si [BudgetInput.includeDaily]. Les montants saisis ([overrides]) priment.
+     * Prix d'entrée habituel par personne (en France). Seuls les lieux qui font vraiment payer
+     * l'entrée comptent : places, ponts, rues, quartiers, jardins, plages, églises… sont gratuits.
+     */
+    fun ticketPrice(a: PlannedActivity): Double {
+        val k = norm(a.kind)
+        return when {
+            "eglise" in k || "cathedrale" in k || "basilique" in k || "chapelle" in k || "mosquee" in k ||
+                "synagogue" in k || "temple" in k -> 0.0
+            "parc d'attractions" in k || "parc a theme" in k || "disney" in k || "theme park" in k -> 60.0
+            "spectacle" in k || "theatre" in k || "opera" in k || "concert" in k || "cabaret" in k -> 40.0
+            "zoo" in k || "aquarium" in k -> 25.0
+            "croisiere" in k || "excursion" in k || "visite guidee" in k -> 20.0
+            "musee" in k || "museum" in k || "galerie" in k || "exposition" in k -> 15.0
+            "chateau" in k || "palais" in k || "forteresse" in k || "citadelle" in k || "catacombe" in k -> 14.0
+            "tour " in k || k.startsWith("tour") || "observatoire" in k || "belvedere payant" in k || "grande roue" in k -> 12.0
+            "cinema" in k -> 12.0
+            else -> when (a.category) {
+                ActivityLinks.Category.MUSEUMS -> 15.0
+                ActivityLinks.Category.ATTRACTIONS -> 20.0
+                ActivityLinks.Category.TOURS -> 20.0
+                else -> 0.0   // monuments en plein air, places, ponts, parcs, plages, marchés, shopping
+            }
+        }
+    }
+
+    /** Repas au restaurant / consommation par personne (en France), selon le niveau de budget. */
+    fun foodPrice(a: PlannedActivity, level: Quiz.Budget): Double {
+        val k = norm(a.kind)
+        return when (costKind(a)) {
+            CostKind.FOOD -> when {
+                "boulangerie" in k || "patisserie" in k || "snack" in k || "fast" in k -> 9.0
+                else -> when (level) { Quiz.Budget.SMALL -> 18.0; Quiz.Budget.MEDIUM -> 32.0; Quiz.Budget.COMFORT -> 65.0 }
+            }
+            CostKind.DRINK -> when {
+                "boite" in k || "club" in k || a.category == ActivityLinks.Category.NIGHTLIFE -> 25.0
+                "bar" in k || "pub" in k || a.category == ActivityLinks.Category.BARS -> 12.0
+                else -> 6.0
+            }
+            else -> 0.0
+        }
+    }
+
+    /**
+     * Budget du séjour, en euros : uniquement ce qui est inclus dans le voyage (vols gardés,
+     * hôtel réservé ou mis en favori, activités). Rien n'est ajouté pour un vol ou un hôtel
+     * non choisi. Repas (hors restaurants choisis), transports et imprévus s'ajoutent en
+     * estimation si [BudgetInput.includeDaily]. Les montants saisis ([overrides]) priment.
      */
     fun compute(i: BudgetInput, overrides: Map<BudgetItem, Double> = emptyMap()): List<BudgetLine> {
         val index = CostIndex.of(i.country)
         val people = i.travellers.coerceAtLeast(1)
         val days = days(i.nights)
-        val levelHotel = when (i.level) { Quiz.Budget.SMALL -> 70.0; Quiz.Budget.MEDIUM -> 130.0; Quiz.Budget.COMFORT -> 250.0 }
         val levelMeals = when (i.level) { Quiz.Budget.SMALL -> 30.0; Quiz.Budget.MEDIUM -> 55.0; Quiz.Budget.COMFORT -> 100.0 }
         val transportDay = if (i.mobility == Quiz.Mobility.WALK) 2.0 else 7.0
+        val lines = mutableListOf<BudgetLine>()
 
-        val flight = if (i.flights.isEmpty()) {
-            when {
-                i.flightEstimateEur == null -> BudgetLine(BudgetItem.FLIGHT, 0.0, "Aucun vol choisi", false, missing = true)
-                i.flightEstimateFromSearch -> BudgetLine(BudgetItem.FLIGHT, i.flightEstimateEur * people,
-                    "Estimation : vol le moins cher de votre recherche", false, missing = true)
-                else -> BudgetLine(BudgetItem.FLIGHT, i.flightEstimateEur * people,
-                    "Estimation selon la distance depuis votre ville de départ", false, missing = true)
-            }
-        } else BudgetLine(BudgetItem.FLIGHT, i.flights.sumOf { it.amountEur }, "Vols gardés dans votre voyage", true, i.flights)
-
-        val hotel = when {
-            i.hotel != null -> BudgetLine(BudgetItem.HOTEL, i.hotel.amountEur,
-                if (i.hotelBooked) "Hôtel réservé" else "Hôtel choisi", true, listOf(i.hotel))
-            i.nights <= 0 -> BudgetLine(BudgetItem.HOTEL, 0.0, "Pas de nuit sur place", true)
-            i.hotelNightEstimateEur != null -> BudgetLine(BudgetItem.HOTEL, i.hotelNightEstimateEur * i.nights,
-                "Estimation : prix moyen des hôtels trouvés pour vos dates", false, missing = true)
-            else -> BudgetLine(BudgetItem.HOTEL, levelHotel * index * ceil(people / 2.0) * i.nights,
-                "Estimation selon le pays et votre niveau de budget", false, missing = true)
-        }
+        if (i.flights.isNotEmpty() || BudgetItem.FLIGHT in overrides)
+            lines += BudgetLine(BudgetItem.FLIGHT, i.flights.sumOf { it.amountEur }, "Vols gardés dans votre voyage", true, i.flights)
+        if (i.hotel != null || BudgetItem.HOTEL in overrides)
+            lines += BudgetLine(BudgetItem.HOTEL, i.hotel?.amountEur ?: 0.0,
+                if (i.hotelBooked) "Hôtel réservé" else "Hôtel choisi", true, listOfNotNull(i.hotel))
 
         val acts = i.activities.distinctBy { norm(it.name) }
-        val activities = if (acts.isEmpty()) BudgetLine(BudgetItem.ACTIVITIES, 1.5 * 13.0 * index * people * days,
-            "Estimation : environ 1 à 2 visites payantes par jour", false, missing = true)
-        else {
-            val details = acts.map { Chosen(it.name, ticketPrice(it) * index * people) }
-            BudgetLine(BudgetItem.ACTIVITIES, details.sumOf { it.amountEur }, "Prix d'entrée habituels pour vos activités", true, details)
+        val tickets = acts.filter { costKind(it) == CostKind.TICKET }
+        val free = acts.count { costKind(it) == CostKind.FREE }
+        if (tickets.isNotEmpty() || free > 0 || BudgetItem.ACTIVITIES in overrides) {
+            val details = tickets.map { Chosen(it.name, ticketPrice(it) * index * people) }
+            lines += BudgetLine(BudgetItem.ACTIVITIES, details.sumOf { it.amountEur }, "Entrées payantes de votre programme", true,
+                details, freeCount = free)
         }
 
-        val chosen = listOf(flight, hotel, activities)
-        val daily = if (!i.includeDaily) emptyList() else listOf(
-            BudgetLine(BudgetItem.MEALS, levelMeals * index * people * days, "Estimation : 3 repas par jour et par personne", false),
-            BudgetLine(BudgetItem.TRANSPORT, transportDay * index * people * days,
-                if (i.mobility == Quiz.Mobility.WALK) "Estimation : surtout à pied" else "Estimation : métro, bus, taxis occasionnels", false),
-        )
-        val base = (chosen + daily).map { line ->
-            overrides[line.item]?.let { line.copy(amountEur = it, source = "Montant saisi", fromData = true, missing = false) } ?: line
+        val food = acts.filter { costKind(it) == CostKind.FOOD || costKind(it) == CostKind.DRINK }
+        val foodDetails = food.map { Chosen(it.name, foodPrice(it, i.level) * index * people) }
+        val chosenMeals = food.filter { costKind(it) == CostKind.FOOD }.sumOf { foodPrice(it, i.level) * index * people }
+        if (i.includeDaily) {
+            val otherMeals = (levelMeals * index * people * days - chosenMeals).coerceAtLeast(0.0)
+            val all = foodDetails + Chosen("Autres repas (estimation)", otherMeals)
+            lines += BudgetLine(BudgetItem.MEALS, all.sumOf { it.amountEur },
+                if (food.isEmpty()) "Estimation : 3 repas par jour et par personne" else "Restaurants et cafés choisis + autres repas estimés",
+                food.isNotEmpty(), if (food.isEmpty()) emptyList() else all)
+            lines += BudgetLine(BudgetItem.TRANSPORT, transportDay * index * people * days,
+                if (i.mobility == Quiz.Mobility.WALK) "Estimation : surtout à pied" else "Estimation : métro, bus, taxis occasionnels", false)
+        } else if (food.isNotEmpty()) {
+            lines += BudgetLine(BudgetItem.MEALS, foodDetails.sumOf { it.amountEur }, "Restaurants et cafés de votre programme", true, foodDetails)
+        }
+
+        val base = lines.map { line ->
+            overrides[line.item]?.let { line.copy(amountEur = it, source = "Montant saisi", fromData = true) } ?: line
         }
         if (!i.includeDaily) return base
-        val extrasBase = base.filter { it.item != BudgetItem.FLIGHT }.sumOf { it.amountEur }
+        val extrasBase = base.filter { it.item != BudgetItem.FLIGHT && it.item != BudgetItem.HOTEL }.sumOf { it.amountEur }
         val extras = overrides[BudgetItem.EXTRAS]?.let { BudgetLine(BudgetItem.EXTRAS, it, "Montant saisi", true) }
             ?: BudgetLine(BudgetItem.EXTRAS, extrasBase * 0.10, "10 % des dépenses sur place", false)
         return base + extras
