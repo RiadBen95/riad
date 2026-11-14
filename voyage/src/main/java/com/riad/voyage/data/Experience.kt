@@ -652,7 +652,8 @@ object ExperienceBuilder {
             if ("plage" in k && startMin >= 14 * 60) s += 1.0
             if (p.id in avoid) s -= 6.0
             if (isWanted(a, p)) s += 8.0                                         // demandé nommément
-            if (isIconic(p) && !iconicToday && a.style != Quiz.Style.HIDDEN) s += 4.0 // un lieu phare par jour
+            // Un lieu phare par jour (pas en extérieur sous la pluie).
+            if (isIconic(p) && !iconicToday && a.style != Quiz.Style.HIDDEN && !(today?.rainy == true && outdoor(p, category))) s += 4.0
             today?.let { w ->
                 val out = outdoor(p, category)
                 val ins = indoor(p, category)
