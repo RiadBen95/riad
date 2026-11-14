@@ -7,11 +7,17 @@ on:
   push:
     paths:
       - tools/build_places.py
+      - .github/workflows/places-data.yml
   schedule:
     - cron: "17 3 * * 1"   # chaque lundi : données à jour
 
 permissions:
   contents: read
+
+# Une génération à la fois : la plus récente remplace celle en cours.
+concurrency:
+  group: places-data-${{ github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   generate:
@@ -31,6 +37,7 @@ jobs:
           git add data/places
           if git diff --cached --quiet; then echo "Aucun changement"; exit 0; fi
           git commit -m "Mettre à jour la base des lieux (Wikidata)"
-          # La branche a pu avancer pendant la génération : on se replace dessus avant d'envoyer.
-          git pull --rebase origin ${{ github.ref_name }}
+          # La branche a pu avancer pendant la génération : on se replace dessus avant d'envoyer
+          # (en cas de conflit sur les données, cette génération, la plus récente, l'emporte).
+          git pull --rebase -X theirs origin ${{ github.ref_name }}
           git push origin HEAD:${{ github.ref_name }}
