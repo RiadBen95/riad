@@ -48,6 +48,11 @@ fun SettingsScreen(
     var foursquareKey by remember(settings) { mutableStateOf(settings.foursquareKey) }
     var liteApiKey by remember(settings) { mutableStateOf(settings.liteApiKey) }
     var tiqetsPartner by remember(settings) { mutableStateOf(settings.tiqetsPartner) }
+    var claudeKey by remember(settings) { mutableStateOf(settings.claudeKey) }
+    var claudeOn by remember(settings) { mutableStateOf(settings.claudeOn) }
+    var claudeFreeText by remember(settings) { mutableStateOf(settings.claudeFreeText) }
+    var claudeVerify by remember(settings) { mutableStateOf(settings.claudeVerify) }
+    var claudeModel by remember(settings) { mutableStateOf(settings.claudeModel) }
 
     Column(
         Modifier
@@ -136,10 +141,50 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxWidth(),
         )
 
+        Text(t("Claude (facultatif)"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
+        Text(
+            t("Avec une clé API Anthropic (console.anthropic.com, payée à l'usage), Claude peut lire vos envies écrites librement et vérifier les lieux du programme. Sans clé, l'app fonctionne comme avant."),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        OutlinedTextField(
+            value = claudeKey,
+            onValueChange = { claudeKey = it },
+            label = { Text(t("Clé API Claude")) },
+            singleLine = true,
+            visualTransformation = PasswordVisualTransformation(),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        if (claudeKey.isNotBlank()) {
+            SwitchRow(t("Activer Claude"), null, claudeOn, true) { claudeOn = it }
+            SwitchRow(t("Saisie libre des envies"), t("Décrivez le séjour souhaité en une phrase ; Claude remplit le questionnaire."),
+                claudeFreeText, claudeOn) { claudeFreeText = it }
+            val hasGoogle = googleKey.isNotBlank()
+            SwitchRow(t("Vérification des lieux (3 étages)"),
+                if (hasGoogle) t("Google vérifie ouverture, horaires et avis ; Claude cherche sur le web les lieux inconnus et résume les avis. Un lieu fermé est remplacé.")
+                else t("Nécessite une clé Google Places (ci-dessus)."),
+                claudeVerify && hasGoogle, claudeOn && hasGoogle) { claudeVerify = it }
+            if (claudeOn) {
+                Text(t("Modèle"), style = MaterialTheme.typography.titleSmall)
+                com.riad.voyage.data.ClaudeModel.entries.forEach { m ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selected = claudeModel == m.id, onClick = { claudeModel = m.id })
+                        Column(Modifier.weight(1f)) {
+                            Text(m.label, fontWeight = FontWeight.Bold)
+                            Text(t(m.strengths), style = MaterialTheme.typography.bodySmall)
+                            Text(t(m.price), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
+        }
+
         val edited = Settings(
             token = token.trim(), marker = marker.trim(), currency = currency,
             googleKey = googleKey.trim(), tripadvisorKey = tripadvisorKey.trim(), foursquareKey = foursquareKey.trim(),
             liteApiKey = liteApiKey.trim(), tiqetsPartner = tiqetsPartner.trim(),
+            claudeKey = claudeKey.trim(), claudeOn = claudeOn, claudeFreeText = claudeFreeText,
+            claudeVerify = claudeVerify, claudeModel = claudeModel,
         )
         val unchanged = edited == settings
         Button(
@@ -257,5 +302,16 @@ private fun LanguagePicker(onLanguage: (com.riad.voyage.Lang?) -> Unit) {
         com.riad.voyage.Lang.entries.forEach { l ->
             FilterChip(selected = current == l, onClick = { onLanguage(l) }, label = { Text(l.nativeName) })
         }
+    }
+}
+
+@Composable
+private fun SwitchRow(title: String, detail: String?, checked: Boolean, enabled: Boolean, onChange: (Boolean) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f))
+            detail?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        }
+        Switch(checked = checked, onCheckedChange = onChange, enabled = enabled)
     }
 }

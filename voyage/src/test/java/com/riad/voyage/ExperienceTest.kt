@@ -32,7 +32,7 @@ class ExperienceTest {
         assertEquals(2, cats.count { it == Category.RESTAURANTS })
         assertTrue(Category.MUSEUMS in cats && Category.CAFES in cats && Category.BARS in cats)
         assertEquals(steps.size, steps.map { it.place.id }.distinct().size)
-        assertEquals("9h30", steps.first().time)
+        assertEquals("10h00", steps.first().time)   // musée : pas avant l'ouverture (10h si horaires inconnus)
         // Les horaires avancent toujours, en tenant compte du temps de visite.
         steps.zipWithNext().forEach { (x, y) -> assertTrue("${x.time} → ${y.time}", minutes(y.time) >= minutes(x.time) + x.durationMin) }
         assertTrue(minutes(steps.first { it.moment == "Dîner" }.time) >= 20 * 60)

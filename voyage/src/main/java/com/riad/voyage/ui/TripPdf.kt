@@ -155,11 +155,17 @@ private class Pages(private val context: Context, private val doc: PdfDocument) 
             tf("{0} voyageur(s)", c.people),
         ).joinToString(" · "), 14f, white)
         trip.programTitle?.let { text(it, 12f, 0xFFCFD8F0.toInt(), gapBefore = 6f) }
+        trip.programSubtitle?.let { text(it, 10f, 0xFFCFD8F0.toInt()) }
         y = band + 24f
     }
 
     fun glance(c: TripPdf.Content) {
         section(t("En un coup d'œil"))
+        val trip = c.trip
+        listOfNotNull(
+            trip.arrivalTime?.let { tf("Arrivée : {0}", it) },
+            trip.departureMin?.let { m -> tf("Départ : {0} · quitter l'hôtel vers {1}", trip.departureTime!!, "%02d:%02d".format((m - 180) / 60, (m - 180) % 60)) },
+        ).takeIf { it.isNotEmpty() }?.let { text("🕑 " + it.joinToString(" · "), 10f, bold = true, gapAfter = 6f) }
         if (c.weather.isNotEmpty()) {
             text(t("Météo prévue"), 11f, bold = true)
             c.weather.forEach { w -> text(formatDay(w.date) + " : " + w.label, 10f, indent = 8f, gapAfter = 1f) }

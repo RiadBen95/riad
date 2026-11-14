@@ -23,6 +23,7 @@ object Packing {
         activityKinds: List<String>,
         country: CountryInfo?,
         family: Boolean = false,
+        lateDeparture: Boolean = false,      // départ l'après-midi ou le soir : bagages à garder la journée
     ): List<PackItem> {
         val days = (nights + 1).coerceAtLeast(1)
         val kinds = activityKinds.map { it.plain() }
@@ -84,6 +85,7 @@ object Packing {
             }
             if (any("bar", "boite", "club", "cabaret", "opera", "theatre")) add(PackItem("Une tenue pour sortir le soir", ACTIVITIES))
             if (family) add(PackItem("Jeux et en-cas pour les enfants", ACTIVITIES))
+            if (lateDeparture) add(PackItem("Consigne à bagages pour le dernier jour", ACTIVITIES))
         }.distinctBy { it.key }
     }
 }

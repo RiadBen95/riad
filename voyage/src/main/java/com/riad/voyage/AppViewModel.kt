@@ -244,6 +244,8 @@ data class ExperienceState(
     val error: String? = null,
     val previous: Set<String> = emptySet(),
     val quick: Boolean = true,            // questionnaire rapide (3 questions)
+    val describing: Boolean = false,      // Claude lit la demande libre
+    val checking: Boolean = false,        // vérification des lieux en cours
     val tripId: String? = null,           // voyage relié : le programme y est enregistré automatiquement
 ) {
     val steps get() = Quiz.steps(answers, quick)
@@ -601,9 +603,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     ): BudgetInput {
         val (flights, hotel, saved) = choicesOf(trip, rates)
         val a = _experience.value.answers
+        // Repas : une demi-journée en moins si l'on arrive après 14 h ou si l'on repart avant midi.
+        val mealDays = (nights + 1) - (if ((trip?.arrivalMin ?: 0) >= 14 * 60) 0.5 else 0.0) -
+            (if ((trip?.departureMin ?: 24 * 60) <= 12 * 60) 0.5 else 0.0)
         return BudgetInput(
             city = city, country = country, travellers = travellers, nights = nights, level = a.budget, mobility = a.mobility,
             flights = flights, hotel = hotel?.first, hotelBooked = hotel?.second == true, activities = program + saved,
+            mealDays = mealDays.coerceAtLeast(0.5),
         )
     }
 
@@ -711,8 +717,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val kinds = trip.program.flatMap { d -> d.steps.map { it.place.kind + " " + it.place.name } } + trip.places.map { it.kind + " " + it.name }
         val a = _experience.value.answers
         // En famille seulement si le programme de ce voyage a été fait « en famille ».
-        val family = _experience.value.tripId == trip.id && a.company == com.riad.voyage.data.Quiz.Company.FAMILY
-        return com.riad.voyage.data.Packing.generate(nights, forecast, kinds, practicalFor(trip.city, trip.country), family)
+        val family = (trip.travellers ?: 0) >= 3 && _experience.value.tripId == trip.id && a.company == com.riad.voyage.data.Quiz.Company.FAMILY
+        return com.riad.voyage.data.Packing.generate(nights, forecast, kinds, practicalFor(trip.city, trip.country), family,
+            lateDeparture = (trip.departureMin ?: 0) >= 15 * 60)
     }
 
     /** Carnet de voyage en PDF (charte Envolée), prêt à partager. */
@@ -985,6 +992,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 flights = trip.flights + saved,
                 startDate = trip.startDate ?: f.departureDate?.toString(),
                 endDate = trip.endDate ?: f.returnAt?.let { parseDateTime(it)?.toLocalDate()?.toString() },
+                arrivalTime = trip.arrivalTime ?: parseDateTime(f.departureAt)?.plusMinutes(f.durationTo.toLong())?.let { "%02d:%02d".format(it.hour, it.minute) },
+                departureTime = trip.departureTime ?: f.returnAt?.let { parseDateTime(it) }?.let { "%02d:%02d".format(it.hour, it.minute) },
             ),
             tf("Vol ajouté à votre voyage : {0}", t(dest.name)),
         )
@@ -1001,7 +1010,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             })
         }
         val end = st.answers.startDate.plusDays((st.answers.duration.days - 1).toLong())
-        val updated = trip.copy(programTitle = exp.title, program = program,
+        val updated = trip.copy(programTitle = exp.title, programSubtitle = exp.subtitle, program = program,
             startDate = trip.startDate ?: st.answers.startDate.toString(), endDate = trip.endDate ?: end.toString())
         if (silent) { tripStore.upsert(updated); refreshTrips() }
         else saveTrip(updated, tf("Programme enregistré dans votre voyage : {0}", t(exp.city)))
@@ -1011,15 +1020,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     // ---------- Créer un voyage ----------
 
     /** Nouveau voyage : destination, dates et voyageurs, saisis une fois et réutilisés partout. */
-    fun createTrip(city: String, place: Place?, start: LocalDate, end: LocalDate, travellers: Int) {
+    fun createTrip(city: String, place: Place?, start: LocalDate, end: LocalDate, travellers: Int, arrival: String?, departure: String?) {
         val trip = Trip(id = "trip-${System.currentTimeMillis()}", city = city.trim(), country = place?.country.orEmpty(),
-            startDate = start.toString(), endDate = end.toString(), travellers = travellers)
+            startDate = start.toString(), endDate = end.toString(), travellers = travellers, arrivalTime = arrival, departureTime = departure)
         saveTrip(trip, tf("Voyage créé : {0}", t(trip.city)))
         openTrip(trip.id)
     }
 
-    fun updateTripInfo(id: String, start: LocalDate, end: LocalDate, travellers: Int) = updateTrip(id) {
-        it.copy(startDate = start.toString(), endDate = end.toString(), travellers = travellers)
+    fun updateTripInfo(id: String, start: LocalDate, end: LocalDate, travellers: Int, arrival: String?, departure: String?) = updateTrip(id) {
+        it.copy(startDate = start.toString(), endDate = end.toString(), travellers = travellers, arrivalTime = arrival, departureTime = departure)
     }
 
     /** « Programme sur mesure » depuis un voyage : ville, dates et voyageurs déjà remplis ; reste les envies. */
@@ -1028,6 +1037,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         updateAnswers { a ->
             a.copy(
                 city = trip.city, place = null, startDate = trip.start ?: LocalDate.now(), duration = Quiz.Duration(days),
+                arrivalMin = trip.arrivalMin, departureMin = trip.departureMin,
                 company = when (trip.travellers) {
                     1 -> Quiz.Company.SOLO
                     2 -> if (a.company == Quiz.Company.SOLO) Quiz.Company.COUPLE else a.company
@@ -1220,6 +1230,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val exp = ExperienceBuilder.build(a, a.city.trim(), experiencePools, weather = experienceWeather)
         _experience.update { it.copy(result = exp, previous = emptySet()) }
         autosave()
+        verifyExperience()
     }
 
     fun moveExperienceStep(dayIndex: Int, stepIndex: Int, delta: Int) = editResult {
@@ -1233,6 +1244,93 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private fun editResult(transform: (Experience) -> Experience) {
         val exp = _experience.value.result ?: return
         _experience.update { it.copy(result = transform(exp)) }
+        autosave()
+    }
+
+    // ---------- Claude (facultatif) ----------
+
+    /** Saisie libre : Claude traduit la demande en réponses du questionnaire, puis le programme est composé. */
+    fun describeTrip(text: String) {
+        val s = _settings.value
+        if (!s.claudeDescribe || text.isBlank()) return
+        _experience.update { it.copy(describing = true, error = null) }
+        viewModelScope.launch {
+            val r = attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.describe(s.claudeKey, com.riad.voyage.data.ClaudeModel.of(s.claudeModel), text, LocalDate.now()) }
+            val req = r?.getOrNull()
+            if (req == null || (req.city.isBlank() && _experience.value.answers.city.isBlank())) {
+                val why = r?.exceptionOrNull()?.let { TravelpayoutsApi.userMessage(it) } ?: t("Précisez au moins la ville.")
+                _experience.update { it.copy(describing = false, error = t("Claude n'a pas pu lire la demande.") + " " + why) }
+                return@launch
+            }
+            updateAnswers { com.riad.voyage.data.ClaudeAssistant.toAnswers(req, it) }
+            _experience.update { it.copy(describing = false) }
+            generateExperience()
+        }
+    }
+
+    private val verifiedIds = mutableSetOf<String>()
+    private var verifying = false
+
+    /**
+     * Vérification en 3 étages : Google (fermé, horaires du jour, avis), recherche web Claude pour les
+     * lieux inconnus de Google, résumé des avis par Claude. Lieu fermé → remplacé par un lieu proche.
+     */
+    private fun verifyExperience() {
+        val s = _settings.value
+        val exp = _experience.value.result ?: return
+        if (!s.claudeChecks || verifying) return
+        val todo = exp.days.flatMap { d -> d.steps.map { d.date to it.place } }
+            .filter { (_, p) -> p.id !in verifiedIds && !p.id.startsWith("transfer/") && !p.id.startsWith("custom/") }
+        if (todo.isEmpty()) return
+        verifying = true
+        _experience.update { it.copy(checking = true) }
+        viewModelScope.launch {
+            val model = com.riad.voyage.data.ClaudeModel.of(s.claudeModel)
+            val checks = mutableMapOf<String, com.riad.voyage.data.PlaceCheck>()
+            val unknown = mutableListOf<Pair<LocalDate?, PointOfInterest>>()
+            for ((date, p) in todo) {
+                if (quotas.remaining(com.riad.voyage.data.RatingSource.GOOGLE) <= 0) break
+                quotas.spend(com.riad.voyage.data.RatingSource.GOOGLE)
+                val c = attempt(10_000) { com.riad.voyage.data.GoogleRatings.check(s.googleKey, p.name, exp.city, (date ?: LocalDate.now()).dayOfWeek) }?.getOrNull()
+                if (c != null) checks[p.id] = c else unknown += date to p
+            }
+            unknown.take(4).forEach { (date, p) ->
+                attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.webCheck(s.claudeKey, model, p.name, exp.city, date) }?.getOrNull()?.let { checks[p.id] = it }
+            }
+            val names = todo.associate { it.second.id to it.second.name }
+            val withReviews = checks.filter { it.value.reviews.isNotEmpty() }.map { (id, c) -> Triple(id, names[id].orEmpty(), c.reviews) }
+            val summaries = if (withReviews.isEmpty()) emptyMap()
+                else attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.summarize(s.claudeKey, model, withReviews) }?.getOrNull().orEmpty()
+            verifiedIds += todo.map { it.second.id }
+            applyChecks(checks, summaries)
+            verifying = false
+            _experience.update { it.copy(checking = false) }
+            verifyExperience()   // lieux de remplacement à vérifier à leur tour
+        }
+    }
+
+    private fun applyChecks(checks: Map<String, com.riad.voyage.data.PlaceCheck>, summaries: Map<String, String>) {
+        val a = _experience.value.answers
+        var exp = _experience.value.result ?: return
+        // Lieux fermés (définitivement ou ce jour-là) : remplacés par le premier lieu proposé à la place.
+        checks.filter { it.value.closedForGood || it.value.closedToday }.keys.forEach { id ->
+            exp.days.forEachIndexed { d, day ->
+                val i = day.steps.indexOfFirst { it.place.id == id }
+                if (i >= 0) exp = ExperienceBuilder.replaceStep(a, exp, d, i,
+                    ExperienceBuilder.alternatives(a, exp, experiencePools, d, i).firstOrNull())
+            }
+        }
+        exp = exp.copy(days = exp.days.map { day ->
+            day.copy(steps = day.steps.map { st ->
+                val c = checks[st.place.id] ?: return@map st
+                val note = listOfNotNull(
+                    "✓ " + (c.hoursToday?.let { tf("Ouvert ce jour-là : {0}", it) } ?: t("Ouvert (vérifié)")),
+                    summaries[st.place.id]?.let { "« $it »" },
+                ).joinToString(" · ")
+                st.copy(why = listOf(st.why, note).filter { it.isNotBlank() }.joinToString(" · "))
+            })
+        })
+        _experience.update { it.copy(result = exp) }
         autosave()
     }
 
@@ -1302,6 +1400,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 else it.copy(loading = false, result = exp, previous = emptySet())
             }
             autosave()
+            verifyExperience()
         }
     }
 
@@ -1351,6 +1450,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val exp = ExperienceBuilder.build(st.answers, st.answers.city.trim(), experiencePools, avoid, experienceWeather)
         _experience.update { it.copy(result = exp, previous = avoid) }
         autosave()
+        verifyExperience()
     }
 
     /** Meilleurs lieux d'une catégorie (même logique que l'onglet Sorties, sans l'afficher). */

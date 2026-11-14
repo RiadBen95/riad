@@ -68,7 +68,10 @@ data class Trip(
     val startDate: String? = null,
     val endDate: String? = null,
     val travellers: Int? = null,
+    val arrivalTime: String? = null,      // « 15:05 » : arrivée le premier jour
+    val departureTime: String? = null,    // « 13:40 » : départ (avion, train) le dernier jour
     val programTitle: String? = null,
+    val programSubtitle: String? = null,  // réglages du programme (compagnie, rythme, régime…)
     val program: List<SavedDay> = emptyList(),
     val flights: List<SavedFlight> = emptyList(),
     val places: List<SavedPlace> = emptyList(),
@@ -81,6 +84,9 @@ data class Trip(
     val isEmpty get() = program.isEmpty() && flights.isEmpty() && places.isEmpty() && articles.isEmpty()
     val start: java.time.LocalDate? get() = startDate?.let { runCatching { java.time.LocalDate.parse(it) }.getOrNull() }
     val end: java.time.LocalDate? get() = endDate?.let { runCatching { java.time.LocalDate.parse(it) }.getOrNull() }
+    val arrivalMin: Int? get() = arrivalTime?.let(::minutesOf)
+    val departureMin: Int? get() = departureTime?.let(::minutesOf)
+
     /** Nombre de nuits (dates connues), sinon null. */
     val nights: Int? get() = start?.let { s -> end?.let { e -> java.time.temporal.ChronoUnit.DAYS.between(s, e).toInt().coerceAtLeast(0) } }
 }
@@ -121,7 +127,8 @@ object TripJson {
 
     fun encode(t: Trip): JSONObject = JSONObject()
         .put("id", t.id).put("city", t.city).put("country", t.country)
-        .put("startDate", t.startDate).put("endDate", t.endDate).put("travellers", t.travellers ?: JSONObject.NULL).put("programTitle", t.programTitle).put("updated", t.updated)
+        .put("startDate", t.startDate).put("endDate", t.endDate).put("travellers", t.travellers ?: JSONObject.NULL)
+        .put("arrivalTime", t.arrivalTime).put("departureTime", t.departureTime).put("programSubtitle", t.programSubtitle).put("programTitle", t.programTitle).put("updated", t.updated)
         .put("program", t.program.arr { d ->
             JSONObject().put("title", d.title).put("weather", d.weather).put("steps", d.steps.arr { st ->
                 JSONObject().put("time", st.time).put("moment", st.moment).put("emoji", st.emoji).put("why", st.why)
@@ -151,6 +158,9 @@ object TripJson {
         startDate = o.s("startDate"),
         endDate = o.s("endDate"),
         travellers = o.optInt("travellers", 0).takeIf { it > 0 },
+        arrivalTime = o.s("arrivalTime"),
+        departureTime = o.s("departureTime"),
+        programSubtitle = o.s("programSubtitle"),
         programTitle = o.s("programTitle"),
         program = o.optJSONArray("program").list { d ->
             SavedDay(d.optString("title"), d.s("weather"), d.optJSONArray("steps").list { st ->
@@ -205,3 +215,10 @@ object TripText {
         append("\n— Envolée")
     }
 }
+
+/** « 15:05 » ou « 15h05 » → minutes depuis minuit (null si illisible). */
+fun minutesOf(time: String): Int? =
+    Regex("^(\\d{1,2})[:h](\\d{2})$").find(time.trim())?.let { m ->
+        val (h, min) = m.destructured
+        (h.toInt() * 60 + min.toInt()).takeIf { h.toInt() < 24 && min.toInt() < 60 }
+    }

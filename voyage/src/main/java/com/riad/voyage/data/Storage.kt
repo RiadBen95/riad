@@ -13,14 +13,22 @@ data class Settings(
     val foursquareKey: String = "",
     val liteApiKey: String = "",
     val tiqetsPartner: String = "",
+    val claudeKey: String = "",
+    val claudeOn: Boolean = false,          // Claude activé (si une clé est saisie)
+    val claudeFreeText: Boolean = true,     // saisie libre des envies
+    val claudeVerify: Boolean = false,      // vérification des lieux (nécessite aussi une clé Google)
+    val claudeModel: String = ClaudeModel.OPUS.id,
 ) {
     val isDemo get() = token.isBlank()
+    private val claude get() = claudeOn && claudeKey.isNotBlank()
+    val claudeDescribe get() = claude && claudeFreeText
+    val claudeChecks get() = claude && claudeVerify && googleKey.isNotBlank()
 }
 
 class SettingsStore(context: Context) {
     private val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
 
-    private val SECRETS = listOf("token", "googleKey", "tripadvisorKey", "foursquareKey", "liteApiKey")
+    private val SECRETS = listOf("token", "googleKey", "tripadvisorKey", "foursquareKey", "liteApiKey", "claudeKey")
 
     /** Clés d'API : chiffrées sur le téléphone (Keystore Android). */
     private fun secret(name: String) = SecretBox.decrypt(prefs.getString(name, "").orEmpty())
@@ -34,6 +42,11 @@ class SettingsStore(context: Context) {
         foursquareKey = secret("foursquareKey"),
         liteApiKey = secret("liteApiKey"),
         tiqetsPartner = prefs.getString("tiqetsPartner", "").orEmpty(),
+        claudeKey = secret("claudeKey"),
+        claudeOn = prefs.getBoolean("claudeOn", false),
+        claudeFreeText = prefs.getBoolean("claudeFreeText", true),
+        claudeVerify = prefs.getBoolean("claudeVerify", false),
+        claudeModel = prefs.getString("claudeModel", ClaudeModel.OPUS.id).orEmpty(),
     ).also { loaded ->
         // Anciennes clés enregistrées en clair : chiffrées dès la première lecture.
         if (SECRETS.any { prefs.getString(it, "").orEmpty().let { v -> v.isNotEmpty() && !SecretBox.isEncrypted(v) } }) save(loaded)
@@ -49,6 +62,9 @@ class SettingsStore(context: Context) {
             .putString("foursquareKey", SecretBox.encrypt(s.foursquareKey.trim()))
             .putString("liteApiKey", SecretBox.encrypt(s.liteApiKey.trim()))
             .putString("tiqetsPartner", s.tiqetsPartner.trim())
+            .putString("claudeKey", SecretBox.encrypt(s.claudeKey.trim()))
+            .putBoolean("claudeOn", s.claudeOn).putBoolean("claudeFreeText", s.claudeFreeText)
+            .putBoolean("claudeVerify", s.claudeVerify).putString("claudeModel", s.claudeModel)
             .apply()
     }
 }

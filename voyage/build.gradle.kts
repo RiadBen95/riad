@@ -67,6 +67,11 @@ android {
     buildFeatures {
         compose = true
     }
+    packaging {
+        // Fichiers de licence en double dans les bibliothèques (Jackson, OkHttp…).
+        resources.excludes += setOf("META-INF/DEPENDENCIES", "META-INF/LICENSE*", "META-INF/NOTICE*", "META-INF/*.kotlin_module",
+            "META-INF/versions/9/OSGI-INF/MANIFEST.MF", "META-INF/INDEX.LIST")
+    }
 }
 
 dependencies {
@@ -82,6 +87,8 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     // Carte OpenStreetMap (sans clé d'API) pour l'itinéraire du programme.
     implementation("org.osmdroid:osmdroid-android:6.1.18")
+    // Claude (facultatif, avec une clé API) : saisie libre des envies, vérification des lieux.
+    implementation("com.anthropic:anthropic-java:3.3.0")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")

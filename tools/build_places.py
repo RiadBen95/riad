@@ -47,7 +47,7 @@ CLASSES = [
     ("MONUMENTS", "Q57821", "Fortification", 6),
     ("MONUMENTS", "Q1785071", "Fort", 6),
     ("MONUMENTS", "Q12518", "Tour", 6),
-    ("MONUMENTS", "Q641226", "Arc de triomphe", 4),
+    ("MONUMENTS", "Q19860854", "Arc de triomphe", 4),
     ("MONUMENTS", "Q12280", "Pont", 15),
     ("MONUMENTS", "Q174782", "Place", 10),
     ("ATTRACTIONS", "Q570116", "Attraction", 4),
@@ -60,6 +60,7 @@ CLASSES = [
     ("ATTRACTIONS", "Q24354", "Théâtre", 8),
     ("ATTRACTIONS", "Q1060829", "Salle de concert", 8),
     ("ATTRACTIONS", "Q483110", "Stade", 15),
+    ("ATTRACTIONS", "Q641226", "Salle de spectacles et de sport", 8),
     ("PARKS", "Q22698", "Parc", 4),
     ("PARKS", "Q22746", "Parc urbain", 3),
     ("PARKS", "Q167346", "Jardin botanique", 3),
@@ -72,6 +73,8 @@ QUERY = """
 SELECT ?item ?coord ?sl ?fr ?en ?img ?frwiki ?enwiki WHERE {
   ?item wdt:P31 wd:%(cls)s ; wikibase:sitelinks ?sl ; wdt:P625 ?coord .
   FILTER(?sl >= %(min)d)
+  FILTER NOT EXISTS { ?item wdt:P576 [] }    # dissous / fermé
+  FILTER NOT EXISTS { ?item wdt:P3999 [] }   # date de fermeture officielle
   OPTIONAL { ?item rdfs:label ?fr FILTER(LANG(?fr) = "fr") }
   OPTIONAL { ?item rdfs:label ?en FILTER(LANG(?en) = "en") }
   OPTIONAL { ?item wdt:P18 ?img }

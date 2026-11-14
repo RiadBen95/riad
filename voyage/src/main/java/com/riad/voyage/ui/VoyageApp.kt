@@ -242,6 +242,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                             detailed = { wasQuick -> vm.setQuickQuiz(!wasQuick) },
                             linked = trips.any { it.id == experience.tripId && it.city.equals(experience.result?.city ?: experience.answers.city, true) },
                             openTrip = { experience.tripId?.let(vm::openTrip) },
+                            describe = if (settings.claudeDescribe) vm::describeTrip else null,
                         ),
                     )
                 }

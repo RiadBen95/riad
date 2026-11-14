@@ -51,11 +51,11 @@ fun ExperienceScreen(
     edits: ExperienceEdits = ExperienceEdits(),
 ) {
     when {
-        state.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        state.loading || state.describing -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
                 CircularProgressIndicator()
                 Spacer(Modifier.height(16.dp))
-                Text(t("Création de votre expérience…"), style = MaterialTheme.typography.titleMedium)
+                Text(if (state.describing) t("Claude lit votre demande…") else t("Création de votre expérience…"), style = MaterialTheme.typography.titleMedium)
                 Text(state.stage, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
             }
         }
@@ -73,6 +73,7 @@ class ExperienceEdits(
     val detailed: (Boolean) -> Unit = {},
     val linked: Boolean = false,
     val openTrip: () -> Unit = {},
+    val describe: ((String) -> Unit)? = null,   // saisie libre avec Claude (null = désactivée)
 )
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -118,6 +119,7 @@ private fun Questionnaire(
 
             when {
                 id == "city" -> {
+                    edits.describe?.let { describe -> FreeTextCard(describe) }
                     QuestionTitle(t("Où voulez-vous vivre l'expérience ?"))
                     PlaceField(
                         label = t("Ville"),
@@ -143,6 +145,8 @@ private fun Questionnaire(
                     QuestionTitle(t("Combien de temps avez-vous ?"))
                     // Version rapide : la date de début est demandée ici (pas de question à part).
                     if (state.quick) DateButton(t("Premier jour"), a.startDate, java.time.LocalDate.now(), { d -> onAnswers { it.copy(startDate = d) } }, Modifier.fillMaxWidth())
+                    TimeField(t("Heure d'arrivée (facultatif, HH:MM)"), a.arrivalMin) { m -> onAnswers { it.copy(arrivalMin = m) } }
+                    TimeField(t("Heure de départ le dernier jour (facultatif, HH:MM)"), a.departureMin) { m -> onAnswers { it.copy(departureMin = m) } }
                     ChoiceCard(t("Une demi-journée"), null, a.duration.halfDay) { onAnswers { it.copy(duration = Quiz.Duration.HALF) } }
                     val end = a.startDate.plusDays((a.duration.days - 1).toLong())
                     ChoiceCard(
@@ -322,6 +326,12 @@ private fun ExperienceResult(
             canUp = i > 0, canDown = i < exp.days[d].steps.lastIndex)
     }
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        if (state.checking) item {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                Text(t("Vérification des lieux…"), style = MaterialTheme.typography.bodySmall)
+            }
+        }
         item {
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
@@ -575,6 +585,38 @@ private fun SettingChip(label: String, options: List<Pair<String, () -> Unit>>) 
         AssistChip(onClick = { open = true }, label = { Text(label) })
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             options.forEach { (text, action) -> DropdownMenuItem(text = { Text(text) }, onClick = { open = false; action() }) }
+        }
+    }
+}
+
+/** Heure facultative (HH:MM) ; vide = pas de contrainte. */
+@Composable
+private fun TimeField(label: String, minutes: Int?, onChange: (Int?) -> Unit) {
+    var text by remember { mutableStateOf(minutes?.let { "%02d:%02d".format(it / 60, it % 60) }.orEmpty()) }
+    OutlinedTextField(
+        value = text,
+        onValueChange = { v -> text = v; if (v.isBlank()) onChange(null) else com.riad.voyage.data.minutesOf(v)?.let(onChange) },
+        label = { Text(label) }, singleLine = true, modifier = Modifier.fillMaxWidth(),
+        isError = text.isNotBlank() && com.riad.voyage.data.minutesOf(text) == null,
+    )
+}
+
+/** Demande en langage libre : Claude remplit le questionnaire puis le programme est composé. */
+@Composable
+private fun FreeTextCard(onSend: (String) -> Unit) {
+    var text by remember { mutableStateOf("") }
+    Card(shape = RoundedCornerShape(16.dp)) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(t("Décrivez votre séjour"), fontWeight = FontWeight.Bold)
+            OutlinedTextField(
+                value = text, onValueChange = { text = it }, modifier = Modifier.fillMaxWidth(), minLines = 2,
+                placeholder = { Text(t("Ex. 3 jours à Barcelone en famille fin mai, Gaudí et tapas, sans trop marcher")) },
+            )
+            Button(onClick = { onSend(text) }, enabled = text.isNotBlank(), modifier = Modifier.align(Alignment.End)) {
+                Text(t("Composer avec Claude"))
+            }
+            Text(t("Ou répondez aux questions ci-dessous."), style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

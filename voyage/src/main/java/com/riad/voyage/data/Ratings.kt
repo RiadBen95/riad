@@ -84,7 +84,46 @@ private object Http {
 private fun JSONObject.s(key: String): String? = if (isNull(key)) null else optString(key).ifBlank { null }
 
 /** Google Places API (New) : une recherche texte = 1 appel, avec note et nombre d'avis. */
+/** Vérification d'un lieu : fermé définitivement, horaires du jour, note, avis récents. */
+data class PlaceCheck(
+    val closedForGood: Boolean,
+    val hoursToday: String?,
+    val closedToday: Boolean,
+    val rating: Double?,
+    val reviews: List<String>,
+)
+
 object GoogleRatings {
+    /** Vérifie un lieu précis (1 recherche Google) : statut, horaires du jour donné, note et avis. */
+    suspend fun check(key: String, name: String, city: String, day: java.time.DayOfWeek): PlaceCheck? {
+        val body = JSONObject().put("textQuery", "$name $city").put("languageCode", com.riad.voyage.I18n.wikiLang).put("pageSize", 1)
+        val json = Http.call(
+            "https://places.googleapis.com/v1/places:searchText",
+            mapOf(
+                "X-Goog-Api-Key" to key,
+                "X-Goog-FieldMask" to "places.businessStatus,places.regularOpeningHours.weekdayDescriptions,places.rating,places.reviews",
+                "X-Android-Package" to "com.riad.voyage",
+                "X-Android-Cert" to "603C871E7D07E6B88530DD6E78D3DCC6C9F6A46F",
+            ),
+            body.toString(),
+        )
+        val p = JSONObject(json).optJSONArray("places")?.optJSONObject(0) ?: return null
+        val status = p.optString("businessStatus")
+        // weekdayDescriptions : du lundi au dimanche, « lundi: 10:00–17:30 ».
+        val desc = p.optJSONObject("regularOpeningHours")?.optJSONArray("weekdayDescriptions")?.optString(day.value - 1).orEmpty()
+        val hours = desc.substringAfter(": ", desc).trim().ifBlank { null }
+        val reviews = p.optJSONArray("reviews")?.let { a ->
+            (0 until a.length()).mapNotNull { a.optJSONObject(it)?.optJSONObject("text")?.s("text")?.take(400) }
+        }.orEmpty().take(5)
+        return PlaceCheck(
+            closedForGood = status == "CLOSED_PERMANENTLY",
+            hoursToday = hours,
+            closedToday = status == "CLOSED_TEMPORARILY" || (hours != null && Regex("ferm|closed", RegexOption.IGNORE_CASE).containsMatchIn(hours)),
+            rating = p.optDouble("rating").takeIf { !it.isNaN() },
+            reviews = reviews,
+        )
+    }
+
     private const val FIELDS = "places.id,places.displayName,places.location,places.formattedAddress," +
         "places.rating,places.userRatingCount,places.priceLevel,places.websiteUri," +
         "places.nationalPhoneNumber,places.googleMapsUri,places.currentOpeningHours.openNow," +

@@ -57,6 +57,7 @@ data class BudgetInput(
     val hotelBooked: Boolean = false,
     val activities: List<PlannedActivity> = emptyList(),
     val includeDaily: Boolean = true,               // ajouter repas, transports et imprévus estimés
+    val mealDays: Double? = null,                   // jours de repas (moins les demi-journées de voyage)
 )
 
 /**
@@ -171,7 +172,7 @@ object BudgetCalculator {
         val foodDetails = food.map { Chosen(it.name, foodPrice(it, i.level) * index * people) }
         val chosenMeals = food.filter { costKind(it) == CostKind.FOOD }.sumOf { foodPrice(it, i.level) * index * people }
         if (i.includeDaily) {
-            val otherMeals = (levelMeals * index * people * days - chosenMeals).coerceAtLeast(0.0)
+            val otherMeals = (levelMeals * index * people * (i.mealDays ?: days.toDouble()) - chosenMeals).coerceAtLeast(0.0)
             val all = foodDetails + Chosen("Autres repas (estimation)", otherMeals)
             lines += BudgetLine(BudgetItem.MEALS, all.sumOf { it.amountEur },
                 if (food.isEmpty()) "Estimation : 3 repas par jour et par personne" else "Restaurants et cafés choisis + autres repas estimés",
