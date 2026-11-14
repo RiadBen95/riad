@@ -25,33 +25,25 @@ enum class ClaudeModel(val id: String, val label: String, val strengths: String,
     }
 }
 
-/** Réponse structurée : la demande en langage libre, traduite en réponses du questionnaire. */
-class TripRequest {
-    var city: String = ""
-    var startDate: String = ""
-    var days: Int = 0
-    var halfDay: Boolean = false
-    var company: String = ""
-    var interests: List<String> = emptyList()
-    var tastes: List<String> = emptyList()
-    var style: String = ""
-    var pace: String = ""
-    var mobility: String = ""
-    var diet: String = ""
-    var budget: String = ""
-    var arrivalTime: String = ""
-    var departureTime: String = ""
-    var wanted: List<String> = emptyList()
-    var avoid: List<String> = emptyList()
-}
-
-class PlaceReviewSummary {
-    var id: String = ""
-    var summary: String = ""
-}
-
-class PlaceReviewSummaries {
-    var items: List<PlaceReviewSummary> = emptyList()
+/** La demande en langage libre, traduite en réponses du questionnaire (lue depuis le JSON de la réponse). */
+class TripRequest(o: JSONObject) {
+    private fun list(k: String) = o.optJSONArray(k)?.let { a -> List(a.length()) { a.optString(it) } }.orEmpty()
+    val city = o.optString("city")
+    val startDate = o.optString("startDate")
+    val days = o.optInt("days")
+    val halfDay = o.optBoolean("halfDay")
+    val company = o.optString("company")
+    val interests = list("interests")
+    val tastes = list("tastes")
+    val style = o.optString("style")
+    val pace = o.optString("pace")
+    val mobility = o.optString("mobility")
+    val diet = o.optString("diet")
+    val budget = o.optString("budget")
+    val arrivalTime = o.optString("arrivalTime")
+    val departureTime = o.optString("departureTime")
+    val wanted = list("wanted")
+    val avoid = list("avoid")
 }
 
 /**
@@ -65,6 +57,26 @@ object ClaudeAssistant {
         cached?.takeIf { it.first == key }?.second ?: AnthropicOkHttpClient.builder().apiKey(key).build().also { cached = key to it }
 
     private fun <E : Enum<E>> choices(values: Array<E>) = values.joinToString(", ") { it.name }
+
+    /**
+     * Une question, une réponse texte. Le JSON demandé est lu avec org.json (intégré à Android) :
+     * les réponses « structurées » de la bibliothèque passent par une réflexion Java absente d'Android.
+     */
+    private fun ask(key: String, model: ClaudeModel, prompt: String, web: Boolean = false): String {
+        val builder = MessageCreateParams.builder().model(model.id).maxTokens(4000L).addUserMessage(prompt)
+        if (web) {
+            if (model == ClaudeModel.HAIKU) builder.addTool(WebSearchTool20250305.builder().maxUses(3L).build())
+            else builder.addTool(WebSearchTool20260209.builder().maxUses(3L).build())
+        }
+        return client(key).messages().create(builder.build()).content().mapNotNull { it.text().orElse(null)?.text() }.joinToString("")
+    }
+
+    /** Dernier objet JSON de la réponse (Claude peut écrire du texte autour). */
+    private fun json(text: String): JSONObject? {
+        val start = text.indexOf('{').takeIf { it >= 0 } ?: return null
+        val end = text.lastIndexOf('}').takeIf { it > start } ?: return null
+        return runCatching { JSONObject(text.substring(start, end + 1)) }.getOrNull()
+    }
 
     suspend fun describe(key: String, model: ClaudeModel, text: String, today: LocalDate): TripRequest? = withContext(Dispatchers.IO) {
         val prompt = """
@@ -81,49 +93,32 @@ object ClaudeAssistant {
             - mobility parmi : ${choices(Quiz.Mobility.entries.toTypedArray())} ; diet parmi : ${choices(Quiz.Diet.entries.toTypedArray())} ;
               budget parmi : ${choices(Quiz.Budget.entries.toTypedArray())}.
             - wanted : lieux ou noms cités explicitement (ex. « Sagrada Família », « Gaudí ») ; avoid : lieux ou types à éviter.
+            Réponds uniquement par un objet JSON avec les clés : city, startDate, days, halfDay, company, interests, tastes,
+            style, pace, mobility, diet, budget, arrivalTime, departureTime, wanted, avoid.
 
             Demande : $text
         """.trimIndent()
-        val params = MessageCreateParams.builder()
-            .model(model.id)
-            .maxTokens(4000L)
-            .outputConfig(TripRequest::class.java)
-            .addUserMessage(prompt)
-            .build()
-        client(key).messages().create(params).content().firstNotNullOfOrNull { it.text().orElse(null)?.text() }
+        json(ask(key, model, prompt))?.let(::TripRequest)
     }
 
     /** Résumé en une phrase des avis de chaque lieu ([id], nom, avis) → id → résumé. */
     suspend fun summarize(key: String, model: ClaudeModel, places: List<Triple<String, String, List<String>>>): Map<String, String> =
         withContext(Dispatchers.IO) {
             val input = places.joinToString("\n\n") { (id, name, reviews) -> "id=$id · $name\n" + reviews.joinToString("\n") { "- $it" } }
-            val params = MessageCreateParams.builder()
-                .model(model.id)
-                .maxTokens(4000L)
-                .outputConfig(PlaceReviewSummaries::class.java)
-                .addUserMessage(
-                    "Pour chaque lieu, résume ses avis de visiteurs en une phrase courte et utile (moins de 20 mots, " +
-                        "en ${com.riad.voyage.I18n.lang.nativeName}), sans inventer. Garde le même id.\n\n$input",
-                )
-                .build()
-            client(key).messages().create(params).content().firstNotNullOfOrNull { it.text().orElse(null)?.text() }
-                ?.items?.associate { it.id to it.summary }.orEmpty()
+            val prompt = "Pour chaque lieu, résume ses avis de visiteurs en une phrase courte et utile (moins de 20 mots, " +
+                "en ${com.riad.voyage.I18n.lang.nativeName}), sans inventer. Réponds uniquement par un objet JSON " +
+                "{\"id du lieu\": \"résumé\", …} avec les mêmes id.\n\n$input"
+            val o = json(ask(key, model, prompt)) ?: return@withContext emptyMap()
+            o.keys().asSequence().associateWith { o.optString(it) }.filterValues { it.isNotBlank() }
         }
 
     /** Vérifie par recherche web un lieu que Google ne connaît pas : fermé ? horaires ce jour-là ? */
     suspend fun webCheck(key: String, model: ClaudeModel, name: String, city: String, date: LocalDate?): PlaceCheck? =
         withContext(Dispatchers.IO) {
-            val builder = MessageCreateParams.builder()
-                .model(model.id)
-                .maxTokens(4000L)
-                .addUserMessage(
-                    "Le lieu « $name » à $city est-il encore ouvert au public" + (date?.let { ", et quels sont ses horaires le $it" } ?: "") +
-                        " ? Cherche sur le web, puis réponds uniquement par une ligne JSON : " +
-                        "{\"closedForGood\": true ou false, \"hours\": \"horaires ce jour-là ou vide\"}",
-                )
-            if (model == ClaudeModel.HAIKU) builder.addTool(WebSearchTool20250305.builder().maxUses(3L).build())
-            else builder.addTool(WebSearchTool20260209.builder().maxUses(3L).build())
-            val text = client(key).messages().create(builder.build()).content().mapNotNull { it.text().orElse(null)?.text() }.joinToString("")
+            val text = ask(key, model,
+                "Le lieu « $name » à $city est-il encore ouvert au public" + (date?.let { ", et quels sont ses horaires le $it" } ?: "") +
+                    " ? Cherche sur le web, puis réponds uniquement par une ligne JSON : " +
+                    "{\"closedForGood\": true ou false, \"hours\": \"horaires ce jour-là ou vide\"}", web = true)
             val json = Regex("\\{[^{}]*\\}").findAll(text).lastOrNull()?.value ?: return@withContext null
             runCatching {
                 val o = JSONObject(json)
