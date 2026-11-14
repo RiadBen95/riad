@@ -87,4 +87,4 @@ jobs:
           gh release create "build-${{ github.run_number }}" out/*.apk \
             --target "${{ github.sha }}" --latest \
             --title "Applications Android (build ${{ github.run_number }})" \
-            --notes "Compilé depuis ${{ github.sha }}. envolee.apk : Envolée (version signée) ; accordeur-guitare.apk : accordeur de guitare. Android 8.0 minimum."
+            --notes "Compilé depuis ${{ github.sha }}. envolee.apk : Envolée ; accordeur-guitare.apk : accordeur de guitare. Android 8.0 minimum."
