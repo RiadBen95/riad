@@ -302,6 +302,7 @@ private fun BookingDialog(
 @Composable
 private fun PaymentDialog(html: String, sandbox: Boolean, onDone: () -> Unit, onCancel: () -> Unit) {
     var finished by remember { mutableStateOf(false) }
+    var problem by remember { mutableStateOf<String?>(null) }   // erreur de la page de paiement (affichée pour diagnostic)
     androidx.compose.ui.window.Dialog(
         onDismissRequest = onCancel,
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
@@ -316,12 +317,28 @@ private fun PaymentDialog(html: String, sandbox: Boolean, onDone: () -> Unit, on
                 if (sandbox) Text(t("Mode test : utilisez la carte 4242 4242 4242 4242, une date future et n'importe quel code."),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(horizontal = 16.dp))
+                problem?.let {
+                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+                }
                 androidx.compose.ui.viewinterop.AndroidView(
                     modifier = Modifier.fillMaxSize(),
                     factory = { ctx ->
                         android.webkit.WebView(ctx).apply {
                             settings.javaScriptEnabled = true
                             settings.domStorageEnabled = true
+                            settings.javaScriptCanOpenWindowsAutomatically = true
+                            settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+                            // Le formulaire de carte (Stripe) tourne dans des iframes qui ont besoin de leurs cookies.
+                            android.webkit.CookieManager.getInstance().setAcceptCookie(true)
+                            android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+                            webChromeClient = object : android.webkit.WebChromeClient() {
+                                override fun onConsoleMessage(m: android.webkit.ConsoleMessage?): Boolean {
+                                    if (m?.messageLevel() == android.webkit.ConsoleMessage.MessageLevel.ERROR)
+                                        problem = m.message().take(200)
+                                    return true
+                                }
+                            }
                             webViewClient = object : android.webkit.WebViewClient() {
                                 private fun check(url: String?): Boolean {
                                     if (url != null && url.startsWith(com.riad.voyage.data.LitePayment.RETURN_URL)) {
@@ -332,6 +349,12 @@ private fun PaymentDialog(html: String, sandbox: Boolean, onDone: () -> Unit, on
                                 }
                                 override fun shouldOverrideUrlLoading(view: android.webkit.WebView?, request: android.webkit.WebResourceRequest?) =
                                     check(request?.url?.toString())
+                                override fun onReceivedError(view: android.webkit.WebView?, request: android.webkit.WebResourceRequest?,
+                                                             error: android.webkit.WebResourceError?) {
+                                    if (request?.isForMainFrame == true || request?.url?.host?.contains("stripe") == true ||
+                                        request?.url?.host?.contains("liteapi") == true)
+                                        problem = "${request?.url?.host}: ${error?.description}"
+                                }
                                 override fun onPageStarted(view: android.webkit.WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                                     if (check(url)) view?.stopLoading() else super.onPageStarted(view, url, favicon)
                                 }

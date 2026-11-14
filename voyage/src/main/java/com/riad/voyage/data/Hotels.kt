@@ -333,7 +333,7 @@ object LitePayment {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>body{font-family:sans-serif;margin:16px;background:#fff;color:#111}</style>
 <script src="https://payment-wrapper.liteapi.travel/dist/liteAPIPayment.js?v=a1"></script></head>
-<body><div id="targetElement"></div>
+<body><div id="targetElement" style="min-height:420px"></div>
 <script>
 var liteAPIConfig = {
   publicKey: ${js(if (sandbox) "sandbox" else "live")},
@@ -343,8 +343,12 @@ var liteAPIConfig = {
   secretKey: ${js(secretKey)},
   returnUrl: ${js(RETURN_URL)}
 };
-var liteAPIPayment = new LiteAPIPayment(liteAPIConfig);
-liteAPIPayment.handlePayment();
+window.onerror = function(m){ console.error(String(m)); };
+function start(){
+  if (typeof LiteAPIPayment === 'undefined') { console.error('Module de paiement LiteAPI non chargé'); return; }
+  try { var p = new LiteAPIPayment(liteAPIConfig); p.handlePayment(); } catch (e) { console.error(String(e && e.message || e)); }
+}
+if (document.readyState === 'complete') start(); else window.addEventListener('load', start);
 </script></body></html>"""
     }
 }
