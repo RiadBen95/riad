@@ -130,9 +130,9 @@ fun BudgetScreen(
         }
 
         // Ce qui n'est pas encore dans le voyage n'est pas compté : proposer de l'ajouter.
-        val absent = listOf(BudgetItem.FLIGHT, BudgetItem.HOTEL, BudgetItem.ACTIVITIES).filter { item -> lines.none { it.item == item } }
+        val absent = listOf(BudgetItem.FLIGHT, BudgetItem.HOTEL, BudgetItem.ACTIVITIES).filter { item -> lines.none { it.item == item && !it.missing } }
         if (absent.isNotEmpty()) item {
-            Text(t("Pas encore dans votre voyage (non compté) :"), style = MaterialTheme.typography.bodySmall,
+            Text(t("Pas encore choisi dans votre voyage :"), style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 absent.forEach { item ->

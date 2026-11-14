@@ -154,10 +154,17 @@ object BudgetCalculator {
         val lines = mutableListOf<BudgetLine>()
 
         if (i.flights.isNotEmpty() || BudgetItem.FLIGHT in overrides)
-            lines += BudgetLine(BudgetItem.FLIGHT, i.flights.sumOf { it.amountEur }, "Vols gardés dans votre voyage", true, i.flights)
+            lines += BudgetLine(BudgetItem.FLIGHT, i.flights.sumOf { it.amountEur.coerceAtLeast(0.0) }, "Vols gardés dans votre voyage", true, i.flights)
         if (i.hotel != null || BudgetItem.HOTEL in overrides)
-            lines += BudgetLine(BudgetItem.HOTEL, i.hotel?.amountEur ?: 0.0,
+            lines += BudgetLine(BudgetItem.HOTEL, i.hotel?.amountEur?.coerceAtLeast(0.0) ?: 0.0,
                 if (i.hotelBooked) "Hôtel réservé" else "Hôtel choisi", true, listOfNotNull(i.hotel))
+        else if (i.includeDaily && i.nights > 0) {
+            // Pas encore d'hôtel : une estimation, signalée comme telle, pour que le total reste honnête.
+            val perNight = when (i.level) { Quiz.Budget.SMALL -> 55.0; Quiz.Budget.MEDIUM -> 100.0; Quiz.Budget.COMFORT -> 190.0 }
+            val rooms = (people + 1) / 2
+            lines += BudgetLine(BudgetItem.HOTEL, perNight * index * rooms * i.nights,
+                "Estimation : aucun hôtel choisi (chambre double, prix moyen de la ville)", false, missing = true)
+        }
 
         val acts = i.activities.distinctBy { norm(it.name) }
         val tickets = acts.filter { costKind(it) == CostKind.TICKET }

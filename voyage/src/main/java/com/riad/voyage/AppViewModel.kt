@@ -40,6 +40,7 @@ import com.riad.voyage.data.PlacesApi
 import com.riad.voyage.data.PlacesParser
 import com.riad.voyage.data.PlannedActivity
 import com.riad.voyage.data.PointOfInterest
+import com.riad.voyage.data.hhmm
 import com.riad.voyage.data.minutesOf
 import com.riad.voyage.data.PopularPlaces
 import com.riad.voyage.data.Prebook
@@ -248,6 +249,8 @@ data class ExperienceState(
     val describing: Boolean = false,      // Claude lit la demande libre
     val checking: Boolean = false,        // vérification des lieux en cours
     val tripId: String? = null,           // voyage relié : le programme y est enregistré automatiquement
+    val aiSummary: String? = null,        // ce qu'Envolée AI a compris de la demande libre
+    val aiIgnored: List<String> = emptyList(), // ce qu'elle n'a pas compris
 ) {
     val steps get() = Quiz.steps(answers, quick)
 }
@@ -587,14 +590,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Budget du programme Expérience affiché (+ vols et hôtel choisis pour la même ville). */
-    fun openBudgetForExperience() = openBudget(
-        _trips.value.firstOrNull { it.city.equals(_experience.value.result?.city ?: _experience.value.answers.city, true) }?.id,
-    ) { rates ->
+    fun openBudgetForExperience() = openBudget(linkedTrip(_experience.value)?.id) { rates ->
         val st = _experience.value
         val a = st.answers
         val city = st.result?.city ?: a.city
         val program = st.result?.days.orEmpty().flatMap { d -> d.steps.map { PlannedActivity(it.place.name, it.place.kind, it.category) } }
-        budgetFor(city, countryOf(city, a.place?.country.orEmpty()), _trips.value.firstOrNull { it.city.equals(city, true) }, rates,
+        budgetFor(city, countryOf(city, a.place?.country.orEmpty()), linkedTrip(st) ?: _trips.value.firstOrNull { it.city.equals(city, true) }, rates,
             if (a.duration.halfDay) 0 else (a.duration.days - 1).coerceAtLeast(0), travellersFor(a.company), program)
     }
 
@@ -604,9 +605,23 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     ): BudgetInput {
         val (flights, hotel, saved) = choicesOf(trip, rates)
         val a = _experience.value.answers
-        // Repas : une demi-journée en moins si l'on arrive après 14 h ou si l'on repart avant midi.
-        val mealDays = (nights + 1) - (if ((trip?.arrivalMin ?: 0) >= 14 * 60) 0.5 else 0.0) -
-            (if ((trip?.departureMin ?: 24 * 60) <= 12 * 60) 0.5 else 0.0)
+        // Repas : rien le premier jour après une arrivée le soir (ou avec soirée à l'hôtel), la moitié l'après-midi ;
+        // rien le dernier jour avant un départ le matin, la moitié avant un départ l'après-midi.
+        val arrival = trip?.arrivalMin
+        val departure = trip?.departureMin
+        val firstLoss = when {
+            arrival == null -> 0.0
+            arrival >= 19 * 60 || (trip?.restAfterArrival == true && arrival >= 15 * 60) -> 1.0
+            arrival >= 14 * 60 -> 0.5
+            else -> 0.0
+        }
+        val lastLoss = when {
+            departure == null -> 0.0
+            departure <= 11 * 60 -> 1.0
+            departure <= 15 * 60 -> 0.5
+            else -> 0.0
+        }
+        val mealDays = (nights + 1) - firstLoss - lastLoss
         return BudgetInput(
             city = city, country = country, travellers = travellers, nights = nights, level = a.budget, mobility = a.mobility,
             flights = flights, hotel = hotel?.first, hotelBooked = hotel?.second == true, activities = program + saved,
@@ -1010,11 +1025,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     SavedPlace.of(s.place))
             })
         }
-        val end = st.answers.startDate.plusDays((st.answers.duration.days - 1).toLong())
-        val c = st.answers.company
+        // Le voyage porte les mêmes dates, heures et voyageurs que le programme (une seule source pour le PDF,
+        // le budget et les bagages).
+        val a = st.answers
+        val end = a.startDate.plusDays((a.duration.days - 1).toLong())
+        val c = a.company
         val travellers = if (c == Quiz.Company.SOLO || c == Quiz.Company.COUPLE) travellersFor(c) else trip.travellers ?: travellersFor(c)
         val updated = trip.copy(programTitle = exp.title, programSubtitle = exp.subtitle, program = program, travellers = travellers,
-            startDate = trip.startDate ?: st.answers.startDate.toString(), endDate = trip.endDate ?: end.toString())
+            startDate = a.startDate.toString(), endDate = end.toString(), arrivalTime = hhmm(a.arrivalMin) ?: trip.arrivalTime,
+            departureTime = hhmm(a.departureMin) ?: trip.departureTime,
+            restAfterArrival = a.restAfterArrival, programNotes = exp.notes)
         if (silent) { tripStore.upsert(updated); refreshTrips() }
         else saveTrip(updated, tf("Programme enregistré dans votre voyage : {0}", t(exp.city)))
         _experience.update { it.copy(tripId = updated.id) }
@@ -1030,8 +1050,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         openTrip(trip.id)
     }
 
-    fun updateTripInfo(id: String, start: LocalDate, end: LocalDate, travellers: Int, arrival: String?, departure: String?) = updateTrip(id) {
-        it.copy(startDate = start.toString(), endDate = end.toString(), travellers = travellers, arrivalTime = arrival, departureTime = departure)
+    fun updateTripInfo(id: String, start: LocalDate, end: LocalDate, travellers: Int, arrival: String?, departure: String?) {
+        updateTrip(id) {
+            it.copy(startDate = start.toString(), endDate = end.toString(), travellers = travellers, arrivalTime = arrival, departureTime = departure)
+        }
+        // Programme de ce voyage : mêmes dates, heures et voyageurs (recalculé sans nouvelle recherche).
+        if (_experience.value.tripId != id) return
+        val days = (java.time.temporal.ChronoUnit.DAYS.between(start, end).toInt() + 1).coerceIn(1, Quiz.Duration.MAX_DAYS)
+        val change: (Quiz.Answers) -> Quiz.Answers = { a ->
+            a.copy(startDate = start, duration = Quiz.Duration(days), arrivalMin = arrival?.let(::minutesOf),
+                departureMin = departure?.let(::minutesOf), company = companyFor(travellers, a.company))
+        }
+        if (_experience.value.result != null) refineExperience(change) else updateAnswers(change)
     }
 
     /** Compagnie de voyage cohérente avec un nombre de voyageurs (garde la réponse actuelle quand elle convient). */
@@ -1047,11 +1077,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         updateAnswers { a ->
             a.copy(
                 city = trip.city, place = null, startDate = trip.start ?: LocalDate.now(), duration = Quiz.Duration(days),
-                arrivalMin = trip.arrivalMin, departureMin = trip.departureMin,
+                arrivalMin = trip.arrivalMin, departureMin = trip.departureMin, restAfterArrival = trip.restAfterArrival,
                 company = trip.travellers?.let { companyFor(it, a.company) } ?: a.company,
             )
         }
-        _experience.update { it.copy(quick = true, step = it.steps.indexOf("interests"), result = null, error = null, tripId = trip.id) }
+        _experience.update { it.copy(quick = true, step = it.steps.indexOf("interests"), result = null, error = null, tripId = trip.id,
+            aiSummary = null, aiIgnored = emptyList()) }
         _tab.value = Tab.EXPERIENCE
     }
 
@@ -1262,20 +1293,51 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             val r = attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.describe(s.claudeKey, com.riad.voyage.data.ClaudeModel.of(s.claudeModel), text, LocalDate.now()) }
             val req = r?.getOrNull()
-            if (req == null || (req.city.isBlank() && _experience.value.answers.city.isBlank())) {
+            val trip = linkedTrip(_experience.value)
+            val base = freshAnswers(trip)
+            if (req == null || (req.city.isBlank() && base.city.isBlank())) {
                 val why = r?.exceptionOrNull()?.let { TravelpayoutsApi.userMessage(it) } ?: t("Précisez au moins la ville.")
                 _experience.update { it.copy(describing = false, error = t("Envolée AI n'a pas pu lire la demande.") + " " + why) }
                 return@launch
             }
-            updateAnswers { com.riad.voyage.data.ClaudeAssistant.toAnswers(req, it) }
-            // Voyage relié : le nombre de voyageurs dit dans la demande l'emporte, sinon celui du voyage.
-            linkedTrip(_experience.value)?.let { trip ->
-                if (req.travellers > 0) updateTrip(trip.id) { it.copy(travellers = req.travellers) }
-                else trip.travellers?.let { n -> updateAnswers { it.copy(company = companyFor(n, it.company)) } }
-            }
-            _experience.update { it.copy(describing = false) }
+            val (answers, ignored) = com.riad.voyage.data.ClaudeAssistant.toAnswers(req, base)
+            updateAnswers { answers }
+            if (trip != null && req.travellers > 0) updateTrip(trip.id) { it.copy(travellers = req.travellers) }
+            _experience.update { it.copy(describing = false, aiSummary = summaryOf(answers), aiIgnored = ignored) }
             generateExperience()
         }
+    }
+
+    /**
+     * Point de départ d'une demande libre : réponses par défaut, plus le voyage relié (ville, dates, heures, voyageurs)
+     * et les préférences personnelles (rythme, budget, régime, déplacements). Rien d'une demande précédente.
+     */
+    private fun freshAnswers(trip: Trip?): Quiz.Answers {
+        val a = _experience.value.answers
+        return Quiz.Answers(
+            city = trip?.city.orEmpty(), startDate = trip?.start ?: LocalDate.now(),
+            duration = trip?.nights?.let { Quiz.Duration((it + 1).coerceIn(1, Quiz.Duration.MAX_DAYS)) } ?: Quiz.Duration.DAY,
+            company = trip?.travellers?.let { companyFor(it, Quiz.Company.COUPLE) } ?: Quiz.Company.COUPLE,
+            arrivalMin = trip?.arrivalMin, departureMin = trip?.departureMin, restAfterArrival = trip?.restAfterArrival == true,
+            pace = a.pace, budget = a.budget, diet = a.diet, mobility = a.mobility, style = a.style,
+        )
+    }
+
+    /** Résumé lisible de ce qu'Envolée AI a compris. */
+    private fun summaryOf(a: Quiz.Answers): String {
+        val end = a.startDate.plusDays((a.duration.days - 1).toLong())
+        return listOfNotNull(
+            t(a.city),
+            com.riad.voyage.ui.formatDay(a.startDate) + (if (end != a.startDate) " → " + com.riad.voyage.ui.formatDay(end) else ""),
+            a.arrivalMin?.let { tf("arrivée {0}", hhmm(it)!!) },
+            t("soirée à l'hôtel").takeIf { a.restAfterArrival && a.arrivalMin != null },
+            a.departureMin?.let { tf("départ {0}", hhmm(it)!!) },
+            t(a.company.label),
+            a.interests.joinToString(", ") { t(it.label) }.ifBlank { null },
+            a.tastes.joinToString(", ") { t(it.label) }.ifBlank { null },
+            t(a.diet.label).takeIf { a.diet != Quiz.Diet.NONE },
+            t(a.budget.label),
+        ).joinToString(" · ")
     }
 
     private val verifiedIds = mutableSetOf<String>()
@@ -1348,10 +1410,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Programme relié à un voyage : chaque changement y est enregistré sans action de la personne. */
-    private fun autosave() {
-        val st = _experience.value
-        if (linkedTrip(st) != null) saveExperience(silent = true)
-    }
+    private fun autosave() = saveExperience(silent = true)
 
     /** Voyage relié au programme affiché (même ville), s'il y en a un. */
     private fun linkedTrip(st: ExperienceState): Trip? {
@@ -1359,7 +1418,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         return _trips.value.firstOrNull { it.id == st.tripId && it.city.equals(city.trim(), ignoreCase = true) }
     }
 
-    fun editExperience() = _experience.update { it.copy(result = null, step = 0, error = null) }
+    fun editExperience() = _experience.update { it.copy(result = null, step = 0, error = null, aiSummary = null, aiIgnored = emptyList()) }
+
+    /** Nouvelle heure pour une étape ; les suivantes sont décalées, rien n'est recomposé. */
+    fun setExperienceStepTime(dayIndex: Int, stepIndex: Int, minutes: Int) = editResult {
+        ExperienceBuilder.setStepTime(_experience.value.answers, it, dayIndex, stepIndex, minutes)
+    }
 
     /** Charge les meilleurs lieux de chaque catégorie utile, puis compose l'expérience. */
     fun generateExperience() {
@@ -1410,7 +1474,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             val exp = ExperienceBuilder.build(a, city, analysed, weather = experienceWeather)
             answersStore.save(a)
             _experience.update {
-                if (exp.days.isEmpty()) it.copy(loading = false, error = tf("Pas assez de lieux trouvés pour {0}. Essayez d'autres envies ou une grande ville proche.", t(city)))
+                if (exp.days.isEmpty()) it.copy(loading = false, error =
+                    if (analysed.values.any { l -> l.isNotEmpty() }) tf("Les lieux trouvés à {0} sont fermés à ces dates. Essayez d'autres dates ou d'autres envies.", t(city))
+                    else tf("Pas assez de lieux trouvés pour {0}. Essayez d'autres envies ou une grande ville proche.", t(city)))
                 else it.copy(loading = false, result = exp, previous = emptySet())
             }
             autosave()

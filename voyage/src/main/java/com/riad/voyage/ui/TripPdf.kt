@@ -163,8 +163,8 @@ private class Pages(private val context: Context, private val doc: PdfDocument) 
         section(t("En un coup d'œil"))
         val trip = c.trip
         listOfNotNull(
-            trip.arrivalTime?.let { tf("Arrivée : {0}", it) },
-            trip.departureMin?.let { m -> tf("Départ : {0} · quitter l'hôtel vers {1}", trip.departureTime!!, "%02d:%02d".format((m - 180) / 60, (m - 180) % 60)) },
+            trip.arrivalTime?.let { tf("Arrivée : {0}", it) + if (trip.restAfterArrival) " (" + t("soirée à l'hôtel") + ")" else "" },
+            trip.departureMin?.let { m -> tf("Départ : {0} · quitter l'hôtel vers {1}", trip.departureTime!!, com.riad.voyage.data.hhmm(m - 180)!!) },
         ).takeIf { it.isNotEmpty() }?.let { text("🕑 " + it.joinToString(" · "), 10f, bold = true, gapAfter = 6f) }
         if (c.weather.isNotEmpty()) {
             text(t("Météo prévue"), 11f, bold = true)
@@ -187,12 +187,18 @@ private class Pages(private val context: Context, private val doc: PdfDocument) 
         section(t("Programme"))
         c.trip.program.forEach { day ->
             text(day.title + (day.weather?.let { " · $it" } ?: ""), 12f, NAVY, bold = true, gapBefore = 8f)
-            day.steps.forEach { s ->
-                text("${s.time}   ${s.emoji} ${s.place.name}", 11f, bold = true, gapBefore = 3f, gapAfter = 1f)
+            day.steps.forEachIndexed { i, s ->
+                text("${s.time}   ${s.emoji} ${s.place.name.take(90)}", 11f, bold = true, gapBefore = 3f, gapAfter = 1f)
                 text(listOf(t(s.moment), tk(s.place.kind), "⏱ " + ExperienceBuilder.formatDuration(s.durationMin)).filter { it.isNotBlank() }
                     .joinToString(" · "), 9f, GREY, indent = 44f, gapAfter = 1f)
                 if (s.why.isNotBlank()) text(s.why, 9f, indent = 44f)
+                day.steps.getOrNull(i + 1)?.let { n -> ExperienceBuilder.freeTime(s.time, s.durationMin, n.time) }
+                    ?.let { text("⏳ " + t("Temps libre") + " · " + it, 9f, GREY, indent = 44f) }
             }
+        }
+        if (c.trip.programNotes.isNotEmpty()) {
+            text(t("À savoir"), 11f, bold = true, gapBefore = 8f)
+            c.trip.programNotes.forEach { text("• $it", 9f, indent = 8f, gapAfter = 1f) }
         }
         // Jour du départ (sans programme) : on l'indique plutôt que de le passer sous silence.
         val trip = c.trip

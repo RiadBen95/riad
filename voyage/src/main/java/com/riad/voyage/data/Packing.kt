@@ -36,13 +36,15 @@ object Packing {
             add(PackItem("Réservations enregistrées hors connexion", DOCS))
             if (nights >= 2) add(PackItem("Assurance voyage", DOCS))
 
-            add(PackItem("Tenues de jour", CLOTHES, days.coerceAtMost(7)))
-            add(PackItem("Sous-vêtements et chaussettes", CLOTHES, days.coerceAtMost(8)))
-            if (nights > 0) add(PackItem("Pyjama", CLOTHES))
+            if (nights > 0) {   // aller-retour dans la journée : pas de vêtements de rechange
+                add(PackItem("Tenues de jour", CLOTHES, days.coerceAtMost(7)))
+                add(PackItem("Sous-vêtements et chaussettes", CLOTHES, days.coerceAtMost(8)))
+                add(PackItem("Pyjama", CLOTHES))
+            }
             add(PackItem("Chaussures confortables pour marcher", CLOTHES))
             if (nights >= 5) add(PackItem("Lessive de voyage", CLOTHES))
 
-            add(PackItem("Trousse de toilette", HEALTH))
+            if (nights > 0) add(PackItem("Trousse de toilette", HEALTH))
             add(PackItem("Médicaments personnels", HEALTH))
             if (nights >= 3 || family) add(PackItem("Petite trousse de premiers secours", HEALTH))
 

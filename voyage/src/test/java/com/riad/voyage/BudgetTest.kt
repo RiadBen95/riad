@@ -39,9 +39,12 @@ class BudgetTest {
         assertEquals(3, acts.freeCount)
     }
 
-    @Test fun nothingChosenAddsNoFlightNorHotel() {
+    @Test fun nothingChosenAddsNoFlightAndAnEstimatedHotel() {
         val l = BudgetCalculator.compute(BudgetInput("Paris", "France", travellers = 2, nights = 3))
-        assertTrue(l.none { it.item == BudgetItem.FLIGHT || it.item == BudgetItem.HOTEL || it.item == BudgetItem.ACTIVITIES })
+        assertTrue(l.none { it.item == BudgetItem.FLIGHT || it.item == BudgetItem.ACTIVITIES })
+        // Pas d'hôtel choisi : une estimation signalée (1 chambre double, 3 nuits), pour un total honnête.
+        assertTrue(line(l, BudgetItem.HOTEL).missing)
+        assertEquals(100.0 * 3, line(l, BudgetItem.HOTEL).amountEur, 0.01)
         assertEquals(55.0 * 2 * 4, line(l, BudgetItem.MEALS).amountEur, 0.01)
         assertTrue(BudgetCalculator.compute(BudgetInput("Paris", "France", includeDaily = false)).isEmpty())
     }

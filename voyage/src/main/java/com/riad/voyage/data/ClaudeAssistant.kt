@@ -27,9 +27,10 @@ enum class ClaudeModel(val id: String, val label: String, val strengths: String,
 
 /** La demande en langage libre, traduite en réponses du questionnaire (lue depuis le JSON de la réponse). */
 class TripRequest(o: JSONObject) {
+    /** Liste de textes, même si Envolée AI renvoie un seul texte au lieu d'une liste. */
     private fun list(o: JSONObject, k: String): List<String> {
-        val a = o.optJSONArray(k) ?: return emptyList()
-        return List(a.length()) { a.optString(it) }
+        val a = o.optJSONArray(k) ?: return listOfNotNull(o.optString(k).takeIf { it.isNotBlank() && it != "null" })
+        return List(a.length()) { a.optString(it) }.filter { it.isNotBlank() && it != "null" }
     }
     val city: String = o.optString("city")
     val startDate: String = o.optString("startDate")
@@ -135,32 +136,56 @@ object ClaudeAssistant {
             }.getOrNull()
         }
 
-    /** Fiche de Claude → réponses du questionnaire (les valeurs inconnues gardent les réponses actuelles). */
-    fun toAnswers(r: TripRequest, a: Quiz.Answers): Quiz.Answers {
-        fun <E : Enum<E>> pick(values: Array<E>, name: String, default: E) = values.firstOrNull { it.name == name.trim().uppercase() } ?: default
+    /**
+     * Fiche d'Envolée AI → réponses du questionnaire, en partant de [base] (réponses par défaut, complétées par le
+     * voyage relié) : rien d'une demande précédente ne se mélange à la nouvelle. Renvoie aussi ce qui n'a pas été compris.
+     */
+    fun toAnswers(r: TripRequest, base: Quiz.Answers): Pair<Quiz.Answers, List<String>> {
+        val ignored = mutableListOf<String>()
+        fun <E : Enum<E>> pick(values: Array<E>, name: String, default: E, what: String): E {
+            if (name.isBlank()) return default
+            return values.firstOrNull { it.name == name.trim().uppercase() } ?: default.also { ignored += "$what « $name »" }
+        }
+        fun <E : Enum<E>> pickAll(values: Array<E>, names: List<String>, what: String) = names.mapNotNull { n ->
+            values.firstOrNull { it.name == n.trim().uppercase() }.also { if (it == null && n.isNotBlank()) ignored += "$what « $n »" }
+        }.toSet()
+        if (r.days > Quiz.Duration.MAX_DAYS) ignored += com.riad.voyage.tf("{0} jours (au plus {1})", r.days, Quiz.Duration.MAX_DAYS)
         val days = r.days.coerceIn(0, Quiz.Duration.MAX_DAYS)
-        return a.copy(
-            city = r.city.trim().ifBlank { a.city },
-            place = if (r.city.isBlank()) a.place else null,
-            startDate = runCatching { LocalDate.parse(r.startDate.trim()) }.getOrNull() ?: a.startDate,
+        val start = r.startDate.takeIf { it.isNotBlank() }?.let { d ->
+            runCatching { LocalDate.parse(d.trim()) }.getOrNull()?.takeIf { !it.isBefore(LocalDate.now()) }
+                ?: null.also { ignored += com.riad.voyage.tf("date « {0} »", d) }
+        }
+        fun time(v: String, what: String) = v.takeIf { it.isNotBlank() }?.let { minutesOf(it) ?: null.also { ignored += "$what « $v »" } }
+        val company = when {
+            r.company.isNotBlank() -> pick(Quiz.Company.entries.toTypedArray(), r.company, base.company, com.riad.voyage.t("compagnie"))
+            r.travellers == 1 -> Quiz.Company.SOLO
+            r.travellers == 2 -> Quiz.Company.COUPLE
+            r.travellers >= 3 -> Quiz.Company.FRIENDS
+            else -> base.company
+        }
+        val answers = base.copy(
+            city = r.city.trim().ifBlank { base.city },
+            place = if (r.city.isBlank()) base.place else null,
+            startDate = start ?: base.startDate,
             duration = when {
                 r.halfDay -> Quiz.Duration.HALF
                 days > 0 -> Quiz.Duration(days)
-                else -> a.duration
+                else -> base.duration
             },
-            company = pick(Quiz.Company.entries.toTypedArray(), r.company, a.company),
-            interests = r.interests.mapNotNull { n -> Quiz.Interest.entries.firstOrNull { it.name == n.trim().uppercase() } }.toSet().ifEmpty { a.interests },
-            tastes = r.tastes.mapNotNull { n -> Quiz.Taste.entries.firstOrNull { it.name == n.trim().uppercase() } }.toSet(),
-            style = pick(Quiz.Style.entries.toTypedArray(), r.style, a.style),
-            pace = pick(Quiz.Pace.entries.toTypedArray(), r.pace, a.pace),
-            mobility = pick(Quiz.Mobility.entries.toTypedArray(), r.mobility, a.mobility),
-            diet = pick(Quiz.Diet.entries.toTypedArray(), r.diet, a.diet),
-            budget = pick(Quiz.Budget.entries.toTypedArray(), r.budget, a.budget),
-            arrivalMin = minutesOf(r.arrivalTime) ?: a.arrivalMin,
-            departureMin = minutesOf(r.departureTime) ?: a.departureMin,
+            company = company,
+            interests = pickAll(Quiz.Interest.entries.toTypedArray(), r.interests, com.riad.voyage.t("envie")).ifEmpty { base.interests },
+            tastes = pickAll(Quiz.Taste.entries.toTypedArray(), r.tastes, com.riad.voyage.t("goût")),
+            style = pick(Quiz.Style.entries.toTypedArray(), r.style, base.style, com.riad.voyage.t("style")),
+            pace = pick(Quiz.Pace.entries.toTypedArray(), r.pace, base.pace, com.riad.voyage.t("rythme")),
+            mobility = pick(Quiz.Mobility.entries.toTypedArray(), r.mobility, base.mobility, com.riad.voyage.t("déplacements")),
+            diet = pick(Quiz.Diet.entries.toTypedArray(), r.diet, base.diet, com.riad.voyage.t("régime")),
+            budget = pick(Quiz.Budget.entries.toTypedArray(), r.budget, base.budget, com.riad.voyage.t("budget")),
+            arrivalMin = time(r.arrivalTime, com.riad.voyage.t("arrivée")) ?: base.arrivalMin,
+            departureMin = time(r.departureTime, com.riad.voyage.t("départ")) ?: base.departureMin,
             wanted = r.wanted.filter { it.isNotBlank() },
             avoidNames = r.avoid.filter { it.isNotBlank() },
             restAfterArrival = r.restAfterArrival,
         )
+        return answers to ignored
     }
 }

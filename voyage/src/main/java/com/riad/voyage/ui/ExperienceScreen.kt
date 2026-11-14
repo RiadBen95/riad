@@ -1,6 +1,7 @@
 package com.riad.voyage.ui
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -74,6 +75,7 @@ class ExperienceEdits(
     val linked: Boolean = false,
     val openTrip: () -> Unit = {},
     val describe: ((String) -> Unit)? = null,   // saisie libre avec Claude (null = désactivée)
+    val setTime: (Int, Int, Int) -> Unit = { _, _, _ -> },   // nouvelle heure d'une étape (jour, étape, minutes)
 )
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -151,6 +153,11 @@ private fun Questionnaire(
                         Text(t("Soirée libre à l'hôtel après l'arrivée"))
                     }
                     TimeField(t("Heure de départ le dernier jour (facultatif, HH:MM)"), a.departureMin) { m -> onAnswers { it.copy(departureMin = m) } }
+                    val dep = a.departureMin
+                    val arr = a.arrivalMin
+                    if (a.duration.days == 1 && dep != null && arr != null && dep <= arr) Text(
+                        t("Le départ est avant l'arrivée : vérifiez les heures."), color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall)
                     ChoiceCard(t("Une demi-journée"), null, a.duration.halfDay) { onAnswers { it.copy(duration = Quiz.Duration.HALF) } }
                     val end = a.startDate.plusDays((a.duration.days - 1).toLong())
                     ChoiceCard(
@@ -327,7 +334,32 @@ private fun ExperienceResult(
             onPick = { choice -> onReplace(d, i, choice); editing = null },
             onDismiss = { editing = null },
             onMove = { delta -> edits.move(d, i, delta); editing = null },
-            canUp = i > 0, canDown = i < exp.days[d].steps.lastIndex)
+            // Repas, arrivée et départ gardent leur place ; les visites se déplacent autour.
+            canUp = i > 0 && !ExperienceBuilder.isAnchored(step) && !ExperienceBuilder.isAnchored(exp.days[d].steps[i - 1]),
+            canDown = i < exp.days[d].steps.lastIndex && !ExperienceBuilder.isAnchored(step) && !ExperienceBuilder.isAnchored(exp.days[d].steps[i + 1]))
+    }
+    // Étape dont on change l'heure (les suivantes sont décalées).
+    var timing by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+    timing?.let { (d, i) ->
+        val step = exp.days.getOrNull(d)?.steps?.getOrNull(i)
+        if (step == null) timing = null
+        else {
+            var minutes by remember(d, i) { mutableStateOf(com.riad.voyage.data.minutesOf(step.time)) }
+            AlertDialog(
+                onDismissRequest = { timing = null },
+                title = { Text(step.place.name) },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TimeField(t("Nouvelle heure (HH:MM)"), minutes) { minutes = it }
+                        Text(t("Les étapes suivantes sont décalées d'autant."), style = MaterialTheme.typography.bodySmall)
+                    }
+                },
+                confirmButton = {
+                    TextButton(enabled = minutes != null, onClick = { minutes?.let { edits.setTime(d, i, it) }; timing = null }) { Text(t("Valider")) }
+                },
+                dismissButton = { TextButton(onClick = { timing = null }) { Text(t("Annuler")) } },
+            )
+        }
     }
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (state.checking) item {
@@ -354,6 +386,13 @@ private fun ExperienceResult(
                         Button(onClick = onRegenerate) { Text(t("Autre proposition")) }
                         OutlinedButton(onClick = onEdit) { Text(t("Modifier")) }
                     }
+                    // Ce qu'Envolée AI a compris, à corriger d'un geste.
+                    state.aiSummary?.let { summary ->
+                        Text(t("Envolée AI a compris :") + " " + summary, style = MaterialTheme.typography.bodySmall)
+                        if (state.aiIgnored.isNotEmpty()) Text(tf("Non compris : {0}", state.aiIgnored.joinToString(", ")),
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                        TextButton(onClick = onEdit, contentPadding = PaddingValues(0.dp)) { Text(t("Corriger les réponses ›")) }
+                    }
                     if (edits.linked) {
                         TextButton(onClick = edits.openTrip, contentPadding = PaddingValues(0.dp)) {
                             Text(t("✓ Enregistré dans votre voyage, mis à jour à chaque changement ›"))
@@ -361,6 +400,15 @@ private fun ExperienceResult(
                     } else Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) { Text(t("💾 Enregistrer dans mon voyage")) }
                     OutlinedButton(onClick = onHotels, modifier = Modifier.fillMaxWidth()) { Text(t("🏨 Où dormir ?")) }
                     OutlinedButton(onClick = onBudget, modifier = Modifier.fillMaxWidth()) { Text(t("💰 Budget du séjour")) }
+                }
+            }
+        }
+        // Compromis faits pour composer le programme : dits clairement plutôt que découverts dans le PDF.
+        if (exp.notes.isNotEmpty()) item {
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer), modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(t("À savoir"), fontWeight = FontWeight.Bold)
+                    exp.notes.forEach { Text("• $it", style = MaterialTheme.typography.bodySmall) }
                 }
             }
         }
@@ -374,7 +422,16 @@ private fun ExperienceResult(
         }
         exp.days.forEachIndexed { dayIndex, day ->
             item { DayHeader(day, exp.city) }
-            itemsIndexed(day.steps) { stepIndex, s -> StepCard(s, exp.city, onOpen = { detail = s }) { editing = dayIndex to stepIndex } }
+            itemsIndexed(day.steps) { stepIndex, s ->
+                val transfer = s.place.id.startsWith("transfer/")
+                StepCard(s, exp.city, onOpen = { if (!transfer) detail = s }, onTime = { timing = dayIndex to stepIndex }.takeIf { !transfer },
+                    onChange = { editing = dayIndex to stepIndex }.takeIf { !transfer })
+                // Frise : les trous de la journée sont visibles.
+                day.steps.getOrNull(stepIndex + 1)?.let { next -> ExperienceBuilder.freeTime(s.time, s.durationMin, next.time) }?.let { gap ->
+                    Text("⏳ " + t("Temps libre") + " · " + gap, style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 66.dp))
+                }
+            }
             item {
                 TextButton(onClick = { adding = dayIndex }, contentPadding = PaddingValues(0.dp)) { Text(t("+ Ajouter une étape")) }
             }
@@ -414,11 +471,13 @@ private fun DayHeader(day: ExperienceDay, city: String) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun StepCard(s: ExperienceStep, city: String, onOpen: () -> Unit = {}, onChange: () -> Unit = {}) {
+private fun StepCard(s: ExperienceStep, city: String, onOpen: () -> Unit = {}, onTime: (() -> Unit)? = null, onChange: (() -> Unit)? = null) {
     val context = LocalContext.current
     Row {
         Column(Modifier.width(58.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(s.time, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            // L'heure se touche pour la changer (les étapes suivantes suivent).
+            Text(s.time, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary,
+                modifier = if (onTime != null) Modifier.clickable(onClick = onTime) else Modifier)
             Text(s.category.emoji, style = MaterialTheme.typography.titleLarge)
         }
         Card(onClick = onOpen, modifier = Modifier.weight(1f), shape = RoundedCornerShape(16.dp)) {
@@ -446,7 +505,7 @@ private fun StepCard(s: ExperienceStep, city: String, onOpen: () -> Unit = {}, o
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (onChange != null) Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {   // pas pour l'arrivée ni le départ
                     TextButton(onClick = { openUrl(context, ActivityLinks.directionsUrl(s.place, city)) }, contentPadding = PaddingValues(horizontal = 4.dp)) {
                         Text(t("Itinéraire"))
                     }

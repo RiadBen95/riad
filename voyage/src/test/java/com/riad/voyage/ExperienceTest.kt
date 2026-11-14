@@ -111,7 +111,8 @@ class ExperienceTest {
         assertEquals(first[0].place.id, moved[1].place.id)
         assertEquals(first[1].place.id, moved[0].place.id)
         val added = ExperienceBuilder.addStep(a, exp, 0, "Pique-nique").days[0].steps
-        assertEquals("Pique-nique", added.last().place.name)
+        // Ajoutée avant le dîner, pour garder une heure de journée.
+        assertEquals(added.indexOfFirst { it.moment == "Dîner" } - 1, added.indexOfFirst { it.place.name == "Pique-nique" })
         assertEquals(first.size + 1, added.size)
     }
 
@@ -181,5 +182,20 @@ class ExperienceTest {
         assertEquals("Départ", last.last().moment)                                       // rien après le départ
         last.zipWithNext().forEach { (x, y) -> assertTrue("${x.time} → ${y.time}", minutes(y.time) >= minutes(x.time)) }
         assertTrue(last.none { it.moment == "Petit-déjeuner" && minutes(it.time) > minutes(last.last().time) })
+    }
+
+    @Test
+    fun nightTimesAndChosenTimes() {
+        // Vol à minuit : départ de l'hôtel la veille à 21 h, pas d'heure négative ; le dernier jour disparaît.
+        val a = Quiz.Answers(city = "Paris", interests = setOf(Quiz.Interest.FOOD), duration = Quiz.Duration(2), departureMin = 0)
+        val days = ExperienceBuilder.build(a, "Paris", pools).days
+        assertEquals(1, days.size)
+        assertEquals("21h00", days[0].steps.last().time)
+        // Nouvelle heure d'une étape : les suivantes sont décalées, rien n'est recomposé.
+        val exp = ExperienceBuilder.build(a.copy(duration = Quiz.Duration.DAY, departureMin = null), "Paris", pools)
+        val moved = ExperienceBuilder.setStepTime(a, exp, 0, 0, 11 * 60).days[0].steps
+        assertEquals("11h00", moved[0].time)
+        assertEquals(exp.days[0].steps.map { it.place.id }, moved.map { it.place.id })
+        assertTrue(minutes(moved[1].time) >= 11 * 60 + moved[0].durationMin)
     }
 }
