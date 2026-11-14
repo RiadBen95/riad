@@ -153,3 +153,16 @@ Android 8.0 (API 26) minimum.
 | `music/Notes.kt`, `music/Tunings.kt` | Notes, calcul des cents, accordages |
 | `TunerViewModel.kt` | Filtrage (médiane), choix de la corde cible, état de l'écran |
 | `ui/TunerScreen.kt` | Interface : note, jauge, sélecteur de cordes, menu d'accordage |
+
+## Sécurité
+
+- **Signature** : Envolée est publiée en version *release* signée avec une clé privée qui n'est
+  pas dans le dépôt. La CI la lit dans les secrets GitHub `ENVOLEE_KEYSTORE_BASE64`,
+  `ENVOLEE_KEYSTORE_PASSWORD`, `ENVOLEE_KEY_ALIAS` et `ENVOLEE_KEY_PASSWORD`. Sans ces secrets,
+  l'app est compilée mais rien n'est publié.
+- **CI** : droits en lecture par défaut, publication seulement depuis la branche principale ou de
+  développement, actions épinglées par empreinte, mises à jour par Dependabot.
+- **App** : clés d'API chiffrées avec le Keystore Android, aucune sauvegarde des données, trafic
+  HTTPS uniquement, liens externes limités à http(s), page de paiement limitée à LiteAPI et
+  Stripe, réservations payées non confirmées conservées pour être finalisées sans nouveau paiement.
+- À venir : serveur intermédiaire pour garder les clés et vérifier les paiements côté serveur.
