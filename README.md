@@ -63,7 +63,7 @@ pour payer : aucune donnée bancaire ne passe par l'application.
 
 ## Langues
 
-Français, anglais, arabe (affichage de droite à gauche), espagnol, chinois, japonais et hindi. L'app suit la
+Français et anglais (traductions dans `tools/i18n/en.py`). L'app suit la
 langue du téléphone, avec un choix dans **Réglages**. Les articles du blogue et les descriptions Wikipédia
 s'affichent dans la langue choisie quand l'article existe (sinon en anglais).
 
