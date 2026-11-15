@@ -428,7 +428,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _usePrefs.value = false
         _prefsSummary.value = null
         // Toutes les recherches en cours repartent de zéro (Vols, Ville, Hôtels, Blogue, Envolée) ; les voyages enregistrés restent.
-        _form.value = FlightForm()
+        _form.value = FlightForm(origin = null)   // départ vide aussi
         _results.value = ResultsState()
         _activityCity.value = ""
         _activityPlace.value = null
