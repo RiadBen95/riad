@@ -1099,4 +1099,5 @@ ROWS = [
     ['Apéritif', 'Pre-dinner drink'],
     ['{0} à visiter', '{0} to visit'],
     ['{0} à voir en passant', '{0} to see on the way'],
+    ['Historique et préférences effacés.', 'History and preferences cleared.'],
 ]

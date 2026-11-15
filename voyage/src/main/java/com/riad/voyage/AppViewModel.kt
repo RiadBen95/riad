@@ -425,6 +425,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         recentStore.clear()
         _recents.value = emptyList()
         prefStore.clear()   // préférences mémorisées des envolées passées
+        _usePrefs.value = false
+        _prefsSummary.value = null
+        _message.value = t("Historique et préférences effacés.")
     }
 
     // ---------- Nouvelle envolée et préférences ----------
@@ -438,16 +441,23 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _tab.value = Tab.EXPERIENCE
     }
 
-    val usePreferences get() = prefStore.use
+    // Suivis par l'écran : l'interrupteur et le résumé se mettent à jour aussitôt.
+    private val _usePrefs = MutableStateFlow(prefStore.use)
+    val usePreferences: StateFlow<Boolean> = _usePrefs.asStateFlow()
+    private val _prefsSummary = MutableStateFlow(computePrefsSummary())
+    val preferences: StateFlow<String?> = _prefsSummary.asStateFlow()
 
     /** Résumé des préférences habituelles (null s'il n'y a encore aucune envolée). */
-    fun preferenceSummary(): String? = prefStore.applyTo(Quiz.Answers())?.let { p ->
+    fun preferenceSummary(): String? = _prefsSummary.value
+
+    private fun computePrefsSummary(): String? = prefStore.applyTo(Quiz.Answers())?.let { p ->
         listOfNotNull(t(p.diet.label).takeIf { p.diet != Quiz.Diet.NONE }, t(p.budget.label), t(p.mobility.label),
             tf("rythme {0}", t(p.pace.label).lowercase()), t(p.style.label)).joinToString(" · ") { it.lowercase() }
     }
 
     fun setUsePreferences(on: Boolean) {
         prefStore.use = on
+        _usePrefs.value = on
         val d = Quiz.Answers()
         updateAnswers { a ->
             if (on) prefStore.applyTo(a) ?: a
@@ -1894,6 +1904,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             experienceWeather = weatherJob.await()
             val exp = ExperienceBuilder.build(a, city, analysed, weather = experienceWeather)
             prefStore.record(a)
+            _prefsSummary.value = computePrefsSummary()
             if (exp.days.isEmpty()) _experience.update {
                 it.copy(loading = false, error =
                     if (analysed.values.any { l -> l.isNotEmpty() }) tf("Les lieux trouvés à {0} sont fermés à ces dates. Essayez d'autres dates ou d'autres envies.", t(city))

@@ -23,6 +23,8 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
     val tab by vm.tab.collectAsStateWithLifecycle()
     val settings by vm.settings.collectAsStateWithLifecycle()
     val bookingImport by vm.bookingImport.collectAsStateWithLifecycle()
+    val usePrefs by vm.usePreferences.collectAsStateWithLifecycle()
+    val prefsSummary by vm.preferences.collectAsStateWithLifecycle()
     bookingImport?.let { BookingImportDialog(it, onConfirm = vm::applyBooking, onDismiss = vm::cancelBookingImport) }
     val form by vm.form.collectAsStateWithLifecycle()
     val results by vm.results.collectAsStateWithLifecycle()
@@ -249,8 +251,8 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                             describe = if (settings.claudeDescribe) vm::describeTrip else null,
                             setTime = vm::setExperienceStepTime,
                             newEnvolee = vm::newEnvolee,
-                            prefsSummary = vm.preferenceSummary(),
-                            usePrefs = vm.usePreferences,
+                            prefsSummary = prefsSummary,
+                            usePrefs = usePrefs,
                             setUsePrefs = vm::setUsePreferences,
                             askChange = if (settings.has(com.riad.voyage.data.AiFeature.EDIT)) vm::askChange else null,
                             undo = vm::undoChange,
@@ -372,7 +374,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                 Tab.SETTINGS -> {
                     BackHandler { vm.selectTab(Tab.HOME) }
                     SettingsScreen(settings, keyStatus, vm::saveSettings, vm.quotas, vm::setQuotaLimit, vm::setLanguage, vm::diagnosticReport,
-                        onClearHistory = vm::clearRecents, usePrefs = vm.usePreferences, onUsePrefs = vm::setUsePreferences)
+                        onClearHistory = vm::clearRecents, usePrefs = usePrefs, onUsePrefs = vm::setUsePreferences)
                 }
             }
         }
