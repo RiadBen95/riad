@@ -482,11 +482,12 @@ object ExperienceBuilder {
             p.inGuide -> t("Recommandé par le guide Wikivoyage")
             category == ActivityLinks.Category.PARKS || category == ActivityLinks.Category.BEACHES -> t("Pour souffler au grand air")
             p.sitelinks >= 20 -> t("Parmi les lieux les plus réputés de la ville")
-            else -> tf("{0} à découvrir en chemin", tk(p.kind.substringBefore(" · ")))
+            visitMinutes(p, category, a.depth) <= 15 -> tf("{0} à voir en passant", tk(p.kind.substringBefore(" · ")))
+            else -> tf("{0} à visiter", tk(p.kind.substringBefore(" · ")))
         }
         val withTaste = if (taste != null) tf("Pour votre envie « {0} » · {1}", t(taste.label).lowercase(), base) else base
         return when {
-            w != null && w.rainy && isIndoor(p, category) -> t("Idéal par temps de pluie") + " · " + withTaste
+            w != null && w.rainy && isIndoor(p, category) && visitMinutes(p, category, a.depth) > 15 -> t("Idéal par temps de pluie") + " · " + withTaste
             w != null && w.sunny && isOutdoor(p, category) -> t("Parfait sous le soleil prévu") + " · " + withTaste
             else -> withTaste
         }
@@ -704,6 +705,7 @@ object ExperienceBuilder {
         val fridayRest = normalize(a.country) in setOf("algerie", "maroc", "tunisie", "egypte", "turquie", "jordanie", "arabie saoudite",
             "emirats arabes unis", "qatar", "oman", "koweit", "bahrein", "iran", "pakistan", "malaisie", "indonesie", "senegal", "mauritanie")
         var friday = false
+        var sunday = false
         val outings = a.outings.toMutableList()
         val kidsKinds = listOf("zoo", "aquarium", "science", "decouverte", "attractions", "jardin", "parc", "plage", "ferme", "enfant", "jouet", "planetarium")
         /** Lieux en plein air : à éviter sous la pluie, à privilégier au soleil. */
@@ -771,7 +773,8 @@ object ExperienceBuilder {
             } else noFastFood
             if (tastes.isEmpty()) return meals
             // Les goûts filtrent, sauf pour les lieux phares et ceux demandés nommément.
-            val matching = meals.filter { tasteScore(it, tastes, a.country) > 0 || isIconic(it) || it.id in mustSee || isWanted(a, it) }
+            val matching = meals.filter { tasteScore(it, tastes, a.country) > 0 || isIconic(it) || it.id in mustSee || isWanted(a, it) ||
+                (Quiz.Taste.WINE in a.tastes && Regex("\\b(vin|wine|cave|chai)").containsMatchIn(normalize(it.name))) }
             if (matching.isNotEmpty() || meals.isEmpty()) return matching
             if (category == ActivityLinks.Category.CAFES) return meals   // les goûts « cuisine » ne visent pas les cafés
             // Rien pour ces goûts : on le dit ; pas de centre commercial pour des « marchés ».
@@ -810,6 +813,7 @@ object ExperienceBuilder {
             if (p.id in avoid) s -= 6.0
             if (isWanted(a, p)) s += 8.0                                         // demandé nommément
             if (p.id in mustSee) s += 6.0                                        // incontournable de la ville
+            if (Quiz.Taste.WINE in a.tastes && Regex("\\b(vin|vins|wine|cave|chai|chais|vignoble)\\b").containsMatchIn(normalize(p.name + " " + p.kind))) s += 5.0
             // Varier sur tout le séjour : au-delà de 2 lieux du même type (mosquées, églises…), les autres passent devant.
             s -= ((kindsTrip[normalize(p.kind)] ?: 0) - 1).coerceAtLeast(0) * 2.5
             if (a.youngKids && kidsKinds.any { it in k }) s += 3.0                 // un lieu pour les enfants
@@ -845,7 +849,8 @@ object ExperienceBuilder {
         val departure = a.departureMin
         val nightDeparture = departure != null && departure < 6 * 60
         val lastIndex = if (nightDeparture && a.duration.days > 1) a.duration.days - 1 else a.duration.days
-        val outdoorOnly = activities.isNotEmpty() && activities.all { it == ActivityLinks.Category.PARKS || it == ActivityLinks.Category.BEACHES }
+        // Pluie : un musée s'ajoute quand les envies n'ont rien de couvert (plein air seul, ou aucune envie de visite).
+        val outdoorOnly = activities.all { it == ActivityLinks.Category.PARKS || it == ActivityLinks.Category.BEACHES }
 
         val days = (1..a.duration.days).map { dayIndex ->
             val date = a.startDate.plusDays((dayIndex - 1).toLong())
@@ -856,6 +861,7 @@ object ExperienceBuilder {
             holiday = Holidays.isHoliday(a.country, date)
             dayNumber = dayIndex
             friday = fridayRest && date.dayOfWeek == java.time.DayOfWeek.FRIDAY
+            sunday = date.dayOfWeek == java.time.DayOfWeek.SUNDAY
             if (friday && dayIndex <= lastIndex) notes += tf("{0} (vendredi) : jour de la grande prière ; mosquées réservées au culte en milieu de journée, certains lieux ferment ou ouvrent tard.", title)
             if (holiday && dayIndex <= lastIndex) notes += tf("{0} : jour férié, beaucoup de lieux ferment ou réduisent leurs horaires ; vérifiez avant de partir.", title)
             iconicToday = false
@@ -945,6 +951,8 @@ object ExperienceBuilder {
                         val finish = start + minutes
                         if (finish > end) return@mapNotNull null
                         if (friday && isWorship(p) && start < 14 * 60 + 30 && finish > 11 * 60 + 30) return@mapNotNull null   // grande prière
+                        if (sunday && isWorship(p) && !normalize(p.kind).startsWith("mosquee") && start < 12 * 60 + 15 && finish > 9 * 60 + 45)
+                            return@mapNotNull null   // messe du dimanche matin
                         if (!known && closesEarly(p, c) && finish > 18 * 60) return@mapNotNull null
                         Triple(c, p, score(p, c, last, start, lastCategory)) to (minutes to start)
                     }
@@ -1046,11 +1054,19 @@ object ExperienceBuilder {
                     }
                     fillVisits(afternoonEnd) { if (it >= 17 * 60) "Fin d'après-midi" else "Après-midi" }
                 }
+                // Fin d'après-midi libre et envie de sortir : un apéritif (bar à vin si c'est le goût).
+                val aperitif = wantsBar(a) && clock <= 17 * 60 + 45 && dayEnd >= 21 * 60   // un seul bar par jour : avant ou après le dîner
+                if (aperitif) {
+                    clock = max(clock, 18 * 60)
+                    venue(ActivityLinks.Category.BARS, "Apéritif", 60, 20, latest = 19 * 60) { p ->
+                        tasteScore(p, tastesFor(a, ActivityLinks.Category.BARS)) * 1.5 + emblem(p) - travelFrom(p).second / 6.0
+                    }
+                }
                 // Dîner à 20 h, ou dès 19 h si l'on doit partir tôt dans la soirée.
                 val dinnerAt = if (dayEnd < 20 * 60 + 75) 19 * 60 else 20 * 60
                 if (!a.duration.halfDay && dinnerAt + 75 <= dayEnd) {
                     meal(ActivityLinks.Category.RESTAURANTS, "Dîner", dinnerAt, latest = 22 * 60)
-                    if (wantsBar(a)) venue(ActivityLinks.Category.BARS, "Verre en soirée", 90, 20, latest = 23 * 60 + 30) { p ->
+                    if (wantsBar(a) && !aperitif) venue(ActivityLinks.Category.BARS, "Verre en soirée", 90, 20, latest = 23 * 60 + 30) { p ->
                         tasteScore(p, tastesFor(a, ActivityLinks.Category.BARS)) * 1.5 + emblem(p) - travelFrom(p).second / 6.0 -
                             (if (p.id in avoid) 6.0 else 0.0)
                     }

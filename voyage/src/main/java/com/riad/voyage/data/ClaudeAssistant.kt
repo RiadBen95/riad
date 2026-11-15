@@ -115,7 +115,8 @@ data class Booking(val segments: List<Segment>, val passengers: Int, val price: 
 }
 
 /** Conseils pour une étape : astuce, accessibilité, et raison de remplacer un restaurant qui ne colle pas. */
-data class StepAdvice(val tip: String?, val access: String?, val unsuitable: String?, val passage: Boolean = false)
+data class StepAdvice(val tip: String?, val access: String?, val unsuitable: String?, val passage: Boolean = false,
+                      val notThen: String? = null, val minutes: Int = 0)
 
 /** Textes du carnet : introduction, un texte par jour, phrases utiles sur mesure (sens, phrase locale). */
 data class Story(val intro: String, val days: List<String>, val phrases: List<Pair<String, String>>)
@@ -288,20 +289,23 @@ object ClaudeAssistant {
     suspend fun advise(c: Config, city: String, steps: List<Pair<String, String>>, constraints: String,
                        tips: Boolean, access: Boolean, food: Boolean, web: Boolean): Map<String, StepAdvice> {
         val asks = listOfNotNull(
-            "\"tip\": un conseil pratique court, cohérent avec l'heure prévue (ne propose pas un autre moment de la journée), ou vide".takeIf { tips },
+            "\"tip\": un conseil pratique court, cohérent avec le jour et l'heure prévus, sans parler des horaires d'ouverture (l'appli les vérifie), ou vide".takeIf { tips },
             "\"passage\": true si le lieu se voit seulement de l'extérieur (pas de visite intérieure)".takeIf { tips },
+            "\"notThen\": raison courte si le lieu ne se visite pas à ce jour et cette heure (jours de visite, réservation, office religieux), sinon vide".takeIf { tips },
+            "\"minutes\": durée de visite habituelle en minutes si elle diffère nettement de celle prévue, sinon 0".takeIf { tips },
             "\"access\": problème d'accès poussette / fauteuil (escaliers, pavés) ou vide".takeIf { access },
             "\"unsuitable\": pour un restaurant seulement, raison courte s'il ne respecte pas les contraintes, sinon vide".takeIf { food },
         )
         val o = json(ask(c, "Séjour à $city. Contraintes de la personne : ${constraints.ifBlank { "aucune" }}.\n" +
             "Pour chaque étape ci-dessous, donne en $language : ${asks.joinToString(" ; ")}. Ne mets que des informations fiables.\n" +
-            "Réponds uniquement par un JSON {\"id\": {\"tip\": \"\", \"passage\": false, \"access\": \"\", \"unsuitable\": \"\"}, …} avec les mêmes id.\n\n" +
+            "Réponds uniquement par un JSON {\"id\": {\"tip\": \"\", \"passage\": false, \"notThen\": \"\", \"minutes\": 0, \"access\": \"\", \"unsuitable\": \"\"}, …} avec les mêmes id.\n\n" +
             steps.joinToString("\n") { (id, d) -> "id=$id · $d" }, web = web)) ?: return emptyMap()
         return o.keys().asSequence().mapNotNull { id ->
             val v = o.optJSONObject(id) ?: return@mapNotNull null
             fun f(k: String) = v.optString(k).takeIf { it.isNotBlank() && it != "null" }
-            val adv = StepAdvice(f("tip").takeIf { tips }, f("access").takeIf { access }, f("unsuitable").takeIf { food }, tips && v.optBoolean("passage"))
-            if (adv.tip == null && adv.access == null && adv.unsuitable == null && !adv.passage) null else id to adv
+            val adv = StepAdvice(f("tip").takeIf { tips }, f("access").takeIf { access }, f("unsuitable").takeIf { food }, tips && v.optBoolean("passage"),
+                f("notThen").takeIf { tips }, if (tips) v.optInt("minutes").coerceIn(0, 300) else 0)
+            if (adv.tip == null && adv.access == null && adv.unsuitable == null && !adv.passage && adv.notThen == null && adv.minutes == 0) null else id to adv
         }.toMap()
     }
 
@@ -426,7 +430,8 @@ object ClaudeAssistant {
             },
             company = company,
             travellers = travellers ?: base.travellers,
-            interests = pickAll(Quiz.Interest.entries.toTypedArray(), r.interests, t("envie")).ifEmpty { base.interests },
+            interests = (pickAll(Quiz.Interest.entries.toTypedArray(), r.interests, t("envie")) +
+                pickAll(Quiz.Taste.entries.toTypedArray(), r.tastes, t("goût")).map { it.interest }).ifEmpty { base.interests },
             tastes = pickAll(Quiz.Taste.entries.toTypedArray(), r.tastes, t("goût")),
             style = pick(Quiz.Style.entries.toTypedArray(), r.style, base.style, t("style")),
             pace = pick(Quiz.Pace.entries.toTypedArray(), r.pace, base.pace, t("rythme")),

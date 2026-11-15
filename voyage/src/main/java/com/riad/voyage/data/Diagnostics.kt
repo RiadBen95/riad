@@ -19,8 +19,20 @@ object Diagnostics {
         while (errors.size > 30) errors.removeFirst()
     }
 
+    private val events = ArrayDeque<String>()
+
+    /** Événement normal (vérification, remplacement), affiché à part des erreurs. */
+    @Synchronized
+    fun info(message: String) {
+        events.addLast("${LocalDateTime.now().withNano(0)} · $message")
+        while (events.size > 30) events.removeFirst()
+    }
+
     @Synchronized
     private fun recentErrors() = errors.toList()
+
+    @Synchronized
+    private fun recentEvents() = events.toList()
 
     fun report(app: Context, settings: Settings, state: ExperienceState, trip: Trip?, pools: Map<ActivityLinks.Category, Int>): String =
         buildString {
@@ -64,7 +76,7 @@ object Diagnostics {
                     d.steps.forEach { s ->
                         val hours = d.date?.let { OpeningHours.ranges(s.place.openingHours, it.dayOfWeek, it.monthValue) }
                         val read = when {
-                            s.place.openingHours == null -> "horaires non chargés (voir la vérification)"
+                            s.place.openingHours == null -> "pas d'horaires de la semaine (seulement la vérification du jour, ci-dessous)"
                             hours == null -> "horaires illisibles"
                             hours.isEmpty() -> "FERMÉ ce jour-là"
                             else -> "ouvert " + hours.joinToString(", ") { "${hhmm(it.first)}-${hhmm(it.last)}" }
@@ -84,6 +96,9 @@ object Diagnostics {
                 line("Arrivée ${trip.arrivalTime ?: "-"}${if (trip.restAfterArrival) " (soirée à l'hôtel)" else ""} · départ ${trip.departureTime ?: "-"}")
                 line("Vols : ${trip.flights.size} · lieux gardés : ${trip.places.size} · jours au programme : ${trip.program.size} · dépenses : ${trip.expenses.size}")
             }
+            line()
+            line("== Journal (vérifications) ==")
+            recentEvents().ifEmpty { listOf("Rien.") }.forEach { line(it) }
             line()
             line("== Dernières erreurs ==")
             recentErrors().ifEmpty { listOf("Aucune.") }.forEach { line(it) }

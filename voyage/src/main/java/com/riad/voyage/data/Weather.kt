@@ -30,7 +30,8 @@ data class DayWeather(
         else -> "🌤️"
     }
 
-    val label get() = "$emoji ${tMax.roundToInt()}° / ${tMin.roundToInt()}°" + if (rainProb >= 30) " · 💧 $rainProb %" else ""
+    val label get() = "$emoji ${tMax.roundToInt()}° / ${tMin.roundToInt()}°" +
+        if (rainProb >= 30 || code in 51..67 || code in 80..82) " · 💧 $rainProb %" else ""   // icône de pluie : toujours le pourcentage
 }
 
 object WeatherApi {

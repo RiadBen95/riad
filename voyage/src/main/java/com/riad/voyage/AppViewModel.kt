@@ -433,6 +433,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun newEnvolee() {
         verifiedIds.clear()
         advisedIds.clear()
+        knownClosed.clear()
         _experience.value = ExperienceState(answers = blankAnswers())
         _tab.value = Tab.EXPERIENCE
     }
@@ -1455,7 +1456,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.webCheck(c, p.name, exp.city, date) }?.getOrNull()?.let { checks[p.id] = it }
             }
             val names = todo.associate { it.second.id to it.second.name }
-            com.riad.voyage.data.Diagnostics.log("Vérification : ${todo.size} lieux, ${checks.size} vérifiés, ${checks.count { it.value.isClosed }} fermés")
+            com.riad.voyage.data.Diagnostics.info("Vérification : ${todo.size} lieux, ${checks.size} vérifiés, ${checks.count { it.value.isClosed }} fermés")
             val withReviews = checks.filter { it.value.reviews.isNotEmpty() && !it.value.isClosed }.map { (id, c) -> Triple(id, names[id].orEmpty(), c.reviews) }
             val summaries = if (withReviews.isEmpty()) emptyMap()
                 else attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.summarize(c, withReviews) }?.getOrNull().orEmpty()
@@ -1475,6 +1476,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             checks[st.place.id]?.hoursToday?.let { !com.riad.voyage.data.OpeningHours.fits(it, minutesOf(st.time) ?: 0, st.durationMin) } == true
         }.map { it.place.id }
         val replaced = mutableListOf<String>()
+        knownClosed += checks.filter { it.value.isClosed }.keys + closedThen
         (checks.filter { it.value.isClosed }.keys + closedThen).forEach { id ->
             exp.days.forEachIndexed { d, day ->
                 val i = day.steps.indexOfFirst { it.place.id == id }
@@ -1485,7 +1487,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                         c?.isClosed == true -> t("fermé ce jour-là")
                         else -> t("fermé à cette heure-là")
                     })
-                    exp = ExperienceBuilder.replaceStep(a, exp, d, i, ExperienceBuilder.alternatives(a, exp, experiencePools, d, i).firstOrNull())
+                    exp = ExperienceBuilder.replaceStep(a, exp, d, i, alternativesFor(a, exp, d, i).firstOrNull())
                 }
             }
         }
@@ -1498,8 +1500,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     summaries[st.place.id]?.let { "« $it »" },
                 ).joinToString(" · ")
                 val why = if (c.hoursToday != null) st.why.replace(" · " + t("horaires à vérifier"), "") else st.why
-                st.copy(why = listOf(why, note).filter { it.isNotBlank() }.joinToString(" · "))
-            })
+                // Horaires précis trouvés pour une tour vue « en passant » : elle se visite, durée normale.
+                val visitable = st.durationMin <= 15 && c.hoursToday?.let { Regex("\\d{1,2}:\\d{2}").containsMatchIn(it) && !Regex("24").containsMatchIn(it) } == true
+                st.copy(why = listOf(why, note).filter { it.isNotBlank() }.joinToString(" · "), durationMin = if (visitable) 45 else st.durationMin)
+            }.let { steps -> if (steps.map { it.durationMin } != day.steps.map { it.durationMin }) ExperienceBuilder.retime(a, steps, day.date) else steps })
         })
         _experience.update { it.copy(result = exp) }
         autosave()
@@ -1594,19 +1598,32 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         ).joinToString(" ; ")
         viewModelScope.launch {
             val adv = attempt(90_000) {
-                com.riad.voyage.data.ClaudeAssistant.advise(c, exp.city, todo.map { it.place.id to "${it.place.name} · ${it.place.kind} · prévu à ${it.time} pour ${it.durationMin} min" }, constraints,
+                com.riad.voyage.data.ClaudeAssistant.advise(c, exp.city, todo.map { x ->
+                    val day = exp.days.first { d -> x in d.steps }
+                    x.place.id to "${x.place.name} · ${x.place.kind} · prévu le ${day.date?.let { "${it.dayOfWeek} $it" } ?: day.title} à ${x.time} pour ${x.durationMin} min"
+                }, constraints,
                     tips, access, food, web = s.aiWeb && (tips || access))
             }?.getOrNull() ?: return@launch
             var r = _experience.value.result?.takeIf { it.city == exp.city } ?: return@launch
             val notes = mutableListOf<String>()
-            adv.filterValues { it.unsuitable != null }.forEach { (id, v) ->
+            // Restaurant qui ne colle pas aux envies, ou lieu qui ne se visite pas ce jour-là : remplacé, et dit.
+            val rejected = adv.filterValues { it.unsuitable != null || it.notThen != null }
+            knownClosed += adv.filterValues { it.notThen != null }.keys
+            rejected.forEach { (id, v) ->
                 r.days.forEachIndexed { d, day ->
                     val i = day.steps.indexOfFirst { it.place.id == id }
-                    if (i >= 0 && day.steps[i].category == ActivityLinks.Category.RESTAURANTS) {
-                        notes += tf("« {0} » remplacé : {1}", day.steps[i].place.name, v.unsuitable!!)
-                        r = ExperienceBuilder.replaceStep(a, r, d, i, ExperienceBuilder.alternatives(a, r, experiencePools, d, i)
-                            .firstOrNull { it.second.id !in adv.filterValues { x -> x.unsuitable != null }.keys })
+                    val reason = v.notThen ?: v.unsuitable.takeIf { i >= 0 && day.steps[i].category == ActivityLinks.Category.RESTAURANTS }
+                    if (i >= 0 && reason != null) {
+                        notes += tf("« {0} » remplacé : {1}", day.steps[i].place.name, reason)
+                        r = ExperienceBuilder.replaceStep(a, r, d, i, alternativesFor(a, r, d, i).firstOrNull { it.second.id !in rejected.keys })
                     }
+                }
+            }
+            // Durée habituelle d'après Envolée AI (« comptez 1 h ») quand elle diffère nettement.
+            adv.filterValues { it.minutes > 0 && !it.passage }.forEach { (id, v) ->
+                r.days.forEachIndexed { d, day ->
+                    val i = day.steps.indexOfFirst { it.place.id == id }
+                    if (i >= 0 && kotlin.math.abs(day.steps[i].durationMin - v.minutes) >= 15) r = ExperienceBuilder.setDuration(a, r, d, i, v.minutes)
                 }
             }
             // Vu de l'extérieur seulement : la visite devient un passage de 15 minutes.
@@ -1914,8 +1931,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun stepAlternatives(dayIndex: Int, stepIndex: Int): List<Pair<ActivityLinks.Category, PointOfInterest>> {
         val st = _experience.value
         val exp = st.result ?: return emptyList()
-        return ExperienceBuilder.alternatives(st.answers, exp, experiencePools, dayIndex, stepIndex)
+        return alternativesFor(st.answers, exp, dayIndex, stepIndex)
     }
+
+    /** Lieux dits fermés par la vérification : jamais proposés en remplacement (sinon ils reviennent au programme). */
+    private val knownClosed = mutableSetOf<String>()
+
+    private fun alternativesFor(a: Quiz.Answers, exp: Experience, d: Int, i: Int) =
+        ExperienceBuilder.alternatives(a, exp, experiencePools, d, i, limit = 30).filter { it.second.id !in knownClosed }.take(12)
 
     /** Retire une étape (choice = null) ou la remplace par le lieu choisi ; les horaires sont recalculés. */
     fun replaceExperienceStep(dayIndex: Int, stepIndex: Int, choice: Pair<ActivityLinks.Category, PointOfInterest>?) {
