@@ -26,26 +26,26 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
     val usePrefs by vm.usePreferences.collectAsStateWithLifecycle()
     val prefsSummary by vm.preferences.collectAsStateWithLifecycle()
     bookingImport?.let { BookingImportDialog(it, onConfirm = vm::applyBooking, onDismiss = vm::cancelBookingImport) }
-    val form by vm.form.collectAsStateWithLifecycle()
-    val results by vm.results.collectAsStateWithLifecycle()
-    val alerts by vm.alerts.collectAsStateWithLifecycle()
-    val checking by vm.checking.collectAsStateWithLifecycle()
+    val form by vm.flights.form.collectAsStateWithLifecycle()
+    val results by vm.flights.results.collectAsStateWithLifecycle()
+    val alerts by vm.flights.alerts.collectAsStateWithLifecycle()
+    val checking by vm.flights.checking.collectAsStateWithLifecycle()
     val message by vm.message.collectAsStateWithLifecycle()
     val keyStatus by vm.keyStatus.collectAsStateWithLifecycle()
     val activityCity by vm.activityCity.collectAsStateWithLifecycle()
     val activityCategory by vm.activityCategory.collectAsStateWithLifecycle()
     val places by vm.places.collectAsStateWithLifecycle()
-    val recents by vm.recents.collectAsStateWithLifecycle()
+    val recents by vm.flights.recents.collectAsStateWithLifecycle()
     val activityPlace by vm.activityPlace.collectAsStateWithLifecycle()
     val experience by vm.experience.collectAsStateWithLifecycle()
-    val blog by vm.blog.collectAsStateWithLifecycle()
+    val blog by vm.blog.state.collectAsStateWithLifecycle()
     val trips by vm.trips.collectAsStateWithLifecycle()
     val openTrip by vm.openTrip.collectAsStateWithLifecycle()
     val tripArticle by vm.tripArticle.collectAsStateWithLifecycle()
-    val hotels by vm.hotels.collectAsStateWithLifecycle()
+    val hotels by vm.hotels.state.collectAsStateWithLifecycle()
     val budget by vm.budget.collectAsStateWithLifecycle()
     val budgetReturn by vm.budgetReturn.collectAsStateWithLifecycle()
-    val pendingBooking by vm.pendingBooking.collectAsStateWithLifecycle()
+    val pendingBooking by vm.hotels.pendingBooking.collectAsStateWithLifecycle()
     val citySection by vm.citySection.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
 
@@ -98,41 +98,41 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                     onOpenActivities = { vm.selectTab(Tab.ACTIVITIES) },
                     onOpenExperience = vm::newEnvolee,
                     onOpenBlog = { vm.selectTab(Tab.BLOG) },
-                    onOpenHotels = { vm.openHotels(null, null, null, null) },
+                    onOpenHotels = { vm.hotels.openHotels(null, null, null, null) },
                     onOpenBudget = { vm.selectTab(Tab.BUDGET) },
                     trips = trips,
                     onOpenTrip = vm::openTrip,
                     onOpenAlerts = { vm.selectTab(Tab.ALERTS) },
                     onOpenSettings = configure,
-                    onRecent = vm::applyRecent,
+                    onRecent = vm.flights::applyRecent,
                     onClearRecents = vm::clearRecents,
-                    onDestination = vm::pickDestination,
-                    wiki = vm::wikiSummary,
-                    weather = vm::weatherFor,
+                    onDestination = vm.flights::pickDestination,
+                    wiki = vm.core::wikiSummary,
+                    weather = vm.core::weatherFor,
                 )
 
                 Tab.FLIGHTS -> if (results.visible) {
-                    BackHandler { vm.closeResults() }
+                    BackHandler { vm.flights.closeResults() }
                     FlightResultsScreen(
                         state = results,
-                        onBack = vm::closeResults,
-                        onRetry = vm::search,
-                        onSort = vm::setSort,
-                        onPickDay = vm::pickCalendarDay,
-                        onBook = { f -> openUrl(context, vm.bookingUrl(f)) },
+                        onBack = vm.flights::closeResults,
+                        onRetry = vm.flights::search,
+                        onSort = vm.flights::setSort,
+                        onPickDay = vm.flights::pickCalendarDay,
+                        onBook = { f -> openUrl(context, vm.flights.bookingUrl(f)) },
                         onActivities = vm::activitiesAtDestination,
                         onPlanStay = { vm.planStayFromFlight(null) },
                         onHotels = {
                             val q = results.query
-                            vm.openHotels(q?.destination?.name, q?.destination, q?.departure,
+                            vm.hotels.openHotels(q?.destination?.name, q?.destination, q?.departure,
                                 if (q?.roundTrip == true && q.flexibleMonth != true) q.returnDate else null, q?.adults)
                         },
-                        onSaveFlight = vm::saveFlight,
+                        onSaveFlight = vm.flights::saveFlight,
                         onFollow = {
                             onFollowRequested()
-                            vm.followCurrentSearch()
+                            vm.flights.followCurrentSearch()
                         },
-                        onOpenSite = { vm.siteSearchUrl()?.let { openUrl(context, it) } },
+                        onOpenSite = { vm.flights.siteSearchUrl()?.let { openUrl(context, it) } },
                         onConfigure = configure,
                     )
                 } else {
@@ -140,21 +140,21 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                     FlightSearchScreen(
                         form = form,
                         demo = settings.isDemo,
-                        onUpdate = vm::updateForm,
-                        onSwap = vm::swapPlaces,
-                        onSearch = vm::search,
-                        suggest = vm::suggestPlaces,
+                        onUpdate = vm.flights::updateForm,
+                        onSwap = vm.flights::swapPlaces,
+                        onSearch = vm.flights::search,
+                        suggest = vm.core::suggestPlaces,
                         onConfigure = configure,
                         recents = recents,
-                        onRecent = vm::applyRecent,
+                        onRecent = vm.flights::applyRecent,
                     )
                 }
 
                 Tab.CITY, Tab.ACTIVITIES, Tab.BLOG -> {
                     BackHandler {
                         when {
-                            citySection == CitySection.ARTICLES && (blog.article != null || blog.articleLoading) -> vm.closeArticle()
-                            citySection == CitySection.ARTICLES && blog.city != null -> vm.clearBlogCity()
+                            citySection == CitySection.ARTICLES && (blog.article != null || blog.articleLoading) -> vm.blog.closeArticle()
+                            citySection == CitySection.ARTICLES && blog.city != null -> vm.blog.clearBlogCity()
                             else -> vm.selectTab(Tab.HOME)
                         }
                     }
@@ -165,7 +165,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         selected = activityPlace,
                         onCity = vm::chooseCity,
                         onCityText = vm::setActivityCity,
-                        suggest = vm::suggestCities,
+                        suggest = vm.core::suggestCities,
                         places = {
                             ActivitiesScreen(
                                 embedded = true,
@@ -175,13 +175,13 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                                 onCity = vm::setActivityCity,
                                 selectedPlace = activityPlace,
                                 onPlace = vm::setActivityPlace,
-                                suggestCities = vm::suggestCities,
+                                suggestCities = vm.core::suggestCities,
                                 onCategory = vm::setActivityCategory,
                                 onSearch = { vm.searchActivities(force = true) },
-                                wiki = vm::wikiSummary,
-                                weather = vm::weatherFor,
+                                wiki = vm.core::wikiSummary,
+                                weather = vm.core::weatherFor,
                                 isFavorite = { name -> trips.any { tr -> tr.places.any { it.name.equals(name, ignoreCase = true) } } },
-                                onFavorite = { p -> vm.toggleFavorite(p, activityCity.ifBlank { places.city }) },
+                                onFavorite = { p -> vm.core.toggleFavorite(p, activityCity.ifBlank { places.city }) },
                                 onReadArticle = vm::readPlaceArticle,
                             )
                         },
@@ -190,15 +190,15 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                                 embedded = true,
                                 state = blog,
                                 context = vm.blogContext(),
-                                onCity = { c, why -> vm.openBlogCity(c, why); vm.setActivityCity(c.name) },
-                                onPlace = vm::openBlogPlace,
-                                onClearCity = vm::clearBlogCity,
-                                onFilter = vm::setBlogFilter,
-                                onArticle = vm::openArticle,
-                                onCloseArticle = vm::closeArticle,
-                                suggestCities = vm::suggestCities,
-                                searchArticles = vm::searchArticles,
-                                wiki = vm::wikiSummary,
+                                onCity = { c, why -> vm.blog.openBlogCity(c, why); vm.setActivityCity(c.name) },
+                                onPlace = vm.blog::openBlogPlace,
+                                onClearCity = vm.blog::clearBlogCity,
+                                onFilter = vm.blog::setBlogFilter,
+                                onArticle = vm.blog::openArticle,
+                                onCloseArticle = vm.blog::closeArticle,
+                                suggestCities = vm.core::suggestCities,
+                                searchArticles = vm.blog::searchArticles,
+                                wiki = vm.core::wikiSummary,
                                 hasPersonalFilter = experience.answers.interests.isNotEmpty() ||
                                     NotablePlaces.supports(activityCategory),
                                 onSaveArticle = vm::saveArticle,
@@ -230,18 +230,18 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         onGenerate = vm::generateExperience,
                         onRegenerate = vm::regenerateExperience,
                         onEdit = vm::editExperience,
-                        suggestCities = vm::suggestCities,
+                        suggestCities = vm.core::suggestCities,
                         onSave = vm::saveExperience,
                         alternatives = vm::stepAlternatives,
                         onHotels = {
                             val a = experience.answers
-                            vm.openHotels(a.city, a.place, a.startDate, a.startDate.plusDays(a.duration.days.toLong()))
+                            vm.hotels.openHotels(a.city, a.place, a.startDate, a.startDate.plusDays(a.duration.days.toLong()))
                         },
                         onReplace = vm::replaceExperienceStep,
                         onBudget = vm::openBudgetForExperience,
-                        wiki = vm::wikiSummary,
+                        wiki = vm.core::wikiSummary,
                         isFavorite = { name -> trips.any { tr -> tr.places.any { it.name.equals(name, ignoreCase = true) } } },
-                        onFavorite = { p -> vm.toggleFavorite(p, experience.result?.city ?: experience.answers.city) },
+                        onFavorite = { p -> vm.core.toggleFavorite(p, experience.result?.city ?: experience.answers.city) },
                         onReadArticle = vm::readPlaceArticle,
                         edits = ExperienceEdits(
                             move = vm::moveExperienceStep, add = vm::addExperienceStep, refine = vm::refineExperience,
@@ -265,35 +265,35 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
 
                 Tab.HOTELS -> {
                     val detail = hotels.detail
-                    BackHandler { if (detail != null) vm.closeHotelDetail() else vm.selectTab(Tab.HOME) }
+                    BackHandler { if (detail != null) vm.hotels.closeHotelDetail() else vm.selectTab(Tab.HOME) }
                     if (detail != null) {
                         HotelDetailScreen(
                             state = hotels,
                             d = detail,
                             sandbox = LitePayment.isSandbox(settings.liteApiKey),
-                            onBack = vm::closeHotelDetail,
-                            onBook = vm::startHotelBooking,
-                            onConfirm = vm::confirmHotelBooking,
-                            onCancelBooking = vm::cancelHotelBooking,
-                            onPaymentDone = vm::hotelPaymentDone,
+                            onBack = vm.hotels::closeHotelDetail,
+                            onBook = vm.hotels::startHotelBooking,
+                            onConfirm = vm.hotels::confirmHotelBooking,
+                            onCancelBooking = vm.hotels::cancelHotelBooking,
+                            onPaymentDone = vm.hotels::hotelPaymentDone,
                             paidPending = pendingBooking != null,
-                            onRetryPending = vm::retryPendingBooking,
-                            onPaymentCancel = vm::hotelPaymentCancelled,
+                            onRetryPending = vm.hotels::retryPendingBooking,
+                            onPaymentCancel = vm.hotels::hotelPaymentCancelled,
                         )
                     } else {
                         HotelsScreen(
                             state = hotels,
                             hasKey = settings.liteApiKey.isNotBlank(),
-                            onUpdate = vm::updateHotels,
-                            onSearch = vm::searchHotels,
-                            onSave = vm::saveHotel,
+                            onUpdate = vm.hotels::updateHotels,
+                            onSearch = vm.hotels::searchHotels,
+                            onSave = vm.hotels::saveHotel,
                             isFavorite = { name -> trips.any { tr -> tr.places.any { it.name.equals(name, ignoreCase = true) } } },
-                            suggestCities = vm::suggestCities,
+                            suggestCities = vm.core::suggestCities,
                             onConfigure = configure,
-                            onOpen = vm::openHotelDetail,
-                            onBookInApp = vm::openHotelDetail,
+                            onOpen = vm.hotels::openHotelDetail,
+                            onBookInApp = vm.hotels::openHotelDetail,
                             pendingHotel = pendingBooking?.hotelName,
-                            onRetryPending = vm::retryPendingBooking,
+                            onRetryPending = vm.hotels::retryPendingBooking,
                         )
                     }
                 }
@@ -315,19 +315,19 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         onRemove = vm::removeFromTrip,
                         onReadArticle = vm::readSavedArticle,
                         onAlerts = { vm.selectTab(Tab.ALERTS) },
-                        wiki = vm::wikiSummary,
-                        weather = vm::weatherFor,
+                        wiki = vm.core::wikiSummary,
+                        weather = vm.core::weatherFor,
                         onReadArticle2 = vm::readPlaceArticle,
                         onBudget = vm::openBudgetForTrip,
                         onHotels = { tr ->
-                            vm.openHotels(tr.city, null, tr.start, tr.end)
+                            vm.hotels.openHotels(tr.city, null, tr.start, tr.end)
                         },
                         alertCount = alerts.size,
                         actions = TripActions(
                             moveStep = vm::moveStep, deleteStep = vm::deleteStep, editStep = vm::editStep, addStep = vm::addStep,
                             addDay = vm::addDay, packing = vm::packingFor, togglePacked = vm::togglePacked,
                             addPackItem = vm::addPackItem, removePackItem = vm::removePackItem, practical = vm::openPractical,
-                            create = vm::createTrip, updateInfo = vm::updateTripInfo, plan = vm::planTrip, suggestCities = vm::suggestCities,
+                            create = vm::createTrip, updateInfo = vm::updateTripInfo, plan = vm::planTrip, suggestCities = vm.core::suggestCities,
                             pdf = vm::tripPdf,
                             importBooking = if (settings.has(com.riad.voyage.data.AiFeature.IMPORT)) { uris -> vm.importDocuments(uris) } else null,
                             souvenir = if (settings.has(com.riad.voyage.data.AiFeature.SOUVENIR)) vm::souvenir else null,
@@ -369,7 +369,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
 
                 Tab.ALERTS -> {
                     BackHandler { vm.selectTab(Tab.HOME) }
-                    AlertsScreen(alerts, settings.isDemo, checking, vm::checkAlertsNow, vm::removeAlert, configure)
+                    AlertsScreen(alerts, settings.isDemo, checking, vm.flights::checkAlertsNow, vm.flights::removeAlert, configure)
                 }
 
                 Tab.SETTINGS -> {
