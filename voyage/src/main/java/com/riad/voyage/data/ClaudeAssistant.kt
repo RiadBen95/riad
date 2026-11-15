@@ -41,12 +41,13 @@ enum class ClaudeModel(val id: String, val label: String, val strengths: String,
 data class GeminiModel(val id: String, val label: String, val note: String = "") {
     companion object {
         const val FALLBACK = "gemini-flash-lite-latest"   // le plus léger : repli quand le modèle choisi est surchargé
-        /** Modèles gratuits proposés d'office ; « Actualiser » ajoute ceux que Google ouvre à la clé. */
+        /**
+         * Modèles gratuits proposés d'office : les noms « dernière version », que Google fait suivre (les versions
+         * numérotées ferment aux nouveaux comptes) ; « Actualiser » ajoute ceux que Google ouvre à la clé.
+         */
         val defaults = listOf(
             GeminiModel("gemini-flash-latest", "Gemini Flash (dernière version)", "Le plus capable des modèles gratuits ; quota quotidien réduit, parfois surchargé"),
             GeminiModel(FALLBACK, "Gemini Flash-Lite (dernière version)", "Plus rapide, quota plus large, un peu moins précis"),
-            GeminiModel("gemini-2.5-flash", "Gemini 2.5 Flash", "Version stable"),
-            GeminiModel("gemini-2.5-flash-lite", "Gemini 2.5 Flash-Lite", "Version stable, la plus légère"),
         )
     }
 }
@@ -203,7 +204,7 @@ object ClaudeAssistant {
             if (fast) body.put("generationConfig", JSONObject().put("thinkingConfig", JSONObject().put("thinkingBudget", 0)))
             else body.remove("generationConfig")
             var (code, text) = geminiCall("models/$model:generateContent", c.key, body.toString())
-            if (code == 400 && fast && "thinking" in text.lowercase()) {   // modèle qui ne permet pas de couper la réflexion
+            if (code == 400 && fast) {   // modèle qui refuse le réglage de réflexion : même demande sans lui
                 body.remove("generationConfig")
                 geminiCall("models/$model:generateContent", c.key, body.toString()).let { code = it.first; text = it.second }
             }

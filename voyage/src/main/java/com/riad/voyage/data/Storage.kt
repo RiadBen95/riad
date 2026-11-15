@@ -66,7 +66,10 @@ class SettingsStore(context: Context) {
         geminiModel = prefs.getString("geminiModel", null) ?: GeminiModel.defaults.first().id,
         geminiModels = prefs.getString("geminiModels", "").orEmpty().lines().filter { '\t' in it }
             .map { GeminiModel(it.substringBefore('\t'), it.substringAfter('\t')) },
-    ).also { loaded ->
+    ).let { s ->
+        // Modèle Gemini retiré de la liste (version fermée par Google) : retour au modèle par défaut.
+        if ((s.geminiModels + GeminiModel.defaults).any { it.id == s.geminiModel }) s else s.copy(geminiModel = GeminiModel.defaults.first().id)
+    }.also { loaded ->
         // Anciennes clés enregistrées en clair : chiffrées dès la première lecture.
         if (SECRETS.any { prefs.getString(it, "").orEmpty().let { v -> v.isNotEmpty() && !SecretBox.isEncrypted(v) } }) save(loaded)
     }

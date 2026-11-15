@@ -1106,8 +1106,6 @@ Non précisé, réglage par défaut : {0}. Touchez une puce ci-dessous pour pré
 Gratuit : lit les demandes et les billets, rédige ; recherche web limitée. Modèle à choisir ci-dessous.	Free: reads requests and tickets, writes; limited web search. Choose the model below.
 Le plus capable des modèles gratuits ; quota quotidien réduit, parfois surchargé	The most capable free model; small daily quota, sometimes overloaded
 Plus rapide, quota plus large, un peu moins précis	Faster, larger quota, slightly less accurate
-Version stable	Stable version
-Version stable, la plus légère	Stable version, the lightest
 Gemini est surchargé pour le moment : réessayez dans un moment.	Gemini is overloaded right now: try again in a moment.
 Quota gratuit de Gemini atteint (par minute ou par jour) : réessayez plus tard ou choisissez Flash-Lite.	Gemini free quota reached (per minute or per day): try again later or choose Flash-Lite.
 Modèle Gemini indisponible : {0}	Gemini model unavailable: {0}
