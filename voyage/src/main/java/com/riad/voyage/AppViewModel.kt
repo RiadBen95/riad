@@ -1437,7 +1437,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val c = s.aiConfig ?: return
         if (!s.placeChecks || verifying) return
         val todo = exp.days.flatMap { d -> d.steps.map { d.date to it.place } }
-            .filter { (_, p) -> p.id !in verifiedIds && !p.id.startsWith("transfer/") && !p.id.startsWith("custom/") }
+            .filter { (_, p) -> p.id !in verifiedIds && listOf("transfer/", "custom/", "free/", "pause/").none { p.id.startsWith(it) } }
         if (todo.isEmpty()) return
         verifying = true
         _experience.update { it.copy(checking = true) }
@@ -1494,10 +1494,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             day.copy(steps = day.steps.map { st ->
                 val c = checks[st.place.id]?.takeIf { !it.isClosed } ?: return@map st
                 val note = listOfNotNull(
-                    "✓ " + (c.hoursToday?.let { tf("Ouvert ce jour-là : {0}", it) } ?: t("Ouvert (vérifié)")),
+                    "✓ " + (c.hoursToday?.let { tf("Ouvert ce jour-là : {0}", it) } ?: t("Ouvert ce jour-là")),
                     summaries[st.place.id]?.let { "« $it »" },
                 ).joinToString(" · ")
-                st.copy(why = listOf(st.why, note).filter { it.isNotBlank() }.joinToString(" · "))
+                val why = if (c.hoursToday != null) st.why.replace(" · " + t("horaires à vérifier"), "") else st.why
+                st.copy(why = listOf(why, note).filter { it.isNotBlank() }.joinToString(" · "))
             })
         })
         _experience.update { it.copy(result = exp) }
@@ -1582,7 +1583,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val food = s.has(com.riad.voyage.data.AiFeature.FOOD)
         val access = s.has(com.riad.voyage.data.AiFeature.ACCESS) && (a.stroller || a.youngKids)
         if (!tips && !food && !access) return
-        val todo = exp.days.flatMap { it.steps }.filter { st0 -> st0.place.id !in advisedIds && listOf("transfer/", "pause/", "custom/").none { st0.place.id.startsWith(it) } }
+        val todo = exp.days.flatMap { it.steps }.filter { st0 -> st0.place.id !in advisedIds && listOf("transfer/", "pause/", "custom/", "free/").none { st0.place.id.startsWith(it) } }
         if (todo.isEmpty()) return
         advisedIds += todo.map { it.place.id }
         val constraints = listOfNotNull(
@@ -1635,7 +1636,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val a = _experience.value.answers
         val exp = _experience.value.result ?: return
         viewModelScope.launch {
-            val notes = attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.checkDates(c, exp.city, a.startDate, a.startDate.plusDays((a.duration.days - 1).toLong())) }?.getOrNull().orEmpty()
+            val notes = attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.checkDates(c, exp.city, a.startDate, a.startDate.plusDays((a.duration.days - 1).toLong()), exp.notes) }?.getOrNull().orEmpty()
             if (notes.isEmpty()) return@launch
             _experience.update { st -> st.result?.takeIf { it.city == exp.city }?.let { st.copy(result = it.copy(notes = (it.notes + notes).distinct())) } ?: st }
             autosave()
@@ -1782,6 +1783,25 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         verifyExperience()
         adviseExperience()
         checkTripDates()
+        suggestOutings()
+    }
+
+    /** Journées sans nouveau lieu : Envolée AI propose balades de quartier et excursions, puis le programme est recomposé. */
+    private fun suggestOutings() {
+        val s = _settings.value
+        val c = s.aiConfig ?: return
+        val st = _experience.value
+        val exp = st.result ?: return
+        val free = exp.days.count { d -> d.steps.any { it.place.id.startsWith("free/") } }
+        if (!s.has(com.riad.voyage.data.AiFeature.OUTINGS) || free == 0 || st.answers.outings.isNotEmpty()) return
+        viewModelScope.launch {
+            val seen = exp.days.flatMap { d -> d.steps.filter { it.category !in ExperienceBuilder.venues }.map { it.place.name } }
+            val ideas = attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.outings(c, exp.city, free + 2, seen) }?.getOrNull().orEmpty()
+            if (ideas.isEmpty() || _experience.value.result?.city != exp.city) return@launch
+            updateAnswers { it.copy(outings = ideas) }
+            val a = _experience.value.answers
+            if (experiencePools.isNotEmpty()) showProgram(ExperienceBuilder.build(a, a.city.trim(), experiencePools, weather = experienceWeather))
+        }
     }
 
     /** Budget annoncé comparé à l'estimation (en euros). */

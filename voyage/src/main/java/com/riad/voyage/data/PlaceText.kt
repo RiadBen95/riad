@@ -21,7 +21,10 @@ object PlaceText {
         val name = cleanName(p.name)
         val n = name.plain()
         val converted = "mosquee" in p.kind.plain() && listOf("synagogue", "eglise", "cathedrale").any { it in n }
-        return p.copy(name = if (converted) "$name (${t("aujourd'hui mosquée")})" else name)
+        // Musée classé « d'art » mais dont le nom parle d'histoire ou d'armée : musée d'histoire.
+        val kind = if (p.kind.plain().startsWith("musee d'art") && Regex("moudjahid|armee|militaire|guerre|histoire|revolution|resistance|memoire").containsMatchIn(n))
+            "Musée d'histoire" else p.kind
+        return p.copy(name = if (converted) "$name (${t("aujourd'hui mosquée")})" else name, kind = kind)
     }
 
     fun tidy(list: List<PointOfInterest>) = list.filter(::visitable).map(::tidy)

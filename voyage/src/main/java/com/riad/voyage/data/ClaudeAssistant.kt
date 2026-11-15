@@ -47,6 +47,7 @@ enum class AiFeature(val label: String, val description: String) {
     TIPS("Conseils par étape", "Réserver à l'avance, gratuité, tenue, meilleure heure."),
     FOOD("Arbitrer les restaurants", "Un restaurant qui ne colle pas à vos envies (« sans pizza », « vrai halal ») est remplacé."),
     BUDGET("Commenter le budget", "Pistes d'économies si l'estimation dépasse votre budget."),
+    OUTINGS("Balades et excursions", "Quand la ville est épuisée (long séjour) : balades de quartier et excursions à la journée."),
     STORY("Rédiger le carnet", "Une introduction, un texte par jour et des phrases utiles sur mesure dans le PDF."),
     SOUVENIR("Souvenir du voyage", "Un résumé du séjour à partager."),
 }
@@ -248,7 +249,8 @@ object ClaudeAssistant {
     suspend fun summarize(c: Config, places: List<Triple<String, String, List<String>>>): Map<String, String> {
         val input = places.joinToString("\n\n") { (id, name, reviews) -> "id=$id · $name\n" + reviews.joinToString("\n") { "- $it" } }
         val o = json(ask(c, "Pour chaque lieu, résume ses avis de visiteurs en une phrase courte et utile (moins de 20 mots, " +
-            "en $language), sans inventer. Réponds uniquement par un objet JSON {\"id du lieu\": \"résumé\", …} avec les mêmes id.\n\n$input"))
+            "en $language), sans inventer et sans aucun nom de personne (serveur, employé, client). " +
+            "Réponds uniquement par un objet JSON {\"id du lieu\": \"résumé\", …} avec les mêmes id.\n\n$input"))
             ?: return emptyMap()
         return o.keys().asSequence().associateWith { o.optString(it) }.filterValues { it.isNotBlank() }
     }
@@ -264,11 +266,20 @@ object ClaudeAssistant {
     }
 
     /** Jours fériés, fermetures exceptionnelles, grèves, événements et marchés sur les dates du séjour. */
-    suspend fun checkDates(c: Config, city: String, start: LocalDate, end: LocalDate): List<String> =
+    suspend fun checkDates(c: Config, city: String, start: LocalDate, end: LocalDate, known: List<String>): List<String> =
         json(ask(c, "Pour un séjour à $city du $start au $end : cherche les jours fériés, fermetures exceptionnelles de grands lieux, " +
-            "grèves annoncées, festivals et marchés saisonniers (ouverts ou déjà finis). Réponds uniquement par un JSON " +
+            "grèves annoncées, festivals et marchés saisonniers qui tombent pendant le séjour. Ne garde que des informations précises " +
+            "et confirmées (nom de l'événement et dates exactes) ; rien de vague ni d'incertain. Déjà signalé, à ne pas répéter : " +
+            known.joinToString(" | ").ifBlank { "rien" } + ". Réponds uniquement par un JSON " +
             "{\"notes\": [\"remarque courte et utile en $language\", …]} (3 au plus, liste vide si rien de notable).", web = true))
             ?.texts("notes").orEmpty()
+
+    /** Balades de quartier et excursions à la journée, pour les jours où la ville est épuisée. */
+    suspend fun outings(c: Config, city: String, count: Int, seen: List<String>): List<String> =
+        json(ask(c, "Séjour à $city : les grands sites suivants sont déjà au programme : ${seen.joinToString(", ")}. Propose $count idées " +
+            "pour les jours restants, en $language : des balades dans des quartiers réels (« Balade : nom du quartier — ce qu'on y voit ») et " +
+            "des excursions à la journée vers des lieux réels et connus (« Excursion : lieu (distance en km, transport) — intérêt »). " +
+            "N'invente rien. Réponds uniquement par un JSON {\"ideas\": [\"…\"]}."))?.texts("ideas").orEmpty()
 
     /**
      * Conseils par étape ([id] → description) : astuce, accessibilité, restaurant qui ne colle pas aux [constraints].

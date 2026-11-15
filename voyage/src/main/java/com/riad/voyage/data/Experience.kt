@@ -173,6 +173,7 @@ object Quiz {
         val budgetEur: Int? = null,                 // budget annoncé pour le séjour
         val maxWalkMin: Int? = null,                // marche maximale entre deux étapes
         val extraNotes: List<String> = emptyList(), // remarques d'Envolée AI (saison, demande impossible…)
+        val outings: List<String> = emptyList(),    // balades de quartier et excursions proposées par Envolée AI
     )
 
     /**
@@ -582,6 +583,9 @@ object ExperienceBuilder {
         return exp.copy(days = exp.days.mapIndexed { i, d -> if (i == dayIndex) newDay else d })
     }
 
+    /** Balade, excursion ou journée libre : pas un lieu des sources. */
+    private fun freePlace(name: String) = transferPlace(name).copy(id = "free/$name", kind = "Temps libre")
+
     /** Pause (sieste des petits) : pas un lieu à visiter. */
     private fun pausePlace(name: String) = transferPlace(name).copy(id = "pause/$name", kind = "Pause")
 
@@ -691,6 +695,16 @@ object ExperienceBuilder {
             .filterNot(::isTooLarge).sortedByDescending { it.sitelinks }.take(10).map { it.id }.toSet()
         fun isMinorTower(p: PointOfInterest) = p.id !in mustSee && listOf("tour", "porte").any { normalize(p.kind).startsWith(it) }
         val usedBrands = mutableSetOf<String>()
+        val kindsTrip = mutableMapOf<String, Int>()             // types de lieux déjà au programme (tout le séjour)
+        val lastUsed = mutableMapOf<String, Int>()              // dernier jour où une adresse a servi (réutilisation tournante)
+        var dayNumber = 0
+        val worship = listOf("mosquee", "eglise", "cathedrale", "basilique", "synagogue", "temple", "chapelle", "monastere", "abbaye")
+        fun isWorship(p: PointOfInterest) = worship.any { normalize(p.kind).startsWith(it) }
+        // Pays où le vendredi est le jour de la grande prière (repos hebdomadaire).
+        val fridayRest = normalize(a.country) in setOf("algerie", "maroc", "tunisie", "egypte", "turquie", "jordanie", "arabie saoudite",
+            "emirats arabes unis", "qatar", "oman", "koweit", "bahrein", "iran", "pakistan", "malaisie", "indonesie", "senegal", "mauritanie")
+        var friday = false
+        val outings = a.outings.toMutableList()
         val kidsKinds = listOf("zoo", "aquarium", "science", "decouverte", "attractions", "jardin", "parc", "plage", "ferme", "enfant", "jouet", "planetarium")
         /** Lieux en plein air : à éviter sous la pluie, à privilégier au soleil. */
         fun outdoor(p: PointOfInterest, c: ActivityLinks.Category): Boolean {
@@ -796,6 +810,8 @@ object ExperienceBuilder {
             if (p.id in avoid) s -= 6.0
             if (isWanted(a, p)) s += 8.0                                         // demandé nommément
             if (p.id in mustSee) s += 6.0                                        // incontournable de la ville
+            // Varier sur tout le séjour : au-delà de 2 lieux du même type (mosquées, églises…), les autres passent devant.
+            s -= ((kindsTrip[normalize(p.kind)] ?: 0) - 1).coerceAtLeast(0) * 2.5
             if (a.youngKids && kidsKinds.any { it in k }) s += 3.0                 // un lieu pour les enfants
             if (a.stroller && listOf("tour", "ruines", "archeolog", "fortification", "belvedere", "colline").any { it in k }) s -= 3.0
             // Un lieu phare par jour (pas en extérieur sous la pluie).
@@ -818,6 +834,8 @@ object ExperienceBuilder {
 
         fun why(category: ActivityLinks.Category, p: PointOfInterest): String = when {
             p.id.startsWith("pause/") -> t("Retour à l'hôtel ou un parc tranquille pour la sieste des petits.")
+            p.id.startsWith("free/") -> if (p.name != t("Journée libre")) t("Idée d'Envolée AI : renseignez-vous sur le transport et les horaires sur place.")
+                else t("Plus de nouveaux lieux pour ce jour : flânez, revenez sur un coup de cœur ou reposez-vous.")
             p.id == "transfer/" + t("Arrivée et installation") -> t("Trajet depuis l'aéroport ou la gare et dépôt des bagages.")
             p.id.startsWith("transfer/") -> t("Prévoir environ 2 h à l'aéroport et 1 h de trajet.")
             else -> reason(a, city, category, p, today) + (if (hasHours(p, category) && p.openingHours == null) " · " + t("horaires à vérifier") else "")
@@ -836,6 +854,9 @@ object ExperienceBuilder {
             today = weather[date]
             todayDate = date
             holiday = Holidays.isHoliday(a.country, date)
+            dayNumber = dayIndex
+            friday = fridayRest && date.dayOfWeek == java.time.DayOfWeek.FRIDAY
+            if (friday && dayIndex <= lastIndex) notes += tf("{0} (vendredi) : jour de la grande prière ; mosquées réservées au culte en milieu de journée, certains lieux ferment ou ouvrent tard.", title)
             if (holiday && dayIndex <= lastIndex) notes += tf("{0} : jour férié, beaucoup de lieux ferment ou réduisent leurs horaires ; vérifiez avant de partir.", title)
             iconicToday = false
             usedToday.clear()
@@ -865,7 +886,12 @@ object ExperienceBuilder {
             }
 
             /** Trajet trop long pour la marche maximale demandée. */
-            fun tooFar(p: PointOfInterest) = a.maxWalkMin != null && last != null && travelFrom(p).second > a.maxWalkMin
+            fun tooFar(p: PointOfInterest): Boolean {
+                // À pied : pas plus de 40 min de marche entre deux étapes (ou la limite demandée), rien à plus de 6 km du centre.
+                val limit = a.maxWalkMin ?: if (a.mobility == Quiz.Mobility.WALK) 40 else null
+                if (a.mobility == Quiz.Mobility.WALK && p.distanceM > 6000 && p.id !in mustSee) return true
+                return limit != null && last != null && travelFrom(p).second > limit
+            }
 
             fun place(category: ActivityLinks.Category, p: PointOfInterest, moment: String, minutes: Int, fixedStart: Int? = null, exact: Boolean = false) {
                 val (meters, travel) = travelFrom(p)
@@ -874,6 +900,8 @@ object ExperienceBuilder {
                 used += p.id
                 usedToday += p.id
                 if (category in venueCategories) { usedKinds += normalize(p.kind); usedBrands += brand(p) }
+                kindsTrip[normalize(p.kind)] = (kindsTrip[normalize(p.kind)] ?: 0) + 1
+                lastUsed[p.id] = dayNumber
                 last = p
                 lastCategory = category
                 clock = start + minutes
@@ -891,7 +919,12 @@ object ExperienceBuilder {
                         candidates(ActivityLinks.Category.MUSEUMS).take(5).map { ActivityLinks.Category.MUSEUMS to it } else emptyList())
                     val forKids = if (a.youngKids) candidates(ActivityLinks.Category.ATTRACTIONS)
                         .filter { p -> kidsKinds.any { it in normalize(p.kind + " " + p.name) } }.take(5).map { ActivityLinks.Category.ATTRACTIONS to it } else emptyList()
+                    val worshipMax = if (Quiz.Taste.RELIGIOUS in a.tastes) 2 else 1
                     val all = (activities.flatMap { c -> candidates(c).take(25).map { c to it } } + extra + forKids)
+                        .ifEmpty {   // plus rien dans les envies : les autres lieux phares de la ville (le jardin d'Essai…)
+                            iconicCategories.flatMap { c -> candidates(c).take(10).map { c to it } }
+                        }
+                        .filter { (_, p) -> !isWorship(p) || steps.count { isWorship(it.place) } < worshipMax }
                         .filter { (_, p) -> (kindsToday[normalize(p.kind)] ?: 0) < (if (isSquare(p) || isMinorTower(p)) 1 else 2) && !tooFar(p) }
                         // « Place du Dam » puis « Monument national sur la place du Dam » : un seul des deux.
                         .filter { (_, p) -> steps.none { st -> st.place.name.plain().let { n -> n.length > 4 && (n in p.name.plain() || p.name.plain() in n) } } }
@@ -911,6 +944,7 @@ object ExperienceBuilder {
                             else max(earliest, if (hasHours(p, c)) 10 * 60 else 0)) ?: return@mapNotNull null
                         val finish = start + minutes
                         if (finish > end) return@mapNotNull null
+                        if (friday && isWorship(p) && start < 14 * 60 + 30 && finish > 11 * 60 + 30) return@mapNotNull null   // grande prière
                         if (!known && closesEarly(p, c) && finish > 18 * 60) return@mapNotNull null
                         Triple(c, p, score(p, c, last, start, lastCategory)) to (minutes to start)
                     }
@@ -951,9 +985,12 @@ object ExperienceBuilder {
                     tasteScore(p, tastesFor(a, category).ifEmpty { listOf(Quiz.Taste.LOCAL_FOOD) }, a.country) * 1.5 + emblem(p) -
                         (if (local && isForeignCuisine(p, a.country)) 4.0 else 0.0) -   // cuisine locale demandée
                         (if (normalize(p.kind) in usedKinds) 3.0 else 0.0) -          // varier les cuisines
+                        (lastUsed[p.id]?.let { 15.0 - 2.0 * (dayNumber - it) } ?: 0.0).coerceAtLeast(0.0) -   // adresse déjà servie : la plus ancienne d'abord
                         (travelFrom(p).second / (if (a.mobility == Quiz.Mobility.WALK) 6.0 else 12.0)) -
                         (if (p.id in avoid) 6.0 else 0.0)
-                } ?: return
+                } ?: pools[category].orEmpty().filter { it.id !in usedToday }.mapNotNull { p ->   // repli : le plus proche ouvert
+                    openAt(p, max(at, clock + travelFrom(p).second), visitMinutes(p, category), latest + 30)?.let { p to it }
+                }.minWithOrNull(compareBy({ it.first.id in used }, { travelFrom(it.first).second })) ?: return   // jamais servi d'abord
                 place(category, best.first, moment, visitMinutes(best.first, category), fixedStart = best.second)
             }
 
@@ -978,6 +1015,15 @@ object ExperienceBuilder {
                 }
             }
             fillVisits(12 * 60 + 30) { if (it < 11 * 60) "Matin" else "Fin de matinée" }
+            // Plus aucune visite possible ce jour-là : une balade ou une excursion, sinon une journée libre assumée.
+            val noVisit = steps.none { it.category !in venueCategories && !it.place.id.startsWith("transfer/") }
+            if (noVisit && clock <= 11 * 60 && dayEnd >= 17 * 60) {
+                val idea = outings.removeFirstOrNull()
+                val excursion = idea?.let { Regex("excursion|km", RegexOption.IGNORE_CASE).containsMatchIn(it) } == true
+                place(ActivityLinks.Category.TOURS, freePlace(idea ?: t("Journée libre")), if (excursion) "Excursion" else "Balade",
+                    if (excursion) 7 * 60 else 150, fixedStart = max(clock, 10 * 60))
+                last = null
+            }
             if (clock <= 14 * 60 && 12 * 60 + 30 + 75 <= dayEnd) meal(ActivityLinks.Category.RESTAURANTS, "Déjeuner", 12 * 60 + 30, latest = 14 * 60)
             dayAnchor = null   // nouveau quartier pour l'après-midi
             if (a.youngKids && steps.any { it.moment == "Déjeuner" } && clock + 75 <= dayEnd) {
@@ -1038,6 +1084,10 @@ object ExperienceBuilder {
         if (a.stroller) notes += t("Poussette : les lieux avec escaliers ou terrain accidenté sont évités, vérifiez l'accès sur place.")
         if (a.duration.days > 1 && a.arrivalMin == null && a.departureMin == null)
             notes += t("Heures d'arrivée et de départ non précisées : premier et dernier jours complets. Ajoutez-les pour les adapter.")
+        else if (a.duration.days > 1 && a.departureMin == null)
+            notes += t("Heure de départ non précisée : le dernier jour est complet. Ajoutez-la pour prévoir le trajet.")
+        val freeDays = days.count { d -> d.steps.any { it.place.id.startsWith("free/") } }
+        if (freeDays > 0) notes += tf("{0} journée(s) sans nouveau lieu à visiter : balades, excursions ou temps libre proposés.", freeDays)
 
         val present = days.flatMap { d -> d.steps.map { it.category } }.toSet()
         val themes = a.interests.filter { i ->

@@ -64,13 +64,13 @@ object Diagnostics {
                     d.steps.forEach { s ->
                         val hours = d.date?.let { OpeningHours.ranges(s.place.openingHours, it.dayOfWeek, it.monthValue) }
                         val read = when {
-                            s.place.openingHours == null -> "horaires inconnus"
+                            s.place.openingHours == null -> "horaires non chargés (voir la vérification)"
                             hours == null -> "horaires illisibles"
                             hours.isEmpty() -> "FERMÉ ce jour-là"
                             else -> "ouvert " + hours.joinToString(", ") { "${hhmm(it.first)}-${hhmm(it.last)}" }
                         }
                         line("  ${s.time} [${s.moment}] ${s.place.name} · ${s.place.kind} · ${s.durationMin} min · $read")
-                        s.place.openingHours?.let { line("      OSM : $it") }
+                        s.place.openingHours?.let { line("      horaires de la semaine : $it") }
                         if (s.why.isNotBlank()) line("      ${s.why}")
                     }
                 }
