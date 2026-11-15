@@ -427,6 +427,20 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         prefStore.clear()   // préférences mémorisées des envolées passées
         _usePrefs.value = false
         _prefsSummary.value = null
+        // Toutes les recherches en cours repartent de zéro (Vols, Ville, Hôtels, Blogue, Envolée) ; les voyages enregistrés restent.
+        _form.value = FlightForm()
+        _results.value = ResultsState()
+        _activityCity.value = ""
+        _activityPlace.value = null
+        _places.value = PlacesState()
+        placesCache.clear()
+        weatherCache.clear()
+        _hotels.value = HotelState()
+        _blog.value = BlogState()
+        verifiedIds.clear()
+        advisedIds.clear()
+        knownClosed.clear()
+        _experience.value = ExperienceState(answers = Quiz.Answers())
         _message.value = t("Historique et préférences effacés.")
     }
 
