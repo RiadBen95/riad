@@ -1017,7 +1017,8 @@ object ExperienceBuilder {
             fillVisits(12 * 60 + 30) { if (it < 11 * 60) "Matin" else "Fin de matinée" }
             // Plus aucune visite possible ce jour-là : une balade ou une excursion, sinon une journée libre assumée.
             val noVisit = steps.none { it.category !in venueCategories && !it.place.id.startsWith("transfer/") }
-            if (noVisit && clock <= 11 * 60 && dayEnd >= 17 * 60) {
+            val wantsVisits = activities.isNotEmpty() || a.style != Quiz.Style.HIDDEN   // « gastronomie seule » : pas de journée libre
+            if (noVisit && wantsVisits && clock <= 11 * 60 && dayEnd >= 17 * 60) {
                 val idea = outings.removeFirstOrNull()
                 val excursion = idea?.let { Regex("excursion|km", RegexOption.IGNORE_CASE).containsMatchIn(it) } == true
                 place(ActivityLinks.Category.TOURS, freePlace(idea ?: t("Journée libre")), if (excursion) "Excursion" else "Balade",
