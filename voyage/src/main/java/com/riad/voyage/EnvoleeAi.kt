@@ -96,7 +96,7 @@ class EnvoleeAi(
                 return@launch
             }
             val (answers, ignored) = com.riad.voyage.data.ClaudeAssistant.toAnswers(req, base)
-            updateAnswers { answers }
+            host.updateAnswers { answers }
             host.experienceFlow.update { it.copy(describing = false, aiSummary = summaryOf(answers), aiIgnored = ignored, tripId = trip?.id) }
             host.generateExperience()
         }
@@ -250,7 +250,7 @@ class EnvoleeAi(
             var result = if (a != st.answers && host.pools.isNotEmpty())
                 ExperienceBuilder.build(a, a.city.trim(), host.pools, weather = host.weather) else exp
             plan.ops.forEach { op -> result = applyOp(a, result, op) }
-            updateAnswers { a }
+            host.updateAnswers { a }
             host.experienceFlow.update { it.copy(result = result, editing = false, undo = st.answers to exp, changeSummary = plan.summary.ifBlank { t("Programme modifié.") }) }
             host.autosave()
             verifyExperience()
@@ -260,7 +260,7 @@ class EnvoleeAi(
     /** Annule la dernière modification faite en parlant. */
     fun undoChange() {
         val (a, exp) = host.experienceFlow.value.undo ?: return
-        updateAnswers { a }
+        host.updateAnswers { a }
         host.experienceFlow.update { it.copy(result = exp, undo = null, changeSummary = null) }
         host.autosave()
     }
@@ -539,7 +539,7 @@ class EnvoleeAi(
             val seen = exp.days.flatMap { d -> d.steps.filter { it.category !in ExperienceBuilder.venues }.map { it.place.name } }
             val ideas = attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.outings(c, exp.city, free + 2, seen, wine) }?.getOrNull().orEmpty()
             if (ideas.isEmpty() || host.experienceFlow.value.result?.city != exp.city) return@launch
-            updateAnswers { it.copy(outings = ideas) }
+            host.updateAnswers { it.copy(outings = ideas) }
             val a = host.experienceFlow.value.answers
             if (host.pools.isNotEmpty()) host.showProgram(ExperienceBuilder.build(a, a.city.trim(), host.pools, weather = host.weather))
         }
