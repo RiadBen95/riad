@@ -1089,7 +1089,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun saveExperience(silent: Boolean = false) {
         val st = _experience.value
         val exp = st.result ?: return
-        val trip = linkedTrip(st) ?: Trip(id = "trip-${System.currentTimeMillis()}", city = exp.city.trim(), country = st.answers.place?.country.orEmpty())
+        val trip = linkedTrip(st) ?: Trip(id = "trip-${System.currentTimeMillis()}", city = exp.city.trim(),
+            country = st.answers.place?.country?.ifBlank { null } ?: st.answers.country)
         val program = exp.days.map { d ->
             SavedDay(d.title, d.weather?.label, d.steps.map { s ->
                 SavedStep(s.time, t(s.moment), s.category.emoji, s.why, s.durationMin,
@@ -1325,7 +1326,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
      */
     fun refineExperience(transform: (Quiz.Answers) -> Quiz.Answers) {
         val old = _experience.value.answers
-        updateAnswers(transform)
+        answer(transform)
         val a = _experience.value.answers
         if (a.diet != old.diet || a.tastes != old.tastes || experiencePools.isEmpty()) return generateExperience()
         showProgram(ExperienceBuilder.build(a, a.city.trim(), experiencePools, weather = experienceWeather))
@@ -1352,8 +1353,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val s = _settings.value
         val c = s.aiConfig ?: return
         if (!s.claudeDescribe || text.isBlank()) return
-        // Réponse à la question de précision : on complète la demande précédente.
-        val full = _experience.value.aiQuestion?.let { _experience.value.lastRequest + "\n" + text } ?: text
+        val full = text   // nouvelle demande : jamais mélangée à la précédente
         _experience.update { it.copy(describing = true, error = null, aiQuestion = null, lastRequest = full) }
         viewModelScope.launch {
             val r = attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.describe(c, full, LocalDate.now(), s.has(com.riad.voyage.data.AiFeature.QUESTIONS)) }
@@ -1410,6 +1410,19 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         ).joinToString(" · ")
     }
 
+    /** Réponse à la question de précision d'Envolée AI : complète la demande qui l'a posée. */
+    fun answerQuestion(answer: String) {
+        val st = _experience.value
+        if (st.aiQuestion == null || answer.isBlank()) return
+        _experience.update { it.copy(aiQuestion = null) }
+        describeTrip(st.lastRequest + "\n" + answer)
+    }
+
+    fun dismissQuestion() = _experience.update { it.copy(aiQuestion = null) }
+
+    /** Réponse changée à la main : les remarques d'Envolée AI sur l'ancienne demande ne valent plus. */
+    fun answer(transform: (Quiz.Answers) -> Quiz.Answers) = updateAnswers { transform(it).copy(extraNotes = emptyList()) }
+
     private val verifiedIds = mutableSetOf<String>()
     private var verifying = false
 
@@ -1441,7 +1454,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.webCheck(c, p.name, exp.city, date) }?.getOrNull()?.let { checks[p.id] = it }
             }
             val names = todo.associate { it.second.id to it.second.name }
-            val withReviews = checks.filter { it.value.reviews.isNotEmpty() }.map { (id, c) -> Triple(id, names[id].orEmpty(), c.reviews) }
+            com.riad.voyage.data.Diagnostics.log("Vérification : ${todo.size} lieux, ${checks.size} vérifiés, ${checks.count { it.value.isClosed }} fermés")
+            val withReviews = checks.filter { it.value.reviews.isNotEmpty() && !it.value.isClosed }.map { (id, c) -> Triple(id, names[id].orEmpty(), c.reviews) }
             val summaries = if (withReviews.isEmpty()) emptyMap()
                 else attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.summarize(c, withReviews) }?.getOrNull().orEmpty()
             verifiedIds += todo.map { it.second.id }
@@ -1459,13 +1473,22 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val closedThen = exp.days.flatMap { it.steps }.filter { st ->
             checks[st.place.id]?.hoursToday?.let { !com.riad.voyage.data.OpeningHours.fits(it, minutesOf(st.time) ?: 0, st.durationMin) } == true
         }.map { it.place.id }
+        val replaced = mutableListOf<String>()
         (checks.filter { it.value.isClosed }.keys + closedThen).forEach { id ->
             exp.days.forEachIndexed { d, day ->
                 val i = day.steps.indexOfFirst { it.place.id == id }
-                if (i >= 0) exp = ExperienceBuilder.replaceStep(a, exp, d, i,
-                    ExperienceBuilder.alternatives(a, exp, experiencePools, d, i).firstOrNull())
+                if (i >= 0) {
+                    val c = checks[id]
+                    replaced += tf("« {0} » remplacé : {1}", day.steps[i].place.name, when {
+                        c?.closedForGood == true -> t("fermé définitivement")
+                        c?.isClosed == true -> t("fermé ce jour-là")
+                        else -> t("fermé à cette heure-là")
+                    })
+                    exp = ExperienceBuilder.replaceStep(a, exp, d, i, ExperienceBuilder.alternatives(a, exp, experiencePools, d, i).firstOrNull())
+                }
             }
         }
+        exp = exp.copy(notes = exp.notes + replaced)
         exp = exp.copy(days = exp.days.map { day ->
             day.copy(steps = day.steps.map { st ->
                 val c = checks[st.place.id]?.takeIf { !it.isClosed } ?: return@map st
@@ -1569,7 +1592,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         ).joinToString(" ; ")
         viewModelScope.launch {
             val adv = attempt(90_000) {
-                com.riad.voyage.data.ClaudeAssistant.advise(c, exp.city, todo.map { it.place.id to "${it.place.name} · ${it.place.kind} · ${t(it.moment)}" }, constraints,
+                com.riad.voyage.data.ClaudeAssistant.advise(c, exp.city, todo.map { it.place.id to "${it.place.name} · ${it.place.kind} · prévu à ${it.time} pour ${it.durationMin} min" }, constraints,
                     tips, access, food, web = s.aiWeb && (tips || access))
             }?.getOrNull() ?: return@launch
             var r = _experience.value.result?.takeIf { it.city == exp.city } ?: return@launch
@@ -1582,6 +1605,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                         r = ExperienceBuilder.replaceStep(a, r, d, i, ExperienceBuilder.alternatives(a, r, experiencePools, d, i)
                             .firstOrNull { it.second.id !in adv.filterValues { x -> x.unsuitable != null }.keys })
                     }
+                }
+            }
+            // Vu de l'extérieur seulement : la visite devient un passage de 15 minutes.
+            adv.filterValues { it.passage }.keys.forEach { id ->
+                r.days.forEachIndexed { d, day ->
+                    val i = day.steps.indexOfFirst { it.place.id == id }
+                    if (i >= 0 && day.steps[i].durationMin > 15) r = ExperienceBuilder.setDuration(a, r, d, i, 15)
                 }
             }
             r = r.copy(notes = r.notes + notes, days = r.days.map { day ->
@@ -1759,13 +1789,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Charge les meilleurs lieux de chaque catégorie utile, puis compose l'expérience. */
     fun generateExperience() {
-        updateAnswers { it.copy(country = countryOf(it.city.trim(), it.place?.country.orEmpty())) }   // cuisine locale
+        updateAnswers { it.copy(country = countryOf(it.city.trim(), it.place?.country.orEmpty()).ifBlank { it.country }) }   // cuisine locale, fériés
         val a = _experience.value.answers
         val city = a.city.trim()
         if (city.isBlank()) return
         _experience.update { it.copy(loading = true, stage = t("Recherche de la ville…"), error = null, result = null) }
         viewModelScope.launch {
-            val geo = resolveCity(city, a.place?.takeIf { it.name.equals(city, ignoreCase = true) })
+            // « Florence, Italie » : pas de confusion avec une homonyme (Florence aux États-Unis).
+            val geo = resolveCity(if (a.country.isNotBlank() && a.place == null) "$city, ${a.country}" else city,
+                a.place?.takeIf { it.name.equals(city, ignoreCase = true) })
             if (geo == null) {
                 _experience.update { it.copy(loading = false, error = t("Ville introuvable : choisissez-la dans la liste proposée.")) }
                 return@launch

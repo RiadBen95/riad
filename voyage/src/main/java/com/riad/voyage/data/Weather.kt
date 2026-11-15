@@ -13,7 +13,8 @@ data class DayWeather(
     val rainProb: Int,        // probabilité de pluie maximale, en %
     val sunsetMin: Int?,      // coucher du soleil, en minutes depuis minuit (heure locale)
 ) {
-    val rainy get() = rainProb >= 60 || code in 51..67 || code in 80..82 || code in 95..99 || code in 71..77 || code in 85..86
+    /** Pluie probable : forte probabilité, ou code de pluie confirmé par au moins 40 % (orage et neige : toujours). */
+    val rainy get() = rainProb >= 60 || ((code in 51..67 || code in 80..82) && rainProb >= 40) || code in 95..99 || code in 71..77 || code in 85..86
     val sunny get() = code <= 2 && rainProb < 30
     val hot get() = tMax >= 27
     val cold get() = tMax < 8
@@ -23,7 +24,7 @@ data class DayWeather(
         1, 2 -> "🌤️"
         3 -> "☁️"
         45, 48 -> "🌫️"
-        in 51..67, in 80..82 -> "🌧️"
+        in 51..67, in 80..82 -> if (rainProb < 50) "🌦️" else "🌧️"   // averses possibles / pluie
         in 71..77, in 85..86 -> "❄️"
         in 95..99 -> "⛈️"
         else -> "🌤️"

@@ -3,6 +3,7 @@ package com.riad.voyage.data
 import com.riad.voyage.tlist
 import com.riad.voyage.tf
 import com.riad.voyage.t
+import com.riad.voyage.tk
 import kotlin.math.ln
 import kotlin.math.max
 import kotlin.math.min
@@ -412,6 +413,8 @@ object ExperienceBuilder {
             "jardin botanique" in k -> 90
             "parc national" in k || "reserve" in k -> 180
             "plage" in k -> 150
+            // Tour, porte ou fontaine sans horaires ni billet : on la voit en passant.
+            listOf("tour", "porte", "fontaine", "colonne").any { k.startsWith(it) } && p.openingHours == null && big < 40 -> return 15
             "tour" in k || "observation" in k || "belvedere" in k || "point de vue" in k -> 45
             "opera" in k || "theatre" in k || "stade" in k || "salle" in k -> 60
             "marche" in k || "halle" in k || "souk" in k -> 60
@@ -477,7 +480,8 @@ object ExperienceBuilder {
             p.isMustSee -> tf("Un incontournable de {0}", t(city))
             p.inGuide -> t("Recommandé par le guide Wikivoyage")
             category == ActivityLinks.Category.PARKS || category == ActivityLinks.Category.BEACHES -> t("Pour souffler au grand air")
-            else -> t("Parmi les lieux les plus réputés de la ville")
+            p.sitelinks >= 20 -> t("Parmi les lieux les plus réputés de la ville")
+            else -> tf("{0} à découvrir en chemin", tk(p.kind.substringBefore(" · ")))
         }
         val withTaste = if (taste != null) tf("Pour votre envie « {0} » · {1}", t(taste.label).lowercase(), base) else base
         return when {
@@ -503,17 +507,23 @@ object ExperienceBuilder {
         if (steps.isEmpty()) return steps
         var clock = parseTime(steps.first().time) ?: a.start.minutes
         var prev: ExperienceStep? = null
+        var lunchEnd: Int? = null
         return steps.map { st ->
+            if (st.moment == "Déjeuner") lunchEnd = null
             // La première étape garde son heure ; les suivantes s'enchaînent.
             val before = prev ?: run { clock += st.durationMin; prev = st; return@map st.copy(fromPreviousM = null, travelMin = null) }
             val meters = before.place.takeIf { it.hasCoordinates && st.place.hasCoordinates }
                 ?.let { PlacesParser.distanceMeters(it.lat, it.lon, st.place.lat, st.place.lon).toInt() }
             val travel = if (meters == null) 15 else travelMinutes(meters, a.mobility)
             val buffer = if (fixedStart(st.moment) == null) a.pace.bufferMin else 0
-            val earliest = round5(max(clock + travel + buffer, fixedStart(st.moment) ?: 0))
+            // Repas et pauses ne sont jamais avancés (heure d'origine, après minuit comprise) ; café ≥ déjeuner + 1 h 30.
+            val own = if (isAnchored(st) || st.moment == "Pause gourmande") parseTime(st.time)?.let { if (it < clock - 6 * 60) it + 24 * 60 else it } ?: 0 else 0
+            val afterLunch = if (st.moment == "Pause gourmande") (lunchEnd ?: 0) + 90 else 0
+            val earliest = round5(maxOf(clock + travel + buffer, fixedStart(st.moment) ?: 0, own, afterLunch))
             // Lieu aux horaires connus : pas avant son ouverture (pause de midi comprise).
             val start = date?.let { OpeningHours.nextStart(st.place.openingHours, it.dayOfWeek, earliest, st.durationMin, it.monthValue) } ?: earliest
             clock = start + st.durationMin
+            if (st.moment == "Déjeuner") lunchEnd = clock
             val out = st.copy(time = fmt(start), fromPreviousM = meters, travelMin = travel)
             prev = out
             out
@@ -635,6 +645,14 @@ object ExperienceBuilder {
         return if (next - end >= 75) "${fmt(end)} → ${fmt(next)}" else null
     }
 
+    /** Nouvelle durée d'une étape ; les suivantes sont recalculées. */
+    fun setDuration(a: Quiz.Answers, exp: Experience, dayIndex: Int, stepIndex: Int, minutes: Int): Experience {
+        val day = exp.days.getOrNull(dayIndex) ?: return exp
+        if (stepIndex !in day.steps.indices) return exp
+        val steps = day.steps.mapIndexed { i, st -> if (i == stepIndex) st.copy(durationMin = minutes) else st }
+        return exp.copy(days = exp.days.mapIndexed { i, d -> if (i == dayIndex) d.copy(steps = retime(a, steps, d.date)) else d })
+    }
+
     /** Étape à heure fixe : repas, arrivée, départ. */
     fun isAnchored(s: ExperienceStep) = fixedStart(s.moment) != null || s.place.id.startsWith("transfer/")
 
@@ -668,6 +686,10 @@ object ExperienceBuilder {
         val iconicMin = iconicCategories.flatMap { pools[it].orEmpty() }.filterNot(::isTooLarge).map { it.sitelinks }
             .sortedDescending().getOrNull(4)?.coerceIn(15, 60) ?: 60
         fun isIconic(p: PointOfInterest) = p.sitelinks >= iconicMin && !isTooLarge(p)
+        // « Les incontournables » : les 10 lieux les plus connus de la ville passent avant les goûts (Duomo, Offices…).
+        val mustSee = if (a.style != Quiz.Style.ICONIC) emptySet() else iconicCategories.flatMap { pools[it].orEmpty() }
+            .filterNot(::isTooLarge).sortedByDescending { it.sitelinks }.take(10).map { it.id }.toSet()
+        fun isMinorTower(p: PointOfInterest) = p.id !in mustSee && listOf("tour", "porte").any { normalize(p.kind).startsWith(it) }
         val usedBrands = mutableSetOf<String>()
         val kidsKinds = listOf("zoo", "aquarium", "science", "decouverte", "attractions", "jardin", "parc", "plage", "ferme", "enfant", "jouet", "planetarium")
         /** Lieux en plein air : à éviter sous la pluie, à privilégier au soleil. */
@@ -722,7 +744,9 @@ object ExperienceBuilder {
                     notes += tf("Aucun restaurant « {0} » trouvé pour certains repas : vérifiez sur place.", t(a.diet.label).lowercase())
                 }
             } else all
-            val affordable = dietOk.filter { budgetOk(it) }.ifEmpty { dietOk }
+            // Budget moyen : € et €€ d'abord, €€€ seulement s'il reste trop peu d'adresses.
+            val affordable = (if (a.budget == Quiz.Budget.MEDIUM) dietOk.filter { (priceLevel(it) ?: 2) <= 2 }.takeIf { it.size >= 3 } else null)
+                ?: dietOk.filter { budgetOk(it) }.ifEmpty { dietOk }
             // Restauration rapide (kebab, burger…) seulement si « Street food » est choisi.
             val noFastFood = if (category == ActivityLinks.Category.RESTAURANTS && Quiz.Taste.STREET !in a.tastes) {
                 affordable.filterNot { isFastFood(it) }.takeIf { it.size >= 2 } ?: affordable
@@ -733,7 +757,7 @@ object ExperienceBuilder {
             } else noFastFood
             if (tastes.isEmpty()) return meals
             // Les goûts filtrent, sauf pour les lieux phares et ceux demandés nommément.
-            val matching = meals.filter { tasteScore(it, tastes, a.country) > 0 || isIconic(it) || isWanted(a, it) }
+            val matching = meals.filter { tasteScore(it, tastes, a.country) > 0 || isIconic(it) || it.id in mustSee || isWanted(a, it) }
             if (matching.isNotEmpty() || meals.isEmpty()) return matching
             if (category == ActivityLinks.Category.CAFES) return meals   // les goûts « cuisine » ne visent pas les cafés
             // Rien pour ces goûts : on le dit ; pas de centre commercial pour des « marchés ».
@@ -771,6 +795,7 @@ object ExperienceBuilder {
             if ("plage" in k && startMin >= 14 * 60) s += 1.0
             if (p.id in avoid) s -= 6.0
             if (isWanted(a, p)) s += 8.0                                         // demandé nommément
+            if (p.id in mustSee) s += 6.0                                        // incontournable de la ville
             if (a.youngKids && kidsKinds.any { it in k }) s += 3.0                 // un lieu pour les enfants
             if (a.stroller && listOf("tour", "ruines", "archeolog", "fortification", "belvedere", "colline").any { it in k }) s -= 3.0
             // Un lieu phare par jour (pas en extérieur sous la pluie).
@@ -861,13 +886,13 @@ object ExperienceBuilder {
                 while (guard++ < 6 && (activities.isNotEmpty() || a.style != Quiz.Style.HIDDEN) && visitsToday < maxVisits(a.pace)) {
                     // Lieux phares (ou demandés) d'autres catégories, même hors des envies cochées.
                     val extra = (if (a.style == Quiz.Style.HIDDEN) emptyList() else (iconicCategories - activities.toSet()).flatMap { c ->
-                        pools[c].orEmpty().filter { it.id !in used && (isWanted(a, it) || (!iconicToday && isIconic(it))) }.map { c to it }
+                        pools[c].orEmpty().filter { it.id !in used && (isWanted(a, it) || it.id in mustSee || (!iconicToday && isIconic(it))) }.map { c to it }
                     }) + (if (today?.rainy == true && outdoorOnly && ActivityLinks.Category.MUSEUMS !in activities)   // pluie : un abri
                         candidates(ActivityLinks.Category.MUSEUMS).take(5).map { ActivityLinks.Category.MUSEUMS to it } else emptyList())
                     val forKids = if (a.youngKids) candidates(ActivityLinks.Category.ATTRACTIONS)
                         .filter { p -> kidsKinds.any { it in normalize(p.kind + " " + p.name) } }.take(5).map { ActivityLinks.Category.ATTRACTIONS to it } else emptyList()
                     val all = (activities.flatMap { c -> candidates(c).take(25).map { c to it } } + extra + forKids)
-                        .filter { (_, p) -> (kindsToday[normalize(p.kind)] ?: 0) < (if (isSquare(p)) 1 else 2) && !tooFar(p) }
+                        .filter { (_, p) -> (kindsToday[normalize(p.kind)] ?: 0) < (if (isSquare(p) || isMinorTower(p)) 1 else 2) && !tooFar(p) }
                         // « Place du Dam » puis « Monument national sur la place du Dam » : un seul des deux.
                         .filter { (_, p) -> steps.none { st -> st.place.name.plain().let { n -> n.length > 4 && (n in p.name.plain() || p.name.plain() in n) } } }
                     // Rester dans le quartier de la demi-journée quand c'est possible.
@@ -1011,6 +1036,8 @@ object ExperienceBuilder {
         if (days.none { d -> d.steps.any { !it.place.id.startsWith("transfer/") } } && days.any { it.steps.isNotEmpty() })
             notes += t("Vos heures d'arrivée et de départ ne laissent aucune journée d'activité : vérifiez-les.")
         if (a.stroller) notes += t("Poussette : les lieux avec escaliers ou terrain accidenté sont évités, vérifiez l'accès sur place.")
+        if (a.duration.days > 1 && a.arrivalMin == null && a.departureMin == null)
+            notes += t("Heures d'arrivée et de départ non précisées : premier et dernier jours complets. Ajoutez-les pour les adapter.")
 
         val present = days.flatMap { d -> d.steps.map { it.category } }.toSet()
         val themes = a.interests.filter { i ->

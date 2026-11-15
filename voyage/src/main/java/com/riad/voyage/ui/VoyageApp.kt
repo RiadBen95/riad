@@ -223,7 +223,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                     }
                     ExperienceScreen(
                         state = experience,
-                        onAnswers = vm::updateAnswers,
+                        onAnswers = vm::answer,
                         onStep = vm::quizStep,
                         onGenerate = vm::generateExperience,
                         onRegenerate = vm::regenerateExperience,
@@ -254,6 +254,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                             setUsePrefs = vm::setUsePreferences,
                             askChange = if (settings.has(com.riad.voyage.data.AiFeature.EDIT)) vm::askChange else null,
                             undo = vm::undoChange,
+                            answerQuestion = vm::answerQuestion, dismissQuestion = vm::dismissQuestion,
                             recapStep = vm::editRecapStep, recapDone = vm::doneRecapStep, recapApply = vm::applyRecap, recapClose = vm::closeRecap,
                         ),
                     )
@@ -369,7 +370,8 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
 
                 Tab.SETTINGS -> {
                     BackHandler { vm.selectTab(Tab.HOME) }
-                    SettingsScreen(settings, keyStatus, vm::saveSettings, vm.quotas, vm::setQuotaLimit, vm::setLanguage, vm::diagnosticReport)
+                    SettingsScreen(settings, keyStatus, vm::saveSettings, vm.quotas, vm::setQuotaLimit, vm::setLanguage, vm::diagnosticReport,
+                        onClearHistory = vm::clearRecents, usePrefs = vm.usePreferences, onUsePrefs = vm::setUsePreferences)
                 }
             }
         }

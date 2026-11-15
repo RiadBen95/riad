@@ -68,6 +68,7 @@ data class Candidate(
     val openNow: Boolean? = null,
     val mapsUrl: String? = null,
     val typeLabel: String? = null,     // ex. « Restaurant italien », « Bar à cocktails »
+    val hours: String? = null,         // horaires de la semaine au format OpenStreetMap (Google)
 )
 
 private object Http {
@@ -131,7 +132,27 @@ object GoogleRatings {
     private const val FIELDS = "places.id,places.displayName,places.location,places.formattedAddress," +
         "places.rating,places.userRatingCount,places.priceLevel,places.websiteUri," +
         "places.nationalPhoneNumber,places.googleMapsUri,places.currentOpeningHours.openNow," +
-        "places.primaryTypeDisplayName"
+        "places.regularOpeningHours.periods,places.primaryTypeDisplayName"
+
+    /**
+     * Horaires Google de la semaine (« periods ») → format OpenStreetMap (« Mo 08:00-12:00,14:00-20:00; Tu off… »),
+     * pour que le programme respecte les vrais horaires dès sa composition. Null si inconnus.
+     */
+    fun osmHours(periods: org.json.JSONArray?): String? {
+        if (periods == null || periods.length() == 0) return null
+        val names = listOf("Su", "Mo", "Tu", "We", "Th", "Fr", "Sa")   // Google : 0 = dimanche
+        val byDay = names.associateWith { mutableListOf<String>() }
+        for (i in 0 until periods.length()) {
+            val p = periods.optJSONObject(i) ?: continue
+            val open = p.optJSONObject("open") ?: continue
+            val close = p.optJSONObject("close") ?: return "24/7"      // ouvert sans fermeture : 24 h sur 24
+            fun hm(o: JSONObject) = "%02d:%02d".format(o.optInt("hour"), o.optInt("minute"))
+            byDay[names[open.optInt("day") % 7]]!! += hm(open) + "-" + hm(close)
+        }
+        return listOf(1, 2, 3, 4, 5, 6, 0).joinToString("; ") { d ->
+            names[d] + " " + byDay[names[d]]!!.ifEmpty { listOf("off") }.joinToString(",")
+        }
+    }
 
     suspend fun search(key: String, query: String, center: GeoPoint): List<Candidate> {
         val body = JSONObject()
@@ -185,6 +206,7 @@ object GoogleRatings {
                 rating = p.optDouble("rating").takeIf { !it.isNaN() && count > 0 }
                     ?.let { RatingInfo(RatingSource.GOOGLE, it, count, url = p.s("googleMapsUri")) },
                 openNow = p.optJSONObject("currentOpeningHours")?.let { if (it.has("openNow")) it.optBoolean("openNow") else null },
+                hours = osmHours(p.optJSONObject("regularOpeningHours")?.optJSONArray("periods")),
                 mapsUrl = p.s("googleMapsUri"),
                 typeLabel = p.optJSONObject("primaryTypeDisplayName")?.s("text"),
             )
@@ -411,7 +433,7 @@ object RatingsAggregator {
                 lon = lon ?: center.lon,
                 distanceM = if (hasCoords) PlacesParser.distanceMeters(center.lat, center.lon, lat!!, lon!!).toInt() else -1,
                 address = pick { it.address },
-                openingHours = g.guide?.openingHours,
+                openingHours = pick { it.hours } ?: g.guide?.openingHours,
                 website = pick { it.website } ?: g.guide?.website,
                 phone = pick { it.phone } ?: g.guide?.phone,
                 wikipedia = null,

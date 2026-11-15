@@ -83,6 +83,7 @@ class TripRequest(o: JSONObject) {
     val maxWalkMin: Int = o.optInt("maxWalkMin")
     val warnings: List<String> = o.texts("warnings")
     val question: String = o.optString("question").takeIf { it != "null" }.orEmpty()
+    val country: String = o.optString("country").takeIf { it != "null" }.orEmpty()
 }
 
 /** Billet ou confirmation lu par Envolée AI : les trajets (vols, trains) dans l'ordre. */
@@ -106,7 +107,7 @@ data class Booking(val segments: List<Segment>, val passengers: Int, val price: 
 }
 
 /** Conseils pour une étape : astuce, accessibilité, et raison de remplacer un restaurant qui ne colle pas. */
-data class StepAdvice(val tip: String?, val access: String?, val unsuitable: String?)
+data class StepAdvice(val tip: String?, val access: String?, val unsuitable: String?, val passage: Boolean = false)
 
 /** Textes du carnet : introduction, un texte par jour, phrases utiles sur mesure (sens, phrase locale). */
 data class Story(val intro: String, val days: List<String>, val phrases: List<Pair<String, String>>)
@@ -222,12 +223,14 @@ object ClaudeAssistant {
             - mobility parmi : ${choices(Quiz.Mobility.entries.toTypedArray())} ; diet parmi : ${choices(Quiz.Diet.entries.toTypedArray())} ;
               budget parmi : ${choices(Quiz.Budget.entries.toTypedArray())}.
             - wanted : lieux cités explicitement (ex. « Louvre ») ; avoid : mots des lieux ou cuisines à éviter (ex. « pizza »).
-            - warnings : courtes remarques en $language sur ce qui risque de ne pas coller (saison : marchés de Noël en général
-              ouverts de fin novembre au 24 décembre ; fermetures connues ; demande irréaliste), sinon liste vide.
+            - country : pays de la ville en français (ex. « Italie » pour Florence ; précise si la ville est ambiguë).
+            - warnings : courtes remarques en $language, fondées uniquement sur cette demande, sur ce qui risque de ne pas
+              coller (saison : marchés de Noël en général ouverts de fin novembre au 24 décembre ; fermetures connues).
+              N'invente aucun chiffre ni élément que la demande ne contient pas ; sinon liste vide.
             - question : ${if (askQuestions) "si la ville ou les dates manquent ou sont ambiguës, UNE question courte en $language pour les préciser ; sinon \"\"" else "\"\""}.
             Réponds uniquement par un objet JSON avec les clés : city, startDate, days, halfDay, company, interests, tastes,
             style, pace, mobility, diet, budget, arrivalTime, departureTime, restAfterArrival, travellers, childAges, stroller,
-            budgetEur, maxWalkMin, wanted, avoid, warnings, question.
+            budgetEur, maxWalkMin, wanted, avoid, warnings, question, country.
 
             Demande : $text
         """.trimIndent()
@@ -267,19 +270,20 @@ object ClaudeAssistant {
     suspend fun advise(c: Config, city: String, steps: List<Pair<String, String>>, constraints: String,
                        tips: Boolean, access: Boolean, food: Boolean, web: Boolean): Map<String, StepAdvice> {
         val asks = listOfNotNull(
-            "\"tip\": un conseil pratique court (réserver, gratuité, tenue, meilleure heure) ou vide".takeIf { tips },
+            "\"tip\": un conseil pratique court, cohérent avec l'heure prévue (ne propose pas un autre moment de la journée), ou vide".takeIf { tips },
+            "\"passage\": true si le lieu se voit seulement de l'extérieur (pas de visite intérieure)".takeIf { tips },
             "\"access\": problème d'accès poussette / fauteuil (escaliers, pavés) ou vide".takeIf { access },
             "\"unsuitable\": pour un restaurant seulement, raison courte s'il ne respecte pas les contraintes, sinon vide".takeIf { food },
         )
         val o = json(ask(c, "Séjour à $city. Contraintes de la personne : ${constraints.ifBlank { "aucune" }}.\n" +
             "Pour chaque étape ci-dessous, donne en $language : ${asks.joinToString(" ; ")}. Ne mets que des informations fiables.\n" +
-            "Réponds uniquement par un JSON {\"id\": {\"tip\": \"\", \"access\": \"\", \"unsuitable\": \"\"}, …} avec les mêmes id.\n\n" +
+            "Réponds uniquement par un JSON {\"id\": {\"tip\": \"\", \"passage\": false, \"access\": \"\", \"unsuitable\": \"\"}, …} avec les mêmes id.\n\n" +
             steps.joinToString("\n") { (id, d) -> "id=$id · $d" }, web = web)) ?: return emptyMap()
         return o.keys().asSequence().mapNotNull { id ->
             val v = o.optJSONObject(id) ?: return@mapNotNull null
             fun f(k: String) = v.optString(k).takeIf { it.isNotBlank() && it != "null" }
-            val adv = StepAdvice(f("tip").takeIf { tips }, f("access").takeIf { access }, f("unsuitable").takeIf { food })
-            if (adv.tip == null && adv.access == null && adv.unsuitable == null) null else id to adv
+            val adv = StepAdvice(f("tip").takeIf { tips }, f("access").takeIf { access }, f("unsuitable").takeIf { food }, tips && v.optBoolean("passage"))
+            if (adv.tip == null && adv.access == null && adv.unsuitable == null && !adv.passage) null else id to adv
         }.toMap()
     }
 
@@ -413,6 +417,7 @@ object ClaudeAssistant {
             budgetEur = r.budgetEur.takeIf { it > 0 } ?: base.budgetEur,
             maxWalkMin = r.maxWalkMin.takeIf { it > 0 } ?: base.maxWalkMin,
             extraNotes = r.warnings,
+            country = r.country.trim().ifBlank { base.country },
         )
         return answers to ignored
     }

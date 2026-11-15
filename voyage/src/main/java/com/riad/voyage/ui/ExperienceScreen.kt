@@ -87,6 +87,8 @@ class ExperienceEdits(
     val recapDone: () -> Unit = {},
     val recapApply: () -> Unit = {},
     val recapClose: () -> Unit = {},
+    val answerQuestion: (String) -> Unit = {},   // réponse à la question de précision d'Envolée AI
+    val dismissQuestion: () -> Unit = {},
 )
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -140,7 +142,7 @@ private fun Questionnaire(
                         FilterChip(selected = edits.usePrefs, onClick = { edits.setUsePrefs(!edits.usePrefs) },
                             label = { Text("✨ " + t("Reprendre mes préférences") + " · " + summary, style = MaterialTheme.typography.labelMedium) })
                     }
-                    if (single == null) edits.describe?.let { describe -> FreeTextCard(describe, state.aiQuestion) }
+                    if (single == null) edits.describe?.let { describe -> FreeTextCard(describe, state.aiQuestion, edits.answerQuestion, edits.dismissQuestion) }
                     QuestionTitle(t("Où voulez-vous vous envoler ?"))
                     PlaceField(
                         label = t("Ville"),
@@ -763,7 +765,8 @@ private fun AskChangeCard(state: ExperienceState, onSend: (String) -> Unit, onUn
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(t("Modifier avec Envolée AI"), fontWeight = FontWeight.Bold)
             OutlinedTextField(value = text, onValueChange = { text = it }, modifier = Modifier.fillMaxWidth(), enabled = !state.editing,
-                placeholder = { Text(t("Ex. demain plus tranquille, remplace le musée par un parc")) })
+                placeholder = { Text(t("Ex. demain plus tranquille, remplace le musée par un parc")) },
+                trailingIcon = { MicButton { text = (text + " " + it).trim() } })
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf(t("Il pleut"), t("On a 1 h de retard"), t("On est fatigués")).forEach { quick ->
                     AssistChip(onClick = { onSend(quick + " (" + t("replanifie la suite de la journée") + ")") }, label = { Text(quick) }, enabled = !state.editing)
@@ -782,17 +785,36 @@ private fun AskChangeCard(state: ExperienceState, onSend: (String) -> Unit, onUn
     }
 }
 
-/** Demande en langage libre : Envolée AI remplit le questionnaire puis le programme est composé. */
+/**
+ * Demande en langage libre : Envolée AI remplit le questionnaire puis le programme est composé.
+ * Si elle pose une question, la réponse se donne explicitement (« Répondre ») : jamais mélangée à une nouvelle demande.
+ */
 @Composable
-private fun FreeTextCard(onSend: (String) -> Unit, question: String? = null) {
-    var text by remember(question) { mutableStateOf("") }
+private fun FreeTextCard(onSend: (String) -> Unit, question: String? = null, onAnswer: (String) -> Unit = {}, onDismiss: () -> Unit = {}) {
+    if (question != null) {
+        var answer by remember(question) { mutableStateOf("") }
+        Card(shape = RoundedCornerShape(16.dp)) {
+            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("🤔 $question", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                OutlinedTextField(value = answer, onValueChange = { answer = it }, modifier = Modifier.fillMaxWidth(),
+                    label = { Text(t("Votre réponse")) }, trailingIcon = { MicButton { answer = (answer + " " + it).trim() } })
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = onDismiss) { Text(t("Nouvelle demande")) }
+                    Spacer(Modifier.weight(1f))
+                    Button(onClick = { onAnswer(answer) }, enabled = answer.isNotBlank()) { Text(t("Répondre")) }
+                }
+            }
+        }
+        return
+    }
+    var text by remember { mutableStateOf("") }
     Card(shape = RoundedCornerShape(16.dp)) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(t("Décrivez votre séjour"), fontWeight = FontWeight.Bold)
-            question?.let { Text("🤔 $it", color = MaterialTheme.colorScheme.primary) }   // question de précision
             OutlinedTextField(
                 value = text, onValueChange = { text = it }, modifier = Modifier.fillMaxWidth(), minLines = 2,
                 placeholder = { Text(t("Ex. 3 jours à Barcelone en famille fin mai, Gaudí et tapas, sans trop marcher")) },
+                trailingIcon = { MicButton { text = (text + " " + it).trim() } },
             )
             Button(onClick = { onSend(text) }, enabled = text.isNotBlank(), modifier = Modifier.align(Alignment.End)) {
                 Text(t("Composer avec Envolée AI"))
@@ -801,4 +823,18 @@ private fun FreeTextCard(onSend: (String) -> Unit, question: String? = null) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
+}
+
+/** Dicter au lieu d'écrire : reconnaissance vocale d'Android (gratuite, sans clé), dans la langue de l'app. */
+@Composable
+private fun MicButton(onText: (String) -> Unit) {
+    val launcher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { r ->
+        r.data?.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()?.let(onText)
+    }
+    val intent = android.content.Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+        .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+        .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, if (com.riad.voyage.I18n.lang == com.riad.voyage.Lang.EN) "en-GB" else "fr-FR")
+        .putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, t("Dites votre demande"))
+    TextButton(onClick = { runCatching { launcher.launch(intent) } }) { Text("🎤") }
 }
