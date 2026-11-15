@@ -22,10 +22,10 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
     val context = LocalContext.current
     val tab by vm.tab.collectAsStateWithLifecycle()
     val settings by vm.settings.collectAsStateWithLifecycle()
-    val bookingImport by vm.bookingImport.collectAsStateWithLifecycle()
+    val bookingImport by vm.ai.bookingImport.collectAsStateWithLifecycle()
     val usePrefs by vm.usePreferences.collectAsStateWithLifecycle()
     val prefsSummary by vm.preferences.collectAsStateWithLifecycle()
-    bookingImport?.let { BookingImportDialog(it, onConfirm = vm::applyBooking, onDismiss = vm::cancelBookingImport) }
+    bookingImport?.let { BookingImportDialog(it, onConfirm = vm.ai::applyBooking, onDismiss = vm.ai::cancelBookingImport) }
     val form by vm.flights.form.collectAsStateWithLifecycle()
     val results by vm.flights.results.collectAsStateWithLifecycle()
     val alerts by vm.flights.alerts.collectAsStateWithLifecycle()
@@ -248,16 +248,16 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                             detailed = { wasQuick -> vm.setQuickQuiz(!wasQuick) },
                             linked = trips.any { it.id == experience.tripId && it.city.equals(experience.result?.city ?: experience.answers.city, true) },
                             openTrip = { experience.tripId?.let(vm.trips::openTrip) },
-                            describe = if (settings.claudeDescribe) vm::describeTrip else null,
+                            describe = if (settings.claudeDescribe) vm.ai::describeTrip else null,
                             setTime = vm::setExperienceStepTime,
                             newEnvolee = vm::newEnvolee,
                             prefsSummary = prefsSummary,
                             usePrefs = usePrefs,
                             setUsePrefs = vm::setUsePreferences,
-                            askChange = if (settings.has(com.riad.voyage.data.AiFeature.EDIT)) vm::askChange else null,
-                            undo = vm::undoChange,
-                            answerQuestion = vm::answerQuestion, dismissQuestion = vm::dismissQuestion,
-                            importDocs = if (settings.has(com.riad.voyage.data.AiFeature.IMPORT)) { uris -> vm.importDocuments(uris, plan = true) } else null,
+                            askChange = if (settings.has(com.riad.voyage.data.AiFeature.EDIT)) vm.ai::askChange else null,
+                            undo = vm.ai::undoChange,
+                            answerQuestion = vm.ai::answerQuestion, dismissQuestion = vm.ai::dismissQuestion,
+                            importDocs = if (settings.has(com.riad.voyage.data.AiFeature.IMPORT)) { uris -> vm.ai.importDocuments(uris, plan = true) } else null,
                             recapStep = vm::editRecapStep, recapDone = vm::doneRecapStep, recapApply = vm::applyRecap, recapClose = vm::closeRecap,
                         ),
                     )
@@ -329,8 +329,8 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                             addPackItem = vm.trips::addPackItem, removePackItem = vm.trips::removePackItem, practical = vm::openPractical,
                             create = vm.trips::createTrip, updateInfo = vm::updateTripInfo, plan = vm::planTrip, suggestCities = vm.core::suggestCities,
                             pdf = vm::tripPdf,
-                            importBooking = if (settings.has(com.riad.voyage.data.AiFeature.IMPORT)) { uris -> vm.importDocuments(uris) } else null,
-                            souvenir = if (settings.has(com.riad.voyage.data.AiFeature.SOUVENIR)) vm::souvenir else null,
+                            importBooking = if (settings.has(com.riad.voyage.data.AiFeature.IMPORT)) { uris -> vm.ai.importDocuments(uris) } else null,
+                            souvenir = if (settings.has(com.riad.voyage.data.AiFeature.SOUVENIR)) vm.ai::souvenir else null,
                             open = vm::selectTab,
                         ),
                     )
@@ -362,7 +362,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                             onAddExpense = budgetTrip?.let { tr -> { label, amount, cur, item -> vm.trips.addExpense(tr.id, label, amount, cur, item) } },
                             onRemoveExpense = { id -> budgetTrip?.let { vm.trips.removeExpense(it.id, id) } },
                             rates = vm.core::rates,
-                            onAdvice = if (settings.has(com.riad.voyage.data.AiFeature.BUDGET)) vm::budgetAdvice else null,
+                            onAdvice = if (settings.has(com.riad.voyage.data.AiFeature.BUDGET)) vm.ai::budgetAdvice else null,
                         )
                     }
                 }

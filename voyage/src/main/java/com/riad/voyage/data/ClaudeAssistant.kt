@@ -247,21 +247,23 @@ object ClaudeAssistant {
     }
 
     /**
-     * Modèles Gemini ouverts à la clé, sans les Pro (pas sur l'offre gratuite) ni les modèles spécialisés
-     * (images, voix, temps réel, embeddings).
+     * Modèles Gemini ouverts à la clé, utiles ici : les Flash et Flash-Lite (texte, documents, recherche web).
+     * Écartés : Pro et modèles haut de gamme (pas gratuits), images (Nano Banana), voix, transcription, temps réel ;
+     * une préversion disparaît quand la version définitive existe.
      */
     suspend fun geminiModels(key: String): List<GeminiModel> = withContext(Dispatchers.IO) {
         val (code, text) = geminiCall("models?pageSize=200", key)
         if (code !in 200..299) throw ApiException(t("Clé Gemini refusée : vérifiez-la dans les Réglages."), code)
         val a = JSONObject(text).optJSONArray("models") ?: JSONArray()
-        val skip = Regex("pro|image|tts|audio|live|embedding|computer|robotics|vision|aqa|learnlm|thinking-exp|native")
-        (0 until a.length()).mapNotNull { a.optJSONObject(it) }.filter { m ->
+        val skip = Regex("pro|image|banana|tts|audio|live|transcribe|omni|embedding|computer|robotics|vision|aqa|learnlm|exp|native")
+        val all = (0 until a.length()).mapNotNull { a.optJSONObject(it) }.filter { m ->
             val methods = m.optJSONArray("supportedGenerationMethods")
             val id = m.optString("name").removePrefix("models/")
-            id.startsWith("gemini") && !skip.containsMatchIn(id) &&
+            id.startsWith("gemini") && "flash" in id && !skip.containsMatchIn(id) &&
                 (0 until (methods?.length() ?: 0)).any { methods!!.optString(it) == "generateContent" }
         }.map { m -> GeminiModel(m.optString("name").removePrefix("models/"), m.optString("displayName").ifBlank { m.optString("name") }) }
             .distinctBy { it.id }
+        all.filterNot { m -> m.id.endsWith("-preview") && all.any { it.id == m.id.removeSuffix("-preview") } }
     }
 
     /** Objet JSON de la réponse (le moteur peut écrire du texte autour). */

@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
                     androidx.compose.runtime.LaunchedEffect(i) {
                         @Suppress("DEPRECATION")
                         val uri = i.getParcelableExtra<android.net.Uri>(android.content.Intent.EXTRA_STREAM)
-                        vm.importBooking(uri, i.type?.takeIf { uri != null }, i.getStringExtra(android.content.Intent.EXTRA_TEXT))
+                        vm.ai.importBooking(uri, i.type?.takeIf { uri != null }, i.getStringExtra(android.content.Intent.EXTRA_TEXT))
                         shared.value = null
                     }
                 }
