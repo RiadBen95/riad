@@ -2,6 +2,7 @@ package com.riad.voyage.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -20,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.riad.voyage.ExperienceState
 import com.riad.voyage.data.ActivityLinks
 import com.riad.voyage.data.ExperienceBuilder
+import com.riad.voyage.data.hhmm
 import com.riad.voyage.data.ExperienceDay
 import com.riad.voyage.data.ExperienceStep
 import com.riad.voyage.data.Place
@@ -54,11 +56,24 @@ fun ExperienceScreen(
     when {
         state.recap && state.editStep == null -> RecapScreen(state.answers, edits)
         state.loading || state.describing -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
-                CircularProgressIndicator()
-                Spacer(Modifier.height(16.dp))
-                Text(if (state.describing) t("Envolée AI lit votre demande…") else t("Création de votre envolée…"), style = MaterialTheme.typography.titleMedium)
-                Text(state.stage, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+            // Étapes faites ✓, en cours (roue), à venir ○ : on voit où en est la composition.
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(32.dp)) {
+                Text(t("Création de votre envolée…"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                val fromText = state.describing || state.aiSummary != null
+                ExperienceState.STAGES.forEachIndexed { i, label ->
+                    if (i == 0 && !fromText) return@forEachIndexed
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Box(Modifier.size(20.dp), contentAlignment = Alignment.Center) {
+                            when {
+                                i < state.stage -> Text("✓", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                                i == state.stage -> CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                                else -> Text("○", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                        Text(t(label), color = if (i > state.stage) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                            fontWeight = if (i == state.stage) FontWeight.Bold else FontWeight.Normal)
+                    }
+                }
             }
         }
         state.result != null && !state.recap -> ExperienceResult(state, onRegenerate, onEdit, onSave, alternatives, onReplace, onHotels, onBudget,
@@ -485,7 +500,7 @@ private fun ExperienceResult(
                         Text(t("Envolée AI a compris :") + " " + summary, style = MaterialTheme.typography.bodySmall)
                         if (state.aiIgnored.isNotEmpty()) Text(tf("Non compris : {0}", state.aiIgnored.joinToString(", ")),
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
-                        assumedText(state.answers)?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        AssumedChips(state.answers, edits.refine)
                         TextButton(onClick = onEdit, contentPadding = PaddingValues(0.dp)) { Text(t("Corriger les réponses ›")) }
                     }
                     if (edits.linked) {
@@ -500,12 +515,18 @@ private fun ExperienceResult(
         }
         // Modifier en parlant (et replanifier le jour même).
         edits.askChange?.let { ask -> item { AskChangeCard(state, ask, edits.undo) } }
-        // Compromis faits pour composer le programme : dits clairement plutôt que découverts dans le PDF.
-        if (exp.notes.isNotEmpty()) item {
-            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer), modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(t("À savoir"), fontWeight = FontWeight.Bold)
-                    exp.notes.forEach { Text("• $it", style = MaterialTheme.typography.bodySmall) }
+        // À savoir, en trois groupes repliables ; une remarque qui nomme un lieu du programme va sur son étape.
+        val onStep = notesByPlace(exp)
+        val attached = onStep.values.flatten().toSet()
+        listOf(
+            Triple("⚠️ " + t("Important"), exp.notes, true),
+            Triple("📅 " + t("Pendant votre séjour"), exp.events, false),
+            Triple("🔄 " + t("Ajustements faits par l'appli"), exp.changes, false),
+        ).forEach { (title, list, open) ->
+            val shown = list.filterNot { it in attached }
+            if (shown.isNotEmpty()) item {
+                Foldable("$title (${shown.size})", open, CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)) {
+                    shown.forEach { Text("• $it", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = 4.dp)) }
                 }
             }
         }
@@ -521,8 +542,8 @@ private fun ExperienceResult(
             item { DayHeader(day, exp.city) }
             itemsIndexed(day.steps) { stepIndex, s ->
                 val transfer = s.place.id.startsWith("transfer/")
-                StepCard(s, exp.city, onOpen = { if (!transfer) detail = s }, onTime = { timing = dayIndex to stepIndex }.takeIf { !transfer },
-                    onChange = { editing = dayIndex to stepIndex }.takeIf { !transfer })
+                StepCard(s, exp.city, onStep[s.place.id].orEmpty(), onOpen = { detail = s }.takeIf { !transfer },
+                    onTime = { timing = dayIndex to stepIndex }.takeIf { !transfer }, onChange = { editing = dayIndex to stepIndex }.takeIf { !transfer })
                 // Frise : les trous de la journée sont visibles.
                 day.steps.getOrNull(stepIndex + 1)?.let { next -> ExperienceBuilder.freeTime(s.time, s.durationMin, next.time) }?.let { gap ->
                     Text("⏳ " + t("Temps libre") + " · " + gap, style = MaterialTheme.typography.labelMedium,
@@ -548,28 +569,62 @@ private fun ExperienceResult(
 @Composable
 private fun DayHeader(day: ExperienceDay, city: String) {
     val context = LocalContext.current
+    val visits = day.steps.count { it.category !in ExperienceBuilder.venues && it.category != ActivityLinks.Category.TOURS }
+    val meals = day.steps.count { it.category == ActivityLinks.Category.RESTAURANTS }
+    val end = day.steps.lastOrNull()?.let { s -> com.riad.voyage.data.minutesOf(s.time)?.let { hhmm(it + s.durationMin) } }
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
         Column(Modifier.weight(1f)) {
-            Text(
-                day.title + (day.date?.let { " · " + formatDay(it) } ?: ""),
-                style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
-            )
-            day.weather?.let { w ->
-                Text(
-                    w.label + if (w.rainy) " · " + t("journée plutôt à l'abri") else "",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
+            Text(day.title + (day.date?.let { " · " + formatDay(it) } ?: ""), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(listOfNotNull(day.weather?.label, t("journée plutôt à l'abri").takeIf { day.weather?.rainy == true },
+                tf("{0} visite(s)", visits).takeIf { visits > 0 }, tf("{0} repas", meals).takeIf { meals > 0 }, end?.let { tf("fin vers {0}", it) })
+                .joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
         }
-        TextButton(onClick = { openUrl(context, dayRouteUrl(day, city)) }) { Text(t("Parcours sur la carte ›")) }
+        TextButton(onClick = { openUrl(context, dayRouteUrl(day, city)) }) { Text(t("Parcours ›")) }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/** Repères d'une étape en un coup d'œil : note, ouverture vérifiée, abri, envie, conseil. */
+private fun badges(s: ExperienceStep, parts: List<String>): List<String> {
+    val taste = t("Pour votre envie « {0} » · {1}").substringBefore(" «")
+    return listOfNotNull(
+        s.place.ratings.maxByOrNull { it.count }?.let { "⭐ " + "%.1f".format(it.rating) },
+        ("✓ " + t("ouvert")).takeIf { parts.any { it.startsWith("✓ ") } },
+        ("⚠️ " + t("horaires à vérifier")).takeIf { t("horaires à vérifier") in parts },
+        ("☔ " + t("à l'abri")).takeIf { parts.any { it.startsWith(t("Idéal par temps de pluie")) } },
+        ("❤️ " + t("votre envie")).takeIf { parts.any { it.startsWith(taste) } },
+        ("💡 " + t("conseil")).takeIf { parts.any { it.startsWith("💡") } },
+        "♿".takeIf { parts.any { it.startsWith("♿") } },
+    )
+}
+
+/** Remarques qui nomment un lieu du programme (« foire sur la place des Quinconces ») : lieu → remarques. */
+private fun notesByPlace(exp: com.riad.voyage.data.Experience): Map<String, List<String>> {
+    val places = exp.days.flatMap { it.steps }.map { it.place }
+        .filter { it.name.length >= 5 && listOf("transfer/", "free/", "pause/", "custom/").none { p -> it.id.startsWith(p) } }
+    return exp.allNotes.mapNotNull { n -> places.firstOrNull { n.contains(it.name, ignoreCase = true) }?.let { it.id to n } }
+        .groupBy({ it.first }, { it.second })
+}
+
+/** Trajet depuis l'étape précédente, sur une ligne à part : « 🚶 12 min · 850 m ». */
 @Composable
-private fun StepCard(s: ExperienceStep, city: String, onOpen: () -> Unit = {}, onTime: (() -> Unit)? = null, onChange: (() -> Unit)? = null) {
+private fun TravelLine(s: ExperienceStep) {
+    val minutes = s.travelMin ?: return
+    val m = s.fromPreviousM
+    val walk = m == null || m < 1500 || minutes <= m / 80 + 1
+    Text((if (walk) "🚶 " else "🚋 ") + tf("{0} min", minutes) + (m?.let { " · " + formatMeters(it) } ?: ""),
+        style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 66.dp))
+}
+
+/**
+ * Étape compacte : heure, nom, type, durée et repères ; un toucher déplie le détail (raisons, avis, conseils)
+ * et les actions (itinéraire, billets, changer, fiche du lieu).
+ */
+@Composable
+private fun StepCard(s: ExperienceStep, city: String, notes: List<String>, onOpen: (() -> Unit)?, onTime: (() -> Unit)?, onChange: (() -> Unit)?) {
     val context = LocalContext.current
+    var open by rememberSaveable(s.place.id, s.time) { mutableStateOf(false) }
+    val parts = s.why.split(" · ").filter { it.isNotBlank() }
+    TravelLine(s)
     Row {
         Column(Modifier.width(58.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             // L'heure se touche pour la changer (les étapes suivantes suivent).
@@ -577,48 +632,31 @@ private fun StepCard(s: ExperienceStep, city: String, onOpen: () -> Unit = {}, o
                 modifier = if (onTime != null) Modifier.clickable(onClick = onTime) else Modifier)
             Text(s.category.emoji, style = MaterialTheme.typography.titleLarge)
         }
-        Card(onClick = onOpen, modifier = Modifier.weight(1f), shape = RoundedCornerShape(16.dp)) {
-            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(t(s.moment).uppercase(), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Card(onClick = { open = !open }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(16.dp)) {
+            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(t(s.moment).uppercase(), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f))
+                    if (s.durationMin > 0) Text("⏱ " + ExperienceBuilder.formatDuration(s.durationMin), style = MaterialTheme.typography.labelSmall)
+                }
                 Text(s.place.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(tk(s.place.kind), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
-                Text(s.why, style = MaterialTheme.typography.bodySmall)
-                if (s.durationMin > 0) {
-                    Text(
-                        "⏱ " + tf("{0} sur place", ExperienceBuilder.formatDuration(s.durationMin)) + " · " + t("durée estimée"),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Medium,
-                    )
-                }
-                s.travelMin?.let { t ->
-                    val m = s.fromPreviousM
-                    Text(
-                        when {
-                            m == null -> tf("Trajet d'environ {0} min depuis l'étape précédente", t)
-                            m < 1500 || t <= m / 80 + 1 -> tf("🚶 {0} · ~{1} min à pied depuis l'étape précédente", formatMeters(m), t)
-                            else -> tf("🚇 {0} · ~{1} min en transports depuis l'étape précédente", formatMeters(m), t)
-                        },
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                if (onChange != null) Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {   // pas pour l'arrivée ni le départ
-                    TextButton(onClick = { openUrl(context, ActivityLinks.directionsUrl(s.place, city)) }, contentPadding = PaddingValues(horizontal = 4.dp)) {
-                        Text(t("Itinéraire"))
+                badges(s, parts).takeIf { it.isNotEmpty() }?.let { Text(it.joinToString("   "), style = MaterialTheme.typography.labelMedium) }
+                notes.forEach { Text("📌 $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary) }
+                if (open) {
+                    parts.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
+                    if (onChange != null) Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {   // pas pour l'arrivée ni le départ
+                        val url = if (s.place.isVenue) ActivityLinks.restaurantUrl(s.place, city) else ActivityLinks.ticketUrls(s.place, city).first().url
+                        listOfNotNull(
+                            t("Itinéraire") to { openUrl(context, ActivityLinks.directionsUrl(s.place, city)) },
+                            (if (s.place.isFree) t("Infos") else if (s.place.isVenue) t("Réserver / voir") else t("Billets")) to { openUrl(context, url) },
+                            t("Changer") to onChange,
+                            onOpen?.let { t("Fiche") to it },
+                        ).forEach { (label, action) ->
+                            TextButton(onClick = action, contentPadding = PaddingValues(horizontal = 4.dp)) { Text(label) }
+                        }
                     }
-                    val url = if (s.place.isVenue) ActivityLinks.restaurantUrl(s.place, city)
-                    else ActivityLinks.ticketUrls(s.place, city).first().url
-                    TextButton(onClick = { openUrl(context, url) }, contentPadding = PaddingValues(horizontal = 4.dp)) {
-                        Text(
-                            when {
-                                s.place.isFree -> t("Infos")
-                                s.place.isVenue -> t("Réserver / voir")
-                                else -> t("Billets")
-                            },
-                        )
-                    }
-                    TextButton(onClick = onChange, contentPadding = PaddingValues(horizontal = 4.dp)) { Text(t("Changer")) }
-                }
+                } else if (parts.isNotEmpty()) Text(t("Détails ▾"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -724,18 +762,39 @@ private fun AddStepDialog(onDismiss: () -> Unit, onAdd: (String) -> Unit) {
     )
 }
 
+/** Réglage du programme : clé (celle de « assumed »), libellé de la puce, choix possibles (chacun recompose le programme). */
+private class Setting(val key: String, val label: String, val options: List<Pair<String, () -> Unit>>)
+
+private fun settings(a: Quiz.Answers, refine: ((Quiz.Answers) -> Quiz.Answers) -> Unit): List<Setting> {
+    // Un choix fait ici est un vrai choix, même s'il reprend la valeur par défaut : il n'est plus « non précisé ».
+    fun <E> set(key: String, label: String, values: List<E>, name: (E) -> String, apply: Quiz.Answers.(E) -> Quiz.Answers) =
+        Setting(key, label, values.map { v -> name(v) to { refine { x -> x.apply(v).let { it.copy(assumed = it.assumed - key) } } } })
+    return listOf(
+        set("company", "${a.company.emoji} ${t(a.company.label)}", Quiz.Company.entries, { "${it.emoji} ${t(it.label)}" }) { copy(company = it) },
+        set("pace", t(a.pace.label), Quiz.Pace.entries, { t(it.label) }) { copy(pace = it) },
+        set("mobility", t(a.mobility.label), Quiz.Mobility.entries, { t(it.label) }) { copy(mobility = it) },
+        set("diet", "🍽️ " + t(a.diet.label), Quiz.Diet.entries, { t(it.label) }) { copy(diet = it) },
+        set("budget", t(a.budget.label), Quiz.Budget.entries, { t(it.label) }) { copy(budget = it) },
+        set("style", t(a.style.label), Quiz.Style.entries, { t(it.label) }) { copy(style = it) },
+    )
+}
+
 /** Puces des réglages du programme ; chacune ouvre un menu et recompose le programme au choix. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SettingsChips(a: Quiz.Answers, refine: ((Quiz.Answers) -> Quiz.Answers) -> Unit) {
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        SettingChip("${a.company.emoji} ${t(a.company.label)}", Quiz.Company.entries.map { "${it.emoji} ${t(it.label)}" to { refine { x -> x.copy(company = it) } } })
-        SettingChip(t(a.pace.label), Quiz.Pace.entries.map { t(it.label) to { refine { x -> x.copy(pace = it) } } })
-        SettingChip(t(a.mobility.label), Quiz.Mobility.entries.map { t(it.label) to { refine { x -> x.copy(mobility = it) } } })
-        SettingChip("🍽️ " + t(a.diet.label), Quiz.Diet.entries.map { t(it.label) to { refine { x -> x.copy(diet = it) } } })
-        SettingChip(t(a.budget.label), Quiz.Budget.entries.map { t(it.label) to { refine { x -> x.copy(budget = it) } } })
-        SettingChip(t(a.style.label), Quiz.Style.entries.map { t(it.label) to { refine { x -> x.copy(style = it) } } })
-    }
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) { settings(a, refine).forEach { SettingChip(it.label, it.options) } }
+}
+
+/** Réglages que la demande ne précisait pas : valeur par défaut, à préciser d'un geste juste ici. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun AssumedChips(a: Quiz.Answers, refine: ((Quiz.Answers) -> Quiz.Answers) -> Unit) {
+    val open = settings(a, refine).filter { it.key in a.assumed }
+    if (open.isEmpty()) return
+    Text(t("Non précisé (réglage par défaut), touchez pour préciser :"), style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) { open.forEach { SettingChip("❓ " + it.label, it.options) } }
 }
 
 @Composable
@@ -794,6 +853,7 @@ private fun AskChangeCard(state: ExperienceState, onSend: (String) -> Unit, onUn
  * Demande en langage libre : Envolée AI remplit le questionnaire puis le programme est composé.
  * Si elle pose une question, la réponse se donne explicitement (« Répondre ») : jamais mélangée à une nouvelle demande.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun FreeTextCard(onSend: (String) -> Unit, question: String? = null, onAnswer: (String) -> Unit = {}, onDismiss: () -> Unit = {}) {
     if (question != null) {
@@ -821,6 +881,13 @@ private fun FreeTextCard(onSend: (String) -> Unit, question: String? = null, onA
                 placeholder = { Text(t("Ex. 3 jours à Barcelone en famille fin mai, Gaudí et tapas, sans trop marcher")) },
                 trailingIcon = { MicButton { text = (text + " " + it).trim() } },
             )
+            // Exemples : un toucher remplit la demande, à compléter ou envoyer.
+            if (text.isBlank()) FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf(t("Week-end à Rome en amoureux, petit budget"), t("3 jours à Lisbonne avec un enfant de 4 ans"),
+                    t("Une journée à Paris : musées et bonnes tables")).forEach { ex ->
+                    AssistChip(onClick = { text = ex }, label = { Text(ex, style = MaterialTheme.typography.labelSmall) })
+                }
+            }
             Button(onClick = { onSend(text) }, enabled = text.isNotBlank(), modifier = Modifier.align(Alignment.End)) {
                 Text(t("Composer avec Envolée AI"))
             }
@@ -842,16 +909,4 @@ private fun MicButton(onText: (String) -> Unit) {
         .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, if (com.riad.voyage.I18n.lang == com.riad.voyage.Lang.EN) "en-GB" else "fr-FR")
         .putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, t("Dites votre demande"))
     TextButton(onClick = { runCatching { launcher.launch(intent) } }) { Text("🎤") }
-}
-
-/** Réglages que la demande ne précisait pas : valeur par défaut retenue, à préciser d'un geste. */
-private fun assumedText(a: Quiz.Answers): String? {
-    val parts = listOfNotNull(
-        t("compagnie").takeIf { "company" in a.assumed },
-        tf("style ({0})", t(a.style.label).lowercase()).takeIf { "style" in a.assumed },
-        tf("rythme ({0})", t(a.pace.label).lowercase()).takeIf { "pace" in a.assumed },
-        tf("déplacements ({0})", t(a.mobility.label).lowercase()).takeIf { "mobility" in a.assumed },
-        tf("budget ({0})", t(a.budget.label).lowercase()).takeIf { "budget" in a.assumed },
-    )
-    return if (parts.isEmpty()) null else tf("Non précisé, réglage par défaut : {0}. Touchez une puce ci-dessous pour préciser.", parts.joinToString(", "))
 }

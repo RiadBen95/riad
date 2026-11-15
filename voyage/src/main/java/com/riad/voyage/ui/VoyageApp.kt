@@ -72,7 +72,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
             NavigationBar {
                 Tab.entries.filter { it.inBottomBar }.forEach { t ->
                     NavigationBarItem(
-                        selected = tab == t || (t == Tab.CITY && (tab == Tab.ACTIVITIES || tab == Tab.BLOG)),
+                        selected = tab.section == t,
                         onClick = { vm.selectTab(t) },
                         icon = { Icon(tabIcon(t), contentDescription = com.riad.voyage.t(t.label)) },
                         label = { Text(com.riad.voyage.t(t.label), maxLines = 1, fontSize = 10.sp, softWrap = false) },
@@ -331,12 +331,13 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                             pdf = vm::tripPdf,
                             importBooking = if (settings.has(com.riad.voyage.data.AiFeature.IMPORT)) { uris -> vm.importDocuments(uris) } else null,
                             souvenir = if (settings.has(com.riad.voyage.data.AiFeature.SOUVENIR)) vm::souvenir else null,
+                            open = vm::selectTab,
                         ),
                     )
                 }
 
                 Tab.BUDGET -> {
-                    BackHandler { if (budget != null) vm.closeBudget() else vm.selectTab(Tab.HOME) }
+                    BackHandler { if (budget != null) vm.closeBudget() else vm.selectTab(Tab.TRIPS) }
                     val b = budget
                     if (b == null) {
                         BudgetPicker(

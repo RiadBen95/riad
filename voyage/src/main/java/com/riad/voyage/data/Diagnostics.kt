@@ -90,7 +90,7 @@ object Diagnostics {
                         if (s.why.isNotBlank()) line("      ${s.why}")
                     }
                 }
-                if (exp.notes.isNotEmpty()) line("À savoir : " + exp.notes.joinToString(" | "))
+                if (exp.allNotes.isNotEmpty()) line("À savoir : " + exp.allNotes.joinToString(" | "))
             }
             line()
             line("== Voyage relié ==")

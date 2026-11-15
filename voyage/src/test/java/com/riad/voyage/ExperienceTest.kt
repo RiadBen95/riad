@@ -214,7 +214,7 @@ class ExperienceTest {
         val day2 = exp.days[1].steps
         assertTrue(day2.any { it.moment == "Excursion" })
         assertTrue(day2.none { it.category == Category.MUSEUMS || it.category == Category.MONUMENTS })
-        assertTrue(exp.notes.none { "sans nouveau lieu" in it })
+        assertTrue(exp.allNotes.none { "sans nouveau lieu" in it })
     }
 
     @Test

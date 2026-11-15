@@ -287,3 +287,17 @@ fun ImportDocumentsButton(label: String, modifier: androidx.compose.ui.Modifier 
         modifier = modifier,
     ) { androidx.compose.material3.Text(label) }
 }
+
+/** Bloc repliable (aides, groupes de fonctions, remarques). */
+@Composable
+fun Foldable(title: String, open0: Boolean = false, colors: CardColors = CardDefaults.cardColors(), content: @Composable ColumnScope.() -> Unit) {
+    var open by androidx.compose.runtime.saveable.rememberSaveable(title) { mutableStateOf(open0) }
+    Card(Modifier.fillMaxWidth(), colors = colors) {
+        Column(Modifier.padding(horizontal = 14.dp, vertical = 6.dp)) {
+            TextButton(onClick = { open = !open }, contentPadding = PaddingValues(0.dp)) {
+                Text((if (open) "▾ " else "▸ ") + title, fontWeight = FontWeight.Bold)
+            }
+            if (open) content()
+        }
+    }
+}

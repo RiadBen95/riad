@@ -44,6 +44,7 @@ class TripActions(
     val practical: (Trip) -> Unit = {},
     val create: (String, com.riad.voyage.data.Place?, LocalDate, LocalDate, Int, String?, String?) -> Unit = { _, _, _, _, _, _, _ -> },
     val updateInfo: (String, LocalDate, LocalDate, Int, String?, String?) -> Unit = { _, _, _, _, _, _ -> },
+    val open: (com.riad.voyage.Tab) -> Unit = {},   // vols, hôtels, budget : regroupés sous « Mes voyages »
     val plan: (Trip) -> Unit = {},
     val suggestCities: suspend (String) -> List<com.riad.voyage.data.Place> = { emptyList() },
     val pdf: suspend (Trip) -> java.io.File? = { null },
@@ -100,7 +101,16 @@ private fun TripList(trips: List<Trip>, onOpen: (String?) -> Unit, onAlerts: () 
             }
         }
         item {
-            OutlinedButton(onClick = onAlerts, modifier = Modifier.fillMaxWidth()) {
+            // Tout ce qui se prépare pour un voyage, regroupé ici.
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf("✈️ " + t("Vols") to com.riad.voyage.Tab.FLIGHTS, "🏨 " + t("Hôtels") to com.riad.voyage.Tab.HOTELS,
+                    "💰 " + t("Budget") to com.riad.voyage.Tab.BUDGET).forEach { (label, tab) ->
+                    OutlinedButton(onClick = { actions.open(tab) }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 4.dp)) {
+                        Text(label, maxLines = 1)
+                    }
+                }
+            }
+            OutlinedButton(onClick = onAlerts, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
                 Icon(AppIcons.Bell, null)
                 Spacer(Modifier.width(8.dp))
                 Text(t("Alertes de prix") + if (alertCount > 0) " ($alertCount)" else "")

@@ -86,14 +86,17 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
 /**
- * Navigation. Envolée est un planificateur de séjour : Expérience, Ville, Voyages et Budget sont au
- * cœur (barre du bas) ; Vols et Hôtels sont des compléments réservables (depuis l'accueil et le voyage).
+ * Navigation : quatre entrées dans la barre du bas. Explorer regroupe la ville, les sorties et le blogue ;
+ * Mes voyages regroupe vols, hôtels, budget et alertes. [parent] : entrée de la barre allumée pour cet écran.
  */
-enum class Tab(val label: String, val inBottomBar: Boolean = true) {
-    HOME("Accueil"), EXPERIENCE("Envolée"), CITY("Ville"), TRIPS("Voyages"), BUDGET("Budget"),
-    FLIGHTS("Vols", inBottomBar = false), HOTELS("Hôtels", inBottomBar = false),
-    ACTIVITIES("Sorties", inBottomBar = false), BLOG("Blogue", inBottomBar = false),   // sections de la page Ville
-    ALERTS("Alertes", inBottomBar = false), SETTINGS("Réglages", inBottomBar = false),
+enum class Tab(val label: String, val parent: String? = null) {
+    HOME("Accueil"), EXPERIENCE("Envolée"), CITY("Explorer"), TRIPS("Mes voyages"),
+    ACTIVITIES("Sorties", "CITY"), BLOG("Blogue", "CITY"),
+    FLIGHTS("Vols", "TRIPS"), HOTELS("Hôtels", "TRIPS"), BUDGET("Budget", "TRIPS"), ALERTS("Alertes", "TRIPS"),
+    SETTINGS("Réglages", "HOME");
+
+    val inBottomBar get() = parent == null
+    val section: Tab get() = parent?.let { Tab.valueOf(it) } ?: this
 }
 
 /** Billet ou confirmation en cours de lecture par Envolée AI, puis à confirmer. */
@@ -250,7 +253,7 @@ data class ExperienceState(
     val answers: Quiz.Answers = Quiz.Answers(),
     val step: Int = 0,
     val loading: Boolean = false,
-    val stage: String = "",
+    val stage: Int = 0,                   // étape en cours de la composition (voir STAGES)
     val result: Experience? = null,
     val error: String? = null,
     val previous: Set<String> = emptySet(),
@@ -269,6 +272,12 @@ data class ExperienceState(
     val editing: Boolean = false,         // modification en parlant en cours
 ) {
     val steps get() = Quiz.steps(answers, quick)
+
+    companion object {
+        /** Étapes de la composition, affichées une à une pendant l'attente (la première : demande libre seulement). */
+        val STAGES = listOf("Lecture de votre demande", "Recherche de la ville", "Sélection des meilleurs lieux",
+            "Analyse selon vos goûts", "Composition du programme")
+    }
 }
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
@@ -1129,7 +1138,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val updated = trip.copy(programTitle = exp.title, programSubtitle = exp.subtitle, program = program, travellers = travellers,
             startDate = a.startDate.toString(), endDate = end.toString(), arrivalTime = hhmm(a.arrivalMin) ?: trip.arrivalTime,
             departureTime = hhmm(a.departureMin) ?: trip.departureTime,
-            restAfterArrival = a.restAfterArrival, programNotes = exp.notes)
+            restAfterArrival = a.restAfterArrival, programNotes = exp.allNotes)
         if (silent) { tripStore.upsert(updated); refreshTrips() }
         else saveTrip(updated, tf("Programme enregistré dans votre voyage : {0}", t(exp.city)))
         _experience.update { it.copy(tripId = updated.id) }
@@ -1378,7 +1387,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val c = s.aiConfig ?: return
         if (!s.claudeDescribe || text.isBlank()) return
         val full = text   // nouvelle demande : jamais mélangée à la précédente
-        _experience.update { it.copy(describing = true, error = null, aiQuestion = null, lastRequest = full) }
+        _experience.update { it.copy(describing = true, stage = 0, error = null, aiQuestion = null, lastRequest = full) }
         viewModelScope.launch {
             val r = attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.describe(c, full, LocalDate.now(), s.has(com.riad.voyage.data.AiFeature.QUESTIONS)) }
             val req = r?.getOrNull()
@@ -1527,7 +1536,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
         }
-        exp = exp.copy(notes = exp.notes + replaced)
+        exp = exp.copy(changes = exp.changes + replaced)
         exp = exp.copy(days = exp.days.map { day ->
             day.copy(steps = day.steps.map { st ->
                 val c = checks[st.place.id]?.takeIf { !it.isClosed } ?: return@map st
@@ -1671,7 +1680,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     if (i >= 0 && day.steps[i].durationMin > 15) r = ExperienceBuilder.setDuration(a, r, d, i, 15)
                 }
             }
-            r = r.copy(notes = r.notes + notes, days = r.days.map { day ->
+            r = r.copy(changes = r.changes + notes, days = r.days.map { day ->
                 day.copy(steps = day.steps.map { x ->
                     val v = adv[x.place.id] ?: return@map x
                     x.copy(why = (listOf(x.why) + listOfNotNull(v.tip?.let { "💡 $it" }, v.access?.let { "♿ $it" })).filter { it.isNotBlank() }.joinToString(" · "))
@@ -1698,7 +1707,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val key = "${exp.city}|${a.startDate}|$end"
         fun add(notes: List<String>) {
             if (notes.isEmpty()) return
-            _experience.update { st -> st.result?.takeIf { it.city == exp.city }?.let { st.copy(result = it.copy(notes = (it.notes + notes).distinct())) } ?: st }
+            _experience.update { st -> st.result?.takeIf { it.city == exp.city }?.let { st.copy(result = it.copy(events = (it.events + notes).distinct())) } ?: st }
             autosave()
         }
         dateNotes?.takeIf { it.first == key }?.let { return add(it.second) }
@@ -1706,7 +1715,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         datesPending = key
         val places = exp.days.flatMap { d -> d.steps.filter { it.category !in ExperienceBuilder.venues }.map { it.place.name } }
         viewModelScope.launch {
-            val notes = attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.checkDates(c, exp.city, a.startDate, end, exp.notes, places) }?.getOrNull()
+            val notes = attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.checkDates(c, exp.city, a.startDate, end, exp.allNotes, places) }?.getOrNull()
             datesPending = null
             if (notes != null) dateNotes = key to notes
             add(notes.orEmpty())
@@ -1909,7 +1918,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val a = _experience.value.answers
         val city = a.city.trim()
         if (city.isBlank()) return
-        _experience.update { it.copy(loading = true, stage = t("Recherche de la ville…"), error = null, result = null) }
+        _experience.update { it.copy(loading = true, stage = 1, error = null, result = null) }
         viewModelScope.launch {
             // « Florence, Italie » : pas de confusion avec une homonyme (Florence aux États-Unis).
             val geo = resolveCity(if (a.country.isNotBlank() && a.place == null) "$city, ${a.country}" else city,
@@ -1924,7 +1933,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 if (!inRange) emptyMap() else attempt(10_000) { WeatherApi.forecast(geo.lat, geo.lon) }?.getOrNull().orEmpty().associateBy { it.date }
             }
             val needed = ExperienceBuilder.neededCategories(a)
-            _experience.update { it.copy(stage = tf("Sélection des meilleurs lieux de {0}…", t(city))) }
+            _experience.update { it.copy(stage = 2) }
             val pools = coroutineScope {
                 needed.map { c ->
                     val hint = ExperienceBuilder.searchHint(a, c)
@@ -1934,7 +1943,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             }
             // Analyse des lieux : description Wikipédia des meilleurs candidats, pour vérifier
             // qu'ils correspondent vraiment aux goûts (et non au seul nom).
-            _experience.update { it.copy(stage = t("Analyse des lieux selon vos goûts…")) }
+            _experience.update { it.copy(stage = 3) }
             val analysed = coroutineScope {
                 pools.map { (c, list) ->
                     async {
@@ -1949,7 +1958,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 }.map { it.await() }.toMap()
             }
             experiencePools = ExperienceBuilder.withoutBorrowedImages(analysed)
-            _experience.update { it.copy(stage = t("Composition du programme…")) }
+            _experience.update { it.copy(stage = 4) }
             experienceWeather = weatherJob.await()
             val exp = ExperienceBuilder.build(a, city, experiencePools, weather = experienceWeather)
             prefStore.record(a)

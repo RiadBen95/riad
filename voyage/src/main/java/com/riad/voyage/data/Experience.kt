@@ -223,9 +223,16 @@ data class ExperienceDay(
     val weather: DayWeather? = null,
 )
 
-/** [notes] : compromis faits pour composer le programme (régime introuvable, envie écartée…), à montrer à la personne. */
-data class Experience(val city: String, val title: String, val subtitle: String, val days: List<ExperienceDay>, val notes: List<String> = emptyList()) {
+/**
+ * Remarques à montrer, en trois groupes : [notes] importantes (jour férié, heures manquantes, régime introuvable…),
+ * [events] pendant le séjour (festivals, grèves), [changes] faits par l'appli (lieu remplacé, visite couverte ajoutée…).
+ */
+data class Experience(
+    val city: String, val title: String, val subtitle: String, val days: List<ExperienceDay>,
+    val notes: List<String> = emptyList(), val events: List<String> = emptyList(), val changes: List<String> = emptyList(),
+) {
     val placeIds get() = days.flatMap { d -> d.steps.map { it.place.id } }.toSet()
+    val allNotes get() = notes + events + changes
 }
 
 /**
@@ -724,7 +731,8 @@ object ExperienceBuilder {
             duration = answers.duration.copy(days = answers.duration.days.coerceIn(1, Quiz.Duration.MAX_DAYS)),
             pace = if (answers.youngKids) Quiz.Pace.RELAXED else answers.pace,   // petits enfants : rythme doux
         )
-        val notes = linkedSetOf<String>()   // compromis à signaler, sans doublon
+        val notes = linkedSetOf<String>()   // remarques importantes, sans doublon
+        val changes = linkedSetOf<String>() // ajustements faits par l'appli
         notes += a.extraNotes
         // Lieu phare : parmi les 5 lieux les plus connus de la ville (et au plus le seuil mondial) : Naples en a aussi.
         val iconicMin = iconicCategories.flatMap { pools[it].orEmpty() }.filterNot(::isTooLarge).map { it.sitelinks }
@@ -793,7 +801,7 @@ object ExperienceBuilder {
                 .filter { OpeningHours.ranges(it.openingHours, todayDate.dayOfWeek, todayDate.monthValue, holiday)?.isEmpty() != true }   // fermé ce jour-là
             val all = if (fresh.isEmpty() && category in venueCategories) {
                 pools[category].orEmpty().filter { it.id !in usedToday && !isAvoided(a, it) }.also {
-                    if (it.isNotEmpty()) notes += t("Peu d'adresses dans cette ville : certaines reviennent plusieurs fois.")
+                    if (it.isNotEmpty()) changes += t("Peu d'adresses dans cette ville : certaines reviennent plusieurs fois.")
                 }
             } else fresh
             val dietOk = if (category == ActivityLinks.Category.RESTAURANTS && a.diet.keywords.isNotEmpty()) {
@@ -820,7 +828,7 @@ object ExperienceBuilder {
             if (matching.isNotEmpty() || meals.isEmpty()) return matching
             if (category == ActivityLinks.Category.CAFES) return meals   // les goûts « cuisine » ne visent pas les cafés
             // Rien pour ces goûts : on le dit ; pas de centre commercial pour des « marchés ».
-            notes += tf("Rien trouvé pour « {0} » ici : d'autres lieux sont proposés.", tlist(tastes.map { t(it.short) }))
+            changes += tf("Rien trouvé pour « {0} » ici : d'autres lieux sont proposés.", tlist(tastes.map { t(it.short) }))
             return if (category == ActivityLinks.Category.SHOPPING) emptyList() else meals
         }
 
@@ -1010,7 +1018,7 @@ object ExperienceBuilder {
                     val p = best.first.second
                     place(best.first.first, p, moment(max(clock, best.second.second)), best.second.first, fixedStart = best.second.second)
                     if (today?.rainy == true && outdoorOnly && best.first.first == ActivityLinks.Category.MUSEUMS)
-                        notes += t("Pluie prévue : une visite couverte a été ajoutée à vos envies de plein air.")
+                        changes += t("Pluie prévue : une visite couverte a été ajoutée à vos envies de plein air.")
                     if (isIconic(p)) iconicToday = true
                     if (dayAnchor == null) dayAnchor = p
                     kindsToday[normalize(p.kind)] = (kindsToday[normalize(p.kind)] ?: 0) + 1
@@ -1143,8 +1151,8 @@ object ExperienceBuilder {
         }
         if (nightDeparture && a.duration.days > 1) notes += t("Vol de nuit : le départ de l'hôtel est prévu la veille au soir.")
         if (Quiz.Interest.NIGHT in a.interests) when {
-            a.diet == Quiz.Diet.NO_ALCOHOL -> notes += t("Pas de bars au programme : vous avez choisi « Sans alcool ».")
-            a.company == Quiz.Company.FAMILY -> notes += t("Pas de bars ni de sorties nocturnes au programme en famille.")
+            a.diet == Quiz.Diet.NO_ALCOHOL -> changes += t("Pas de bars au programme : vous avez choisi « Sans alcool ».")
+            a.company == Quiz.Company.FAMILY -> changes += t("Pas de bars ni de sorties nocturnes au programme en famille.")
         }
         val allPlaces = pools.values.flatten()
         a.wanted.filter { w -> w.isNotBlank() && allPlaces.none { w.plain() in it.name.plain() } }
@@ -1162,7 +1170,7 @@ object ExperienceBuilder {
         // Jours sans aucune visite d'un lieu (l'excursion « vin » est un choix, pas un manque de lieux).
         val freeDays = days.withIndex().count { (i, d) -> i + 1 != excursionDay && d.steps.any { it.place.id.startsWith("free/") } &&
             d.steps.none { it.category !in venueCategories && it.category != ActivityLinks.Category.TOURS } }
-        if (freeDays > 0) notes += tf("{0} journée(s) sans nouveau lieu à visiter : balades, excursions ou temps libre proposés.", freeDays)
+        if (freeDays > 0) changes += tf("{0} journée(s) sans nouveau lieu à visiter : balades, excursions ou temps libre proposés.", freeDays)
 
         val present = days.flatMap { d -> d.steps.map { it.category } }.toSet()
         val themes = a.interests.filter { i ->
@@ -1183,6 +1191,6 @@ object ExperienceBuilder {
             said("budget", t(a.budget.label).lowercase()),
         ).joinToString(" · ")
         return Experience(city, tf("{0} {1} à {2}", t(a.duration.label), themeText, t(city)), subtitle,
-            days.filter { it.steps.isNotEmpty() }, notes.toList())
+            days.filter { it.steps.isNotEmpty() }, notes.toList(), changes = changes.toList())
     }
 }

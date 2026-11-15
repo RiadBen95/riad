@@ -323,20 +323,6 @@ private fun WhereToGet(text: String, url: String) {
     }
 }
 
-/** Bloc repliable (aides, groupes de fonctions). */
-@Composable
-private fun Foldable(title: String, content: @Composable ColumnScope.() -> Unit) {
-    var open by rememberSaveable(title) { mutableStateOf(false) }
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(horizontal = 14.dp, vertical = 6.dp)) {
-            TextButton(onClick = { open = !open }, contentPadding = PaddingValues(0.dp)) {
-                Text((if (open) "▾ " else "▸ ") + title, fontWeight = FontWeight.Bold)
-            }
-            if (open) content()
-        }
-    }
-}
-
 @Composable
 private fun KeyStatusCard(settings: Settings, status: KeyStatus) {
     val deal = dealColor()
