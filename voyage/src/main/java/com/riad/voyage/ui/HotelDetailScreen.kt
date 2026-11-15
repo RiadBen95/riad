@@ -1,5 +1,6 @@
 package com.riad.voyage.ui
 
+import com.riad.voyage.ui.theme.ctaColors
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -246,9 +247,9 @@ private fun BookingDialog(
         },
         confirmButton = {
             when {
-                confirmed != null -> Button(onClick = onCancel) { Text(t("Fermer")) }
-                paidPending -> Button(onClick = onRetry, enabled = !d.bookingBusy) { Text(t("Réessayer la réservation")) }
-                d.prebook != null -> Button(
+                confirmed != null -> Button(colors = ctaColors(), onClick = onCancel) { Text(t("Fermer")) }
+                paidPending -> Button(colors = ctaColors(), onClick = onRetry, enabled = !d.bookingBusy) { Text(t("Réessayer la réservation")) }
+                d.prebook != null -> Button(colors = ctaColors(), 
                     onClick = { onConfirm(first, last, email) },
                     enabled = !d.bookingBusy && first.isNotBlank() && last.isNotBlank() && email.contains('@'),
                 ) { Text(if (d.prebook.secretKey != null) t("Continuer vers le paiement") else t("Confirmer la réservation")) }

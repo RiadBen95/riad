@@ -1,5 +1,6 @@
 package com.riad.voyage.ui
 
+import com.riad.voyage.ui.theme.ctaColors
 import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -11,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -87,14 +89,16 @@ private fun TripList(trips: List<Trip>, onOpen: (String?) -> Unit, onAlerts: () 
     }
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
-            Text(t("Mes voyages"), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text(
-                t("Vos vols, programmes, lieux et articles gardés, disponibles même sans connexion."),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            com.riad.voyage.ui.theme.BrandBand(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp))) {
+                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(t("Mes voyages"), style = MaterialTheme.typography.headlineMedium)
+                    Text(t("Vos vols, programmes, lieux et articles gardés, disponibles même sans connexion."),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
         }
         item {
-            Button(onClick = { creating = true }, modifier = Modifier.fillMaxWidth()) { Text(t("+ Nouveau voyage")) }
+            Button(colors = ctaColors(), onClick = { creating = true }, modifier = Modifier.fillMaxWidth()) { Text(t("+ Nouveau voyage")) }
             // Réservation faite ailleurs : le voyage se crée (ou se complète) à partir des documents.
             actions.importBooking?.let { import ->
                 ImportDocumentsButton(t("🎫 Importer des réservations (billets, hôtel)"), Modifier.fillMaxWidth().padding(top = 8.dp), import)
@@ -103,10 +107,14 @@ private fun TripList(trips: List<Trip>, onOpen: (String?) -> Unit, onAlerts: () 
         item {
             // Tout ce qui se prépare pour un voyage, regroupé ici.
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf("✈️ " + t("Vols") to com.riad.voyage.Tab.FLIGHTS, "🏨 " + t("Hôtels") to com.riad.voyage.Tab.HOTELS,
-                    "💰 " + t("Budget") to com.riad.voyage.Tab.BUDGET).forEach { (label, tab) ->
-                    OutlinedButton(onClick = { actions.open(tab) }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 4.dp)) {
-                        Text(label, maxLines = 1)
+                listOf(Triple(AppIcons.Flight, t("Vols"), com.riad.voyage.Tab.FLIGHTS), Triple(AppIcons.Hotel, t("Hôtels"), com.riad.voyage.Tab.HOTELS),
+                    Triple(AppIcons.Wallet, t("Budget"), com.riad.voyage.Tab.BUDGET)).forEach { (icon, label, tab) ->
+                    OutlinedCard(onClick = { actions.open(tab) }, modifier = Modifier.weight(1f)) {
+                        Column(Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            IconTile(icon)
+                            Text(label, style = MaterialTheme.typography.labelLarge, maxLines = 1)
+                        }
                     }
                 }
             }
@@ -129,7 +137,10 @@ private fun TripList(trips: List<Trip>, onOpen: (String?) -> Unit, onAlerts: () 
         items(trips, key = { it.id }) { tr ->
             Card(onClick = { onOpen(tr.id) }, shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("✈️ " + t(tr.city), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        IconTile(AppIcons.Luggage, 30.dp)
+                        Text(t(tr.city), style = MaterialTheme.typography.titleLarge)
+                    }
                     datesOf(tr)?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
                     Text(summaryOf(tr), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -203,7 +214,7 @@ private fun TripDetail(
                 )
                 TextButton(onClick = { editingInfo = true }) { Text(t("✎ Modifier")) }
             }
-            Button(onClick = { actions.plan(trip) }, modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+            Button(colors = ctaColors(), onClick = { actions.plan(trip) }, modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
                 Text(if (trip.program.isEmpty()) t("✨ Créer le programme sur mesure") else t("✨ Refaire le programme sur mesure"))
             }
             actions.importBooking?.let { import ->
@@ -473,7 +484,7 @@ private fun ShareButton(trip: Trip, pdf: suspend (Trip) -> java.io.File?, souven
     var open by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     Box {
-        Button(onClick = { open = true }, enabled = !busy) { Text(if (busy) t("Création du PDF…") else t("Partager")) }
+        Button(colors = ctaColors(), onClick = { open = true }, enabled = !busy) { Text(if (busy) t("Création du PDF…") else t("Partager")) }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             DropdownMenuItem(text = { Text(t("📄 Carnet PDF Envolée")) }, onClick = {
                 open = false

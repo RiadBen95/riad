@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -299,5 +300,16 @@ fun Foldable(title: String, open0: Boolean = false, colors: CardColors = CardDef
             }
             if (open) content()
         }
+    }
+}
+
+/** Pictogramme blanc dans un carré bleu marine arrondi, comme sur la page de présentation. */
+@Composable
+fun IconTile(icon: androidx.compose.ui.graphics.vector.ImageVector, size: androidx.compose.ui.unit.Dp = 34.dp) {
+    Box(
+        Modifier.size(size).background(com.riad.voyage.ui.theme.BrandNavy, androidx.compose.foundation.shape.RoundedCornerShape(size * 0.3f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, null, tint = androidx.compose.ui.graphics.Color.White, modifier = Modifier.size(size * 0.58f))
     }
 }

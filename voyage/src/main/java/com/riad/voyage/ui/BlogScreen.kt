@@ -1,5 +1,6 @@
 package com.riad.voyage.ui
 
+import com.riad.voyage.ui.theme.ctaColors
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -305,7 +306,7 @@ internal fun ArticleReader(article: Article, onClose: () -> Unit, onSave: (() ->
         }
         item {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                onSave?.let { save -> Button(onClick = save) { Text(t("♡ Garder l'article (lecture hors connexion)")) } }
+                onSave?.let { save -> Button(colors = ctaColors(), onClick = save) { Text(t("♡ Garder l'article (lecture hors connexion)")) } }
                 OutlinedButton(onClick = { openUrl(context, article.url) }) { Text(t("Lire sur Wikipédia")) }
                 Text(
                     tf("Texte issu de l'article Wikipédia « {0} », licence CC BY-SA 4.0.", article.title),

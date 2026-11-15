@@ -1,5 +1,6 @@
 package com.riad.voyage.ui
 
+import com.riad.voyage.ui.theme.ctaColors
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -146,7 +147,7 @@ fun PlaceDetailSheet(
 
             HorizontalDivider()
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { openUrl(context, ActivityLinks.directionsUrl(place, city)) }) { Text(t("Itinéraire")) }
+                Button(colors = ctaColors(), onClick = { openUrl(context, ActivityLinks.directionsUrl(place, city)) }) { Text(t("Itinéraire")) }
                 when {
                     place.isVenue -> OutlinedButton(onClick = { openUrl(context, ActivityLinks.restaurantUrl(place, city)) }) {
                         Text(t("Réserver / voir"))

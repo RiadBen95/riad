@@ -1,5 +1,6 @@
 package com.riad.voyage.ui
 
+import com.riad.voyage.ui.theme.ctaColors
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -14,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -300,8 +302,8 @@ private fun Questionnaire(
         ) {
             if (step > 0) OutlinedButton(onClick = { onStep(-1) }, modifier = Modifier.weight(1f)) { Text(t("Retour")) }
             val last = step == steps.size - 1
-            if (single != null) Button(onClick = edits.recapDone, enabled = canContinue, modifier = Modifier.weight(1f)) { Text(t("Valider")) }
-            else Button(
+            if (single != null) Button(colors = ctaColors(), onClick = edits.recapDone, enabled = canContinue, modifier = Modifier.weight(1f)) { Text(t("Valider")) }
+            else Button(colors = ctaColors(), 
                 onClick = { if (last) onGenerate() else onStep(1) },
                 enabled = canContinue,
                 modifier = Modifier.weight(if (step > 0) 1.6f else 1f),
@@ -346,7 +348,7 @@ private fun RecapScreen(a: Quiz.Answers, edits: ExperienceEdits) {
         }
         Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedButton(onClick = edits.recapClose, modifier = Modifier.weight(1f)) { Text(t("Annuler")) }
-            Button(onClick = edits.recapApply, modifier = Modifier.weight(1.6f)) {
+            Button(colors = ctaColors(), onClick = edits.recapApply, modifier = Modifier.weight(1.6f)) {
                 Icon(AppIcons.Sparkle, null)
                 Spacer(Modifier.width(8.dp))
                 Text(t("Recomposer"))
@@ -476,11 +478,8 @@ private fun ExperienceResult(
             }
         }
         item {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
+            // En-tête du programme : bandeau bleu marine de la marque (comme la page de présentation).
+            com.riad.voyage.ui.theme.BrandBand(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp))) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(AppIcons.Sparkle, null, tint = MaterialTheme.colorScheme.primary)
@@ -492,7 +491,7 @@ private fun ExperienceResult(
                     Text(exp.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     Text(exp.subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 6.dp)) {
-                        Button(onClick = onRegenerate) { Text(t("Autre proposition")) }
+                        Button(colors = ctaColors(), onClick = onRegenerate) { Text(t("Autre proposition")) }
                         OutlinedButton(onClick = onEdit) { Text(t("Ajuster mes réponses")) }
                     }
                     // Ce qu'Envolée AI a compris, à corriger d'un geste.
@@ -507,7 +506,7 @@ private fun ExperienceResult(
                         TextButton(onClick = edits.openTrip, contentPadding = PaddingValues(0.dp)) {
                             Text(t("✓ Enregistré dans votre voyage, mis à jour à chaque changement ›"))
                         }
-                    } else Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) { Text(t("💾 Enregistrer dans mon voyage")) }
+                    } else Button(colors = ctaColors(), onClick = onSave, modifier = Modifier.fillMaxWidth()) { Text(t("💾 Enregistrer dans mon voyage")) }
                     OutlinedButton(onClick = onHotels, modifier = Modifier.fillMaxWidth()) { Text(t("🏨 Où dormir ?")) }
                     OutlinedButton(onClick = onBudget, modifier = Modifier.fillMaxWidth()) { Text(t("💰 Budget du séjour")) }
                 }
@@ -839,7 +838,7 @@ private fun AskChangeCard(state: ExperienceState, onSend: (String) -> Unit, onUn
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (state.editing) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
                 Spacer(Modifier.weight(1f))
-                Button(onClick = { onSend(text); text = "" }, enabled = text.isNotBlank() && !state.editing) { Text(t("Appliquer")) }
+                Button(colors = ctaColors(), onClick = { onSend(text); text = "" }, enabled = text.isNotBlank() && !state.editing) { Text(t("Appliquer")) }
             }
             state.changeSummary?.let { done ->
                 Text("✓ $done", style = MaterialTheme.typography.bodySmall)
@@ -866,7 +865,7 @@ private fun FreeTextCard(onSend: (String) -> Unit, question: String? = null, onA
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = onDismiss) { Text(t("Nouvelle demande")) }
                     Spacer(Modifier.weight(1f))
-                    Button(onClick = { onAnswer(answer) }, enabled = answer.isNotBlank()) { Text(t("Répondre")) }
+                    Button(colors = ctaColors(), onClick = { onAnswer(answer) }, enabled = answer.isNotBlank()) { Text(t("Répondre")) }
                 }
             }
         }
@@ -888,7 +887,7 @@ private fun FreeTextCard(onSend: (String) -> Unit, question: String? = null, onA
                     AssistChip(onClick = { text = ex }, label = { Text(ex, style = MaterialTheme.typography.labelSmall) })
                 }
             }
-            Button(onClick = { onSend(text) }, enabled = text.isNotBlank(), modifier = Modifier.align(Alignment.End)) {
+            Button(colors = ctaColors(), onClick = { onSend(text) }, enabled = text.isNotBlank(), modifier = Modifier.align(Alignment.End)) {
                 Text(t("Composer avec Envolée AI"))
             }
             Text(t("Ou répondez aux questions ci-dessous."), style = MaterialTheme.typography.bodySmall,

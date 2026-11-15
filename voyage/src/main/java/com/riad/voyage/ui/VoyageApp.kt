@@ -64,7 +64,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = { androidx.compose.foundation.layout.Column {
             if (budgetReturn && tab != Tab.BUDGET && budget != null) {
-                androidx.compose.material3.Button(
+                androidx.compose.material3.Button(colors = com.riad.voyage.ui.theme.ctaColors(),
                     onClick = vm.budget::backToBudget,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
                 ) { Text(com.riad.voyage.t("💰 Retour au budget")) }

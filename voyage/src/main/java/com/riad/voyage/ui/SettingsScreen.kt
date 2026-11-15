@@ -30,9 +30,9 @@ import com.riad.voyage.ui.theme.dealColor
 private val currencies = listOf("EUR", "USD", "GBP", "CHF", "CAD", "DZD", "MAD", "TND")
 
 /** Sections des Réglages, dans l'ordre d'usage. */
-private enum class SettingsSection(val icon: String, val title: String) {
-    GENERAL("⚙️", "Général"), AI("✨", "Envolée AI"), FLIGHTS("✈️", "Vols"), HOTELS("🏨", "Hôtels"),
-    PLACES("🍽️", "Restaurants et lieux"), ACTIVITIES("🎟️", "Activités et billets"), DATA("🔒", "Données et confidentialité"),
+private enum class SettingsSection(val icon: androidx.compose.ui.graphics.vector.ImageVector, val title: String) {
+    GENERAL(AppIcons.Settings, "Général"), AI(AppIcons.Sparkle, "Envolée AI"), FLIGHTS(AppIcons.Flight, "Vols"), HOTELS(AppIcons.Hotel, "Hôtels"),
+    PLACES(AppIcons.City, "Restaurants et lieux"), ACTIVITIES(AppIcons.Ticket, "Activités et billets"), DATA(AppIcons.Person, "Données et confidentialité"),
 }
 
 /**
@@ -125,7 +125,7 @@ fun SettingsScreen(
                 }
                 OutlinedCard(onClick = { section = sec.name }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
                     Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(sec.icon, style = MaterialTheme.typography.titleLarge)
+                        IconTile(sec.icon)
                         Spacer(Modifier.width(14.dp))
                         Column(Modifier.weight(1f)) {
                             Text(t(sec.title), fontWeight = FontWeight.Bold)
@@ -139,7 +139,10 @@ fun SettingsScreen(
         }
 
         TextButton(onClick = { close() }, contentPadding = PaddingValues(0.dp)) { Text("‹ " + t("Réglages")) }
-        Text(open.icon + " " + t(open.title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            IconTile(open.icon, 40.dp)
+            Text(t(open.title), style = MaterialTheme.typography.headlineSmall)
+        }
         when (open) {
             SettingsSection.GENERAL -> {
                 Text(t("Langue de l'application"), style = MaterialTheme.typography.titleMedium)

@@ -1,5 +1,6 @@
 package com.riad.voyage.ui
 
+import com.riad.voyage.ui.theme.ctaColors
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -86,7 +87,7 @@ fun FlightResultsScreen(
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(state.error, textAlign = TextAlign.Center)
-                Button(onClick = onRetry, modifier = Modifier.padding(top = 12.dp)) { Text(t("Réessayer")) }
+                Button(colors = ctaColors(), onClick = onRetry, modifier = Modifier.padding(top = 12.dp)) { Text(t("Réessayer")) }
             }
 
             else -> LazyColumn(
@@ -106,7 +107,7 @@ fun FlightResultsScreen(
                 }
                 item {
                     // Enchaînement vers le séjour : programme personnalisé avec la ville et les dates du vol.
-                    Button(onClick = onPlanStay, modifier = Modifier.fillMaxWidth()) {
+                    Button(colors = ctaColors(), onClick = onPlanStay, modifier = Modifier.fillMaxWidth()) {
                         Text(tf("✨ Planifier mon séjour à {0}", t(q.destination?.name ?: "")))
                     }
                     OutlinedButton(onClick = onHotels, modifier = Modifier.fillMaxWidth()) {
@@ -131,7 +132,7 @@ fun FlightResultsScreen(
                                     t("Essayez « Dates flexibles », un autre jour du calendrier, ou lancez la recherche complète en direct sur Aviasales."),
                                     style = MaterialTheme.typography.bodyMedium,
                                 )
-                                Button(onClick = onOpenSite) { Text(t("Chercher en direct sur Aviasales")) }
+                                Button(colors = ctaColors(), onClick = onOpenSite) { Text(t("Chercher en direct sur Aviasales")) }
                             }
                         }
                     }
@@ -270,7 +271,7 @@ private fun FlightCard(
             Leg("Aller", f.departureAt, f.durationTo, f.transfers)
             f.returnAt?.let { Leg("Retour", it, f.durationBack, f.returnTransfers) }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Button(onClick = onBook) { Text(t("Réserver")) }
+                Button(colors = ctaColors(), onClick = onBook) { Text(t("Réserver")) }
                 TextButton(onClick = onSave) { Text(t("♡ Garder ce vol")) }
             }
         }

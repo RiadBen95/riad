@@ -1,5 +1,6 @@
 package com.riad.voyage.ui
 
+import com.riad.voyage.ui.theme.ctaColors
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -180,7 +181,7 @@ fun BudgetScreen(
                         }
                     }
                 }
-                Button(onClick = { addingExpense = true }, modifier = Modifier.padding(top = 6.dp)) { Text(t("+ Ajouter une dépense")) }
+                Button(colors = ctaColors(), onClick = { addingExpense = true }, modifier = Modifier.padding(top = 6.dp)) { Text(t("+ Ajouter une dépense")) }
             }
         }
         items(expenses.sortedByDescending { it.id }, key = { it.id }) { e ->
@@ -371,7 +372,7 @@ fun BudgetPicker(trips: List<Trip>, experienceCity: String?, onTrip: (Trip) -> U
         if (experienceCity == null && trips.none { !it.isEmpty }) {
             item {
                 Text(t("Aucun séjour pour l'instant."), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Button(onClick = onCreate, modifier = Modifier.padding(top = 8.dp)) { Text(t("✨ Créer mon séjour")) }
+                Button(colors = ctaColors(), onClick = onCreate, modifier = Modifier.padding(top = 8.dp)) { Text(t("✨ Créer mon séjour")) }
             }
         }
     }

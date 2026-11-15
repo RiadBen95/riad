@@ -93,6 +93,7 @@ fun HomeScreen(
                             "envolée",
                             color = Color.White,
                             fontSize = 26.sp,
+                            fontFamily = com.riad.voyage.ui.theme.Display,
                             fontWeight = FontWeight.ExtraBold,
                             letterSpacing = (-0.5).sp,
                             modifier = Modifier.weight(1f),

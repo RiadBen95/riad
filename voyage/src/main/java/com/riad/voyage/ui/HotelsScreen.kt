@@ -1,5 +1,6 @@
 package com.riad.voyage.ui
 
+import com.riad.voyage.ui.theme.ctaColors
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -55,7 +56,7 @@ fun HotelsScreen(
                         Text(tf("Réservation payée à confirmer : {0}", name), fontWeight = FontWeight.Bold)
                         Text(t("Le paiement a été reçu mais la confirmation n'est pas arrivée. Finalisez-la : aucun nouveau paiement ne sera demandé."),
                             style = MaterialTheme.typography.bodySmall)
-                        Button(onClick = onRetryPending) { Text(t("Réessayer la réservation")) }
+                        Button(colors = ctaColors(), onClick = onRetryPending) { Text(t("Réessayer la réservation")) }
                     }
                 }
             }
@@ -96,7 +97,7 @@ fun HotelsScreen(
             Text(tf("{0} nuit(s)", state.nights), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         item {
-            Button(onClick = onSearch, enabled = state.city.isNotBlank() && !state.loading, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+            Button(colors = ctaColors(), onClick = onSearch, enabled = state.city.isNotBlank() && !state.loading, modifier = Modifier.fillMaxWidth().height(52.dp)) {
                 Text(t("Rechercher les hôtels"))
             }
         }
@@ -224,7 +225,7 @@ internal fun BookMenu(hotelName: String, state: HotelState, inAppLabel: String, 
     val context = LocalContext.current
     var menu by remember { mutableStateOf(false) }
     Box {
-        Button(onClick = { menu = true }) { Text(t("Réserver")) }
+        Button(colors = ctaColors(), onClick = { menu = true }) { Text(t("Réserver")) }
         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
             DropdownMenuItem(text = { Text(inAppLabel, fontWeight = FontWeight.Bold) }, onClick = { menu = false; onInApp() })
             HotelBooking.partners("$hotelName ${state.city}", state.checkIn, state.checkOut, state.adults).forEach { p ->

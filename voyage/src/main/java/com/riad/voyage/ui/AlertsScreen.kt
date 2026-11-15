@@ -1,5 +1,6 @@
 package com.riad.voyage.ui
 
+import com.riad.voyage.ui.theme.ctaColors
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -49,7 +50,7 @@ fun AlertsScreen(
             }
         } else {
             item {
-                Button(onClick = onCheck, enabled = !checking, modifier = Modifier.fillMaxWidth()) {
+                Button(colors = ctaColors(), onClick = onCheck, enabled = !checking, modifier = Modifier.fillMaxWidth()) {
                     Text(if (checking) t("Vérification…") else t("Vérifier les prix maintenant"))
                 }
             }

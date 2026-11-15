@@ -1,5 +1,6 @@
 package com.riad.voyage.ui
 
+import com.riad.voyage.ui.theme.ctaColors
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -128,7 +129,7 @@ fun FlightSearchScreen(
             }
         }
 
-        Button(
+        Button(colors = ctaColors(), 
             onClick = onSearch,
             enabled = form.origin != null && form.destination != null,
             shape = RoundedCornerShape(16.dp),

@@ -1,5 +1,6 @@
 package com.riad.voyage.ui
 
+import com.riad.voyage.ui.theme.ctaColors
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -117,7 +118,7 @@ fun ActivitiesScreen(
                         initialText = city,
                         citiesOnly = true,
                     )
-                    Button(onClick = search, enabled = city.isNotBlank(), modifier = Modifier.padding(top = 8.dp)) { Text("OK") }
+                    Button(colors = ctaColors(), onClick = search, enabled = city.isNotBlank(), modifier = Modifier.padding(top = 8.dp)) { Text("OK") }
                 }
             }
         }
@@ -167,13 +168,13 @@ fun ActivitiesScreen(
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(places.error)
-                        Button(onClick = search) { Text(t("Réessayer")) }
+                        Button(colors = ctaColors(), onClick = search) { Text(t("Réessayer")) }
                     }
                 }
             }
 
             places.city.isBlank() || places.category != category -> item {
-                Button(onClick = search, modifier = Modifier.fillMaxWidth()) { Text(t("Afficher les lieux")) }
+                Button(colors = ctaColors(), onClick = search, modifier = Modifier.fillMaxWidth()) { Text(t("Afficher les lieux")) }
             }
 
             else -> {
@@ -286,7 +287,7 @@ private fun PlaceCard(
                 ) {
                     when {
                         p.isVenue -> {
-                            Button(onClick = { openUrl(context, ActivityLinks.restaurantUrl(p, city)) }) {
+                            Button(colors = ctaColors(), onClick = { openUrl(context, ActivityLinks.restaurantUrl(p, city)) }) {
                                 Text(if (p.website != null && p.kind.startsWith("Restaurant")) t("Réserver") else t("Voir"))
                             }
                             p.phone?.let { phone ->
@@ -318,7 +319,7 @@ private fun TicketButton(p: PointOfInterest, city: String) {
     val context = LocalContext.current
     var open by remember { mutableStateOf(false) }
     Box {
-        Button(onClick = { open = true }) { Text(t("Réserver des billets")) }
+        Button(colors = ctaColors(), onClick = { open = true }) { Text(t("Réserver des billets")) }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             ActivityLinks.ticketUrls(p, city).forEach { partner ->
                 DropdownMenuItem(
