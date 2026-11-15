@@ -40,7 +40,7 @@ enum class ClaudeModel(val id: String, val label: String, val strengths: String,
 /** Fonctions d'Envolée AI, chacune activable dans les Réglages. */
 enum class AiFeature(val label: String, val description: String) {
     EDIT("Modifier en parlant et replanifier", "« Demain plus tranquille », « il pleut », « on a 1 h de retard »…"),
-    IMPORT("Lire les réservations", "Un billet ou une confirmation partagé avec l'appli remplit le voyage."),
+    IMPORT("Lire les réservations", "Billets et réservations d'hôtel importés ou partagés avec l'appli remplissent le voyage."),
     QUESTIONS("Questions de précision", "Une ou deux questions quand la demande est ambiguë."),
     DATES("Vérifier les dates du séjour", "Jours fériés, fermetures, grèves, festivals (avec les recherches web)."),
     ACCESS("Accessibilité", "Poussette, fauteuil, escaliers : les lieux concernés sont signalés."),
@@ -86,8 +86,15 @@ class TripRequest(o: JSONObject) {
     val country: String = o.optString("country").takeIf { it != "null" }.orEmpty()
 }
 
-/** Billet ou confirmation lu par Envolée AI : les trajets (vols, trains) dans l'ordre. */
-data class Booking(val segments: List<Segment>, val passengers: Int, val price: Double?, val currency: String, val reference: String) {
+/** Réservations lues par Envolée AI : les trajets (vols, trains) dans l'ordre, et l'hôtel s'il y en a un. */
+data class Booking(val segments: List<Segment>, val passengers: Int, val price: Double?, val currency: String, val reference: String,
+                   val hotel: Hotel? = null) {
+    data class Hotel(val name: String, val city: String, val checkIn: LocalDate?, val checkOut: LocalDate?,
+                     val price: Double?, val currency: String, val reference: String)
+
+    /** Ville du séjour : arrivée du trajet aller, sinon ville de l'hôtel. */
+    val destination get() = outbound?.toCity ?: hotel?.city.orEmpty()
+
     data class Segment(
         val fromCity: String, val toCity: String, val from: String, val to: String,
         val depDate: LocalDate?, val depTime: Int?, val arrDate: LocalDate?, val arrTime: Int?, val number: String,
@@ -315,16 +322,19 @@ object ClaudeAssistant {
         return EditPlan(o.optString("summary"), o.optJSONObject("answers")?.takeIf { it.length() > 0 }, ops)
     }
 
-    /** Lit un billet ou une confirmation (texte, PDF ou image). */
-    suspend fun readBooking(c: Config, text: String?, file: Attachment?): Booking? {
+    /** Lit des billets ou confirmations (texte, PDF, images) : trajets et hôtel. */
+    suspend fun readBooking(c: Config, text: String?, files: List<Attachment>): Booking? {
         val o = json(ask(c, """
-            Lis cette confirmation de réservation de transport (avion ou train) et réponds uniquement par un JSON :
+            Lis ces confirmations de réservation (avion, train, hôtel) et réponds uniquement par un JSON :
             {"segments": [{"fromCity": "ville de départ en français", "toCity": "ville d'arrivée en français", "from": "code ou gare",
               "to": "code ou gare", "depDate": "AAAA-MM-JJ", "depTime": "HH:MM", "arrDate": "AAAA-MM-JJ", "arrTime": "HH:MM",
               "number": "compagnie et numéro"}],
-             "passengers": nombre, "price": montant total ou 0, "currency": "EUR", "reference": "référence de réservation"}
-            Heures locales, trajets dans l'ordre chronologique (escales comprises). N'invente rien : champ vide si absent.
-        """.trimIndent() + (text?.let { "\n\nTexte :\n${it.take(20_000)}" } ?: ""), files = listOfNotNull(file))) ?: return null
+             "passengers": nombre, "price": montant total des trajets ou 0, "currency": "EUR", "reference": "référence de réservation",
+             "hotel": {"name": "", "city": "ville en français", "checkIn": "AAAA-MM-JJ", "checkOut": "AAAA-MM-JJ", "price": 0,
+                       "currency": "EUR", "reference": ""} ou null}
+            Heures locales, trajets dans l'ordre chronologique (escales comprises), liste vide s'il n'y a pas de trajet.
+            N'invente rien : champ vide si absent.
+        """.trimIndent() + (text?.let { "\n\nTexte :\n${it.take(20_000)}" } ?: ""), files = files)) ?: return null
         val segs = o.optJSONArray("segments")?.let { a ->
             List(a.length()) { i ->
                 val s = a.optJSONObject(i) ?: return@List null
@@ -333,9 +343,14 @@ object ClaudeAssistant {
                     date("depDate"), minutesOf(s.optString("depTime")), date("arrDate"), minutesOf(s.optString("arrTime")), s.optString("number"))
             }.filterNotNull().filter { it.toCity.isNotBlank() }
         }.orEmpty()
-        if (segs.isEmpty()) return null
+        val hotel = o.optJSONObject("hotel")?.takeIf { it.optString("name").isNotBlank() }?.let { h ->
+            fun date(k: String) = runCatching { LocalDate.parse(h.optString(k)) }.getOrNull()
+            Booking.Hotel(h.optString("name"), h.optString("city"), date("checkIn"), date("checkOut"),
+                h.optDouble("price").takeIf { !it.isNaN() && it > 0 }, h.optString("currency").ifBlank { "EUR" }, h.optString("reference"))
+        }
+        if (segs.isEmpty() && hotel == null) return null
         return Booking(segs, o.optInt("passengers", 1).coerceAtLeast(1), o.optDouble("price").takeIf { !it.isNaN() && it > 0 },
-            o.optString("currency").ifBlank { "EUR" }, o.optString("reference"))
+            o.optString("currency").ifBlank { "EUR" }, o.optString("reference"), hotel)
     }
 
     /** Commentaire du budget, avec pistes d'économies. */

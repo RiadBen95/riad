@@ -47,7 +47,7 @@ class TripActions(
     val plan: (Trip) -> Unit = {},
     val suggestCities: suspend (String) -> List<com.riad.voyage.data.Place> = { emptyList() },
     val pdf: suspend (Trip) -> java.io.File? = { null },
-    val importBooking: ((android.net.Uri?, String?) -> Unit)? = null,   // billet lu par Envolée AI (null = désactivé)
+    val importBooking: ((List<android.net.Uri>) -> Unit)? = null,   // réservations faites ailleurs, lues par Envolée AI (null = désactivé)
     val souvenir: (suspend (Trip) -> String?)? = null,                    // souvenir écrit par Envolée AI
 )
 
@@ -94,6 +94,10 @@ private fun TripList(trips: List<Trip>, onOpen: (String?) -> Unit, onAlerts: () 
         }
         item {
             Button(onClick = { creating = true }, modifier = Modifier.fillMaxWidth()) { Text(t("+ Nouveau voyage")) }
+            // Réservation faite ailleurs : le voyage se crée (ou se complète) à partir des documents.
+            actions.importBooking?.let { import ->
+                ImportDocumentsButton(t("🎫 Importer des réservations (billets, hôtel)"), Modifier.fillMaxWidth().padding(top = 8.dp), import)
+            }
         }
         item {
             OutlinedButton(onClick = onAlerts, modifier = Modifier.fillMaxWidth()) {
@@ -193,9 +197,7 @@ private fun TripDetail(
                 Text(if (trip.program.isEmpty()) t("✨ Créer le programme sur mesure") else t("✨ Refaire le programme sur mesure"))
             }
             actions.importBooking?.let { import ->
-                val picker = androidx.activity.compose.rememberLauncherForActivityResult(
-                    androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri -> if (uri != null) import(uri, null) }
-                OutlinedButton(onClick = { picker.launch("*/*") }, modifier = Modifier.fillMaxWidth()) { Text(t("🎫 Importer une réservation")) }
+                ImportDocumentsButton(t("🎫 Importer des réservations (billets, hôtel)"), Modifier.fillMaxWidth(), import)
             }
             TripWeather(trip, weather, Modifier.padding(top = 8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {

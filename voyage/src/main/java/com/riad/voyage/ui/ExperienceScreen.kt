@@ -89,6 +89,7 @@ class ExperienceEdits(
     val recapClose: () -> Unit = {},
     val answerQuestion: (String) -> Unit = {},   // réponse à la question de précision d'Envolée AI
     val dismissQuestion: () -> Unit = {},
+    val importDocs: ((List<android.net.Uri>) -> Unit)? = null,   // partir de réservations déjà faites (null = désactivé)
 )
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -143,6 +144,9 @@ private fun Questionnaire(
                             label = { Text("✨ " + t("Reprendre mes préférences") + " · " + summary, style = MaterialTheme.typography.labelMedium) })
                     }
                     if (single == null) edits.describe?.let { describe -> FreeTextCard(describe, state.aiQuestion, edits.answerQuestion, edits.dismissQuestion) }
+                    if (single == null) edits.importDocs?.let { import ->
+                        ImportDocumentsButton(t("🎫 Partir de mes réservations (billets, hôtel)"), Modifier.fillMaxWidth(), import)
+                    }
                     QuestionTitle(t("Où voulez-vous vous envoler ?"))
                     PlaceField(
                         label = t("Ville"),

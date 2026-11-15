@@ -255,6 +255,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                             askChange = if (settings.has(com.riad.voyage.data.AiFeature.EDIT)) vm::askChange else null,
                             undo = vm::undoChange,
                             answerQuestion = vm::answerQuestion, dismissQuestion = vm::dismissQuestion,
+                            importDocs = if (settings.has(com.riad.voyage.data.AiFeature.IMPORT)) { uris -> vm.importDocuments(uris, plan = true) } else null,
                             recapStep = vm::editRecapStep, recapDone = vm::doneRecapStep, recapApply = vm::applyRecap, recapClose = vm::closeRecap,
                         ),
                     )
@@ -326,7 +327,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                             addPackItem = vm::addPackItem, removePackItem = vm::removePackItem, practical = vm::openPractical,
                             create = vm::createTrip, updateInfo = vm::updateTripInfo, plan = vm::planTrip, suggestCities = vm::suggestCities,
                             pdf = vm::tripPdf,
-                            importBooking = if (settings.has(com.riad.voyage.data.AiFeature.IMPORT)) { uri, mime -> vm.importBooking(uri, mime, null) } else null,
+                            importBooking = if (settings.has(com.riad.voyage.data.AiFeature.IMPORT)) { uris -> vm.importDocuments(uris) } else null,
                             souvenir = if (settings.has(com.riad.voyage.data.AiFeature.SOUVENIR)) vm::souvenir else null,
                         ),
                     )
@@ -408,9 +409,13 @@ private fun BookingImportDialog(state: com.riad.voyage.BookingImport, onConfirm:
                             androidx.compose.material3.Text("✈️ ${s.fromCity} → ${s.toCity} · ${s.depDate?.let(::formatDay).orEmpty()} · " +
                                 "${com.riad.voyage.data.hhmm(s.depTime) ?: "?"} → ${com.riad.voyage.data.hhmm(s.arrTime) ?: "?"} · ${s.number}")
                         }
-                        androidx.compose.material3.Text("👥 " + tf("{0} voyageur(s)", b.passengers) +
+                        b.hotel?.let { h ->
+                            androidx.compose.material3.Text("🏨 ${h.name} · ${h.checkIn?.let(::formatDay).orEmpty()} → ${h.checkOut?.let(::formatDay).orEmpty()}" +
+                                (h.price?.let { " · 💶 ${it.toInt()} ${h.currency}" } ?: ""))
+                        }
+                        if (b.segments.isNotEmpty()) androidx.compose.material3.Text("👥 " + tf("{0} voyageur(s)", b.passengers) +
                             (b.price?.let { " · 💶 ${it.toInt()} ${b.currency}" } ?: "") + (b.reference.takeIf { it.isNotBlank() }?.let { " · $it" } ?: ""))
-                        androidx.compose.material3.Text(tf("Le voyage « {0} » sera rempli avec ces dates et ces heures.", t(b.outbound?.toCity.orEmpty())),
+                        androidx.compose.material3.Text(tf("Le voyage « {0} » sera rempli avec ces dates et ces heures.", t(b.destination)),
                             style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
                     }
                 }

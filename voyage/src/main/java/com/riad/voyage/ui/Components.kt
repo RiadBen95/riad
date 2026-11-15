@@ -273,3 +273,17 @@ fun TripWeather(trip: com.riad.voyage.data.Trip, load: suspend (String) -> List<
     if (last != null && last.isBefore(today)) return
     WeatherStrip(trip.city, load, start?.coerceAtLeast(today), last, modifier)
 }
+
+/**
+ * Importer des réservations faites ailleurs (billets, hôtel) : plusieurs documents à la fois
+ * (PDF, images, e-mails), lus par Envolée AI.
+ */
+@androidx.compose.runtime.Composable
+fun ImportDocumentsButton(label: String, modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier, onPick: (List<android.net.Uri>) -> Unit) {
+    val picker = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenMultipleDocuments()) { uris -> if (uris.isNotEmpty()) onPick(uris) }
+    androidx.compose.material3.OutlinedButton(
+        onClick = { picker.launch(arrayOf("application/pdf", "image/*", "text/plain", "message/rfc822")) },
+        modifier = modifier,
+    ) { androidx.compose.material3.Text(label) }
+}

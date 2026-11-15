@@ -97,7 +97,8 @@ enum class Tab(val label: String, val inBottomBar: Boolean = true) {
 }
 
 /** Billet ou confirmation en cours de lecture par Envolée AI, puis à confirmer. */
-data class BookingImport(val booking: com.riad.voyage.data.Booking? = null, val loading: Boolean = false, val error: String? = null)
+data class BookingImport(val booking: com.riad.voyage.data.Booking? = null, val loading: Boolean = false, val error: String? = null,
+                         val plan: Boolean = false)   // depuis l'Envolée : composer le programme du voyage ensuite
 
 /** Sections de la page Ville. */
 enum class CitySection(val label: String) { PLACES("Lieux"), ARTICLES("Articles"), INFO("Infos pratiques") }
@@ -1647,20 +1648,25 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val bookingImport: StateFlow<BookingImport?> = _bookingImport.asStateFlow()
 
     /** Billet ou confirmation partagé avec l'appli (fichier ou texte) : lu, puis à confirmer. */
-    fun importBooking(uri: android.net.Uri?, mime: String?, text: String?) {
+    fun importBooking(uri: android.net.Uri?, mime: String?, text: String?) = importDocuments(listOfNotNull(uri), mime, text)
+
+    /** Documents importés (plusieurs possibles : aller, retour, hôtel) : lus ensemble, puis à confirmer. */
+    fun importDocuments(uris: List<android.net.Uri>, mime: String? = null, text: String? = null, plan: Boolean = false) {
         val s = _settings.value
         val c = s.aiConfig
         if (c == null || !s.has(com.riad.voyage.data.AiFeature.IMPORT)) {
             _message.value = t("Activez Envolée AI et « Lire les réservations » dans les Réglages pour importer un billet.")
             return
         }
-        _bookingImport.value = BookingImport(loading = true)
+        if (uris.isEmpty() && text.isNullOrBlank()) return
+        _bookingImport.value = BookingImport(loading = true, plan = plan)
         viewModelScope.launch {
-            val r = attempt(90_000) {
-                val (file, fileText) = withContext(Dispatchers.IO) { uri?.let { readAttachment(it, mime) } ?: (null to null) }
-                com.riad.voyage.data.ClaudeAssistant.readBooking(c, listOfNotNull(text, fileText).joinToString("\n").ifBlank { null }, file)
+            val r = attempt(120_000) {
+                val read = withContext(Dispatchers.IO) { uris.map { readAttachment(it, mime.takeIf { uris.size == 1 }) } }
+                val texts = (listOfNotNull(text) + read.mapNotNull { it.second }).joinToString("\n\n").ifBlank { null }
+                com.riad.voyage.data.ClaudeAssistant.readBooking(c, texts, read.mapNotNull { it.first })
             }
-            _bookingImport.value = r?.getOrNull()?.let { BookingImport(it) }
+            _bookingImport.value = r?.getOrNull()?.let { BookingImport(it, plan = plan) }
                 ?: BookingImport(error = t("Envolée AI n'a pas pu lire ce document.") + (r?.exceptionOrNull()?.let { " " + TravelpayoutsApi.userMessage(it) } ?: ""))
         }
     }
@@ -1687,27 +1693,41 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Billet confirmé : le voyage de la ville d'arrivée se remplit (dates, heures, voyageurs, vol). */
     fun applyBooking() {
-        val b = _bookingImport.value?.booking ?: return
-        val out = b.outbound ?: return
+        val imp = _bookingImport.value ?: return
+        val b = imp.booking ?: return
+        val city = b.destination.ifBlank { return }
+        val out = b.outbound
         val back = b.inbound
-        val first = b.segments.first()
+        val h = b.hotel
         fun iso(d: LocalDate?, m: Int?) = d?.let { "%sT%02d:%02d:00+00:00".format(it, (m ?: 0) / 60, (m ?: 0) % 60) }
-        val base = _trips.value.firstOrNull { it.city.plain() == out.toCity.plain() } ?: Trip(id = "trip-${System.currentTimeMillis()}", city = out.toCity)
-        val flight = SavedFlight(first.fromCity, out.toCity, iso(first.depDate, first.depTime).orEmpty(), back?.let { iso(it.depDate, it.depTime) },
-            b.price?.toInt() ?: 0, b.currency, b.segments.map { it.number }.filter { it.isNotBlank() }.joinToString(" · "),
-            "booking:" + b.reference.ifBlank { first.number })
+        val base = _trips.value.firstOrNull { it.city.plain() == city.plain() } ?: Trip(id = "trip-${System.currentTimeMillis()}", city = city)
+        val flight = b.segments.firstOrNull()?.let { first ->
+            SavedFlight(first.fromCity, city, iso(first.depDate, first.depTime).orEmpty(), back?.let { iso(it.depDate, it.depTime) },
+                b.price?.toInt() ?: 0, b.currency, b.segments.map { it.number }.filter { it.isNotBlank() }.joinToString(" · "),
+                "booking:" + b.reference.ifBlank { first.number })
+        }
+        // Hôtel réservé ailleurs : gardé dans le voyage avec sa référence et son prix (compté dans le budget).
+        val hotel = h?.let {
+            val label = listOfNotNull("Hôtel réservé", it.reference.takeIf { r -> r.isNotBlank() }?.let { r -> "Réf. $r" },
+                it.price?.let { p -> com.riad.voyage.ui.formatPrice(p.toInt(), it.currency) }).joinToString(" · ")
+            SavedPlace(it.name, label, 0.0, 0.0, false)
+        }
         val trip = base.copy(
-            startDate = out.arrDate?.toString() ?: base.startDate, endDate = back?.depDate?.toString() ?: base.endDate,
-            arrivalTime = hhmm(out.arrTime) ?: base.arrivalTime, departureTime = hhmm(back?.depTime) ?: base.departureTime,
-            travellers = b.passengers, flights = if (base.flights.any { it.url == flight.url }) base.flights else base.flights + flight,
+            startDate = (out?.arrDate ?: h?.checkIn)?.toString() ?: base.startDate,
+            endDate = (back?.depDate ?: h?.checkOut)?.toString() ?: base.endDate,
+            arrivalTime = hhmm(out?.arrTime) ?: base.arrivalTime, departureTime = hhmm(back?.depTime) ?: base.departureTime,
+            travellers = if (b.segments.isNotEmpty()) b.passengers else base.travellers,
+            flights = if (flight == null || base.flights.any { it.url == flight.url }) base.flights else base.flights + flight,
+            places = if (hotel == null || base.places.any { it.name == hotel.name }) base.places else base.places + hotel,
         )
-        saveTrip(trip, tf("Billet ajouté à votre voyage : {0}", t(trip.city)))
+        saveTrip(trip, tf("Réservation ajoutée à votre voyage : {0}", t(trip.city)))
         _bookingImport.value = null
         val start = trip.start
         val end = trip.end
         if (start != null && end != null && _experience.value.tripId == trip.id)
-            updateTripInfo(trip.id, start, end, b.passengers, trip.arrivalTime, trip.departureTime)
-        openTrip(trip.id)
+            updateTripInfo(trip.id, start, end, trip.travellers ?: 2, trip.arrivalTime, trip.departureTime)
+        // Depuis l'Envolée : on compose aussitôt le programme de ce voyage ; sinon on ouvre le voyage.
+        if (imp.plan) planTrip(trip) else openTrip(trip.id)
     }
 
     /** Commentaire du budget par Envolée AI. */
