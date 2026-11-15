@@ -48,8 +48,9 @@ object Diagnostics {
             line("Travelpayouts : ${yes(settings.token.isNotBlank())} · Google Places : ${yes(settings.googleKey.isNotBlank())} · " +
                 "Tripadvisor : ${yes(settings.tripadvisorKey.isNotBlank())} · Foursquare : ${yes(settings.foursquareKey.isNotBlank())} · " +
                 "LiteAPI : ${yes(settings.liteApiKey.isNotBlank())}")
-            line("Envolée AI : clé ${yes(settings.claudeKey.isNotBlank())} · activée ${yes(settings.claudeOn)} · saisie libre ${yes(settings.claudeDescribe)} · " +
-                "recherches web ${yes(settings.aiWeb)} · vérification des lieux ${yes(settings.placeChecks)} · modèle ${settings.claudeModel}")
+            line("Envolée AI : moteur ${if (settings.aiModel.gemini) "Gemini" else "Claude"} · clé ${yes(settings.hasAiKey)} · activée ${yes(settings.claudeOn)} · " +
+                "saisie libre ${yes(settings.claudeDescribe)} · recherches web ${yes(settings.aiWeb)} · vérification des lieux ${yes(settings.placeChecks)} · " +
+                "modèle ${settings.aiModelId}")
             line()
             val a = state.answers
             line("== Réponses du questionnaire ==")

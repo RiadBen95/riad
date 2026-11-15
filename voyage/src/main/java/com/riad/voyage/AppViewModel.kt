@@ -1391,7 +1391,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 return@launch
             }
             if (req == null || (req.city.isBlank() && base.city.isBlank())) {
-                val why = r?.exceptionOrNull()?.let { TravelpayoutsApi.userMessage(it) } ?: t("Précisez au moins la ville.")
+                val why = when {
+                    r == null -> t("Envolée AI met trop de temps à répondre : réessayez dans un moment.")
+                    else -> r.exceptionOrNull()?.let { TravelpayoutsApi.userMessage(it) } ?: t("Précisez au moins la ville.")
+                }
                 _experience.update { it.copy(describing = false, error = t("Envolée AI n'a pas pu lire la demande.") + " " + why) }
                 return@launch
             }
@@ -2321,6 +2324,22 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _places.value = PlacesState()
         if (_blog.value.city != null) loadBlogCards()
         _experience.update { it.copy(result = null) }
+    }
+
+    /** « Actualiser » : modèles Gemini que Google ouvre à cette clé (les réglages en cours sont enregistrés d'abord). */
+    fun refreshGeminiModels(edited: Settings) {
+        saveSettings(edited)
+        viewModelScope.launch {
+            val r = attempt(20_000) { com.riad.voyage.data.ClaudeAssistant.geminiModels(edited.geminiKey) }
+            val list = r?.getOrNull()
+            if (list.isNullOrEmpty()) {
+                _message.value = r?.exceptionOrNull()?.let { TravelpayoutsApi.userMessage(it) } ?: t("Google n'a pas répondu : réessayez dans un moment.")
+                return@launch
+            }
+            val s = _settings.value
+            saveSettings(s.copy(geminiModels = list, geminiModel = s.geminiModel.takeIf { id -> list.any { it.id == id } || com.riad.voyage.data.GeminiModel.defaults.any { it.id == id } } ?: list.first().id))
+            _message.value = tf("{0} modèles Gemini disponibles avec votre clé.", list.size)
+        }
     }
 
     fun saveSettings(s: Settings) {

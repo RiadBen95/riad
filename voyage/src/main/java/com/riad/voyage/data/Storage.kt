@@ -20,13 +20,18 @@ data class Settings(
     val claudeVerify: Boolean = false,      // recherches sur le web (vérifications, dates, accessibilité, conseils)
     val claudeModel: String = ClaudeModel.OPUS.id,
     val aiOff: Set<String> = emptySet(),    // fonctions d'Envolée AI désactivées (noms d'AiFeature)
+    val geminiModel: String = GeminiModel.defaults.first().id,
+    val geminiModels: List<GeminiModel> = emptyList(),   // modèles lus chez Google (« Actualiser »), sinon la liste d'office
 ) {
     val isDemo get() = token.isBlank()
     val aiModel get() = ClaudeModel.of(claudeModel)
     private val aiKey get() = if (aiModel.gemini) geminiKey else claudeKey
     val ai get() = claudeOn && aiKey.isNotBlank()
     /** Moteur et clé d'Envolée AI (null si elle est désactivée). */
-    val aiConfig get() = if (ai) ClaudeAssistant.Config(aiModel, aiKey) else null
+    val aiConfig get() = if (ai) ClaudeAssistant.Config(aiModel, aiKey, geminiModel) else null
+    /** Modèle réellement utilisé (pour le diagnostic) et présence de sa clé. */
+    val aiModelId get() = if (aiModel.gemini) geminiModel else aiModel.id
+    val hasAiKey get() = aiKey.isNotBlank()
     fun has(f: AiFeature) = ai && f.name !in aiOff
     val claudeDescribe get() = ai && claudeFreeText
     val aiWeb get() = ai && claudeVerify
@@ -58,6 +63,9 @@ class SettingsStore(context: Context) {
         claudeFreeText = prefs.getBoolean("claudeFreeText", true),
         claudeVerify = prefs.getBoolean("claudeVerify", false),
         claudeModel = prefs.getString("claudeModel", ClaudeModel.OPUS.id).orEmpty(),
+        geminiModel = prefs.getString("geminiModel", null) ?: GeminiModel.defaults.first().id,
+        geminiModels = prefs.getString("geminiModels", "").orEmpty().lines().filter { '\t' in it }
+            .map { GeminiModel(it.substringBefore('\t'), it.substringAfter('\t')) },
     ).also { loaded ->
         // Anciennes clés enregistrées en clair : chiffrées dès la première lecture.
         if (SECRETS.any { prefs.getString(it, "").orEmpty().let { v -> v.isNotEmpty() && !SecretBox.isEncrypted(v) } }) save(loaded)
@@ -78,6 +86,8 @@ class SettingsStore(context: Context) {
             .putString("aiOff", s.aiOff.joinToString(","))
             .putBoolean("claudeOn", s.claudeOn).putBoolean("claudeFreeText", s.claudeFreeText)
             .putBoolean("claudeVerify", s.claudeVerify).putString("claudeModel", s.claudeModel)
+            .putString("geminiModel", s.geminiModel)
+            .putString("geminiModels", s.geminiModels.joinToString("\n") { "${it.id}\t${it.label}" })
             .apply()
     }
 }

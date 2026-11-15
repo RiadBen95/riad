@@ -51,6 +51,7 @@ fun SettingsScreen(
     onClearHistory: () -> Unit = {},
     usePrefs: Boolean = false,
     onUsePrefs: (Boolean) -> Unit = {},
+    onGeminiModels: (Settings) -> Unit = {},
 ) {
     val context = LocalContext.current
     var token by remember(settings) { mutableStateOf(settings.token) }
@@ -69,6 +70,7 @@ fun SettingsScreen(
     var claudeFreeText by remember(settings) { mutableStateOf(settings.claudeFreeText) }
     var claudeVerify by remember(settings) { mutableStateOf(settings.claudeVerify) }
     var claudeModel by remember(settings) { mutableStateOf(settings.claudeModel) }
+    var geminiModel by remember(settings) { mutableStateOf(settings.geminiModel) }
     var section by rememberSaveable { mutableStateOf<String?>(null) }
 
     val edited = Settings(
@@ -77,6 +79,7 @@ fun SettingsScreen(
         liteApiKey = liteApiKey.trim(), tiqetsPartner = tiqetsPartner.trim(),
         claudeKey = claudeKey.trim(), geminiKey = geminiKey.trim(), claudeOn = claudeOn, claudeFreeText = claudeFreeText,
         claudeVerify = claudeVerify, claudeModel = claudeModel, aiOff = aiOff,
+        geminiModel = geminiModel, geminiModels = settings.geminiModels,
     )
     // Quitter une section (ou la page) enregistre ce qui a changé.
     fun close() {
@@ -100,7 +103,8 @@ fun SettingsScreen(
             SettingsSection.entries.forEach { sec ->
                 val summary = when (sec) {
                     SettingsSection.GENERAL -> (com.riad.voyage.I18n.chosen?.nativeName ?: t("Automatique")) + " · " + currency
-                    SettingsSection.AI -> if (!edited.ai) t("Désactivée") else listOfNotNull(t("Activée"), model.label,
+                    SettingsSection.AI -> if (!edited.ai) t("Désactivée") else listOfNotNull(t("Activée"),
+                        if (model.gemini) (settings.geminiModels + com.riad.voyage.data.GeminiModel.defaults).firstOrNull { it.id == geminiModel }?.label ?: geminiModel else model.label,
                         t("recherches web").takeIf { claudeVerify }, tf("{0} fonctions", com.riad.voyage.data.AiFeature.entries.count { it.name !in aiOff })).joinToString(" · ")
                     SettingsSection.FLIGHTS -> when {
                         token.isBlank() -> t("Mode démo (prix fictifs)")
@@ -161,8 +165,27 @@ fun SettingsScreen(
                     }
                 }
                 val gemini = com.riad.voyage.data.ClaudeModel.of(claudeModel).gemini
-                if (gemini) SecretField(t("Clé API Gemini (gratuite)"), geminiKey, { geminiKey = it },
-                    t("Gratuite sur aistudio.google.com (compte Google)."), "https://aistudio.google.com/apikey")
+                if (gemini) {
+                    SecretField(t("Clé API Gemini (gratuite)"), geminiKey, { geminiKey = it },
+                        t("Gratuite sur aistudio.google.com (compte Google)."), "https://aistudio.google.com/apikey")
+                    // Modèles gratuits : liste d'office, ou ceux que Google ouvre à la clé (Pro exclus : pas gratuits).
+                    Text(t("Modèle Gemini"), style = MaterialTheme.typography.titleMedium)
+                    val known = com.riad.voyage.data.GeminiModel.defaults.associateBy { it.id }
+                    (settings.geminiModels.map { known[it.id] ?: it } + com.riad.voyage.data.GeminiModel.defaults).distinctBy { it.id }.forEach { m ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(selected = geminiModel == m.id, onClick = { geminiModel = m.id })
+                            Column(Modifier.weight(1f)) {
+                                Text(m.label, fontWeight = FontWeight.Bold)
+                                Text(m.note.takeIf { it.isNotBlank() }?.let { t(it) } ?: m.id, style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                    if (geminiKey.isNotBlank()) TextButton(onClick = { onGeminiModels(edited) }, contentPadding = PaddingValues(0.dp)) {
+                        Text(t("↻ Actualiser la liste depuis Google"))
+                    }
+                    Hint(t("Si le modèle choisi est surchargé, Envolée AI réessaie puis passe à Flash-Lite. Les modèles Pro ne sont pas proposés : ils ne sont pas gratuits."))
+                }
                 else SecretField(t("Clé API Anthropic"), claudeKey, { claudeKey = it },
                     t("Payée à l'usage sur console.anthropic.com."), "https://console.anthropic.com/settings/keys")
                 if ((if (gemini) geminiKey else claudeKey).isNotBlank()) {

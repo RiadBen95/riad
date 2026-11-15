@@ -28,12 +28,26 @@ enum class ClaudeModel(val id: String, val label: String, val strengths: String,
         "2 $ / 10 $ par million de jetons · ≈ 0,005 $ par demande"),
     HAIKU("claude-haiku-5-5", "Haiku 5.5", "Le plus rapide et le plus économique",
         "0,10 $ / 0,50 $ par million de jetons · ≈ 0,0003 $ par demande"),
-    GEMINI("gemini-flash-latest", "Gemini Flash (Google)", "Gratuit : lit les demandes et les billets, rédige ; recherche web limitée",
+    GEMINI("gemini-flash-latest", "Gemini (Google)", "Gratuit : lit les demandes et les billets, rédige ; recherche web limitée. Modèle à choisir ci-dessous.",
         "Gratuit dans la limite d'un quota quotidien · sur l'offre gratuite, Google peut utiliser les demandes pour améliorer ses modèles", gemini = true),
     ;
 
     companion object {
         fun of(id: String) = entries.firstOrNull { it.id == id } ?: OPUS
+    }
+}
+
+/** Modèle Gemini (offre gratuite) : identifiant de l'API et nom affiché. */
+data class GeminiModel(val id: String, val label: String, val note: String = "") {
+    companion object {
+        const val FALLBACK = "gemini-flash-lite-latest"   // le plus léger : repli quand le modèle choisi est surchargé
+        /** Modèles gratuits proposés d'office ; « Actualiser » ajoute ceux que Google ouvre à la clé. */
+        val defaults = listOf(
+            GeminiModel("gemini-flash-latest", "Gemini Flash (dernière version)", "Le plus capable des modèles gratuits ; quota quotidien réduit, parfois surchargé"),
+            GeminiModel(FALLBACK, "Gemini Flash-Lite (dernière version)", "Plus rapide, quota plus large, un peu moins précis"),
+            GeminiModel("gemini-2.5-flash", "Gemini 2.5 Flash", "Version stable"),
+            GeminiModel("gemini-2.5-flash-lite", "Gemini 2.5 Flash-Lite", "Version stable, la plus légère"),
+        )
     }
 }
 
@@ -130,7 +144,7 @@ data class EditPlan(val summary: String, val answers: JSONObject?, val ops: List
  */
 object ClaudeAssistant {
     /** Moteur et clé à utiliser (Claude ou Gemini). */
-    class Config(val model: ClaudeModel, val key: String)
+    class Config(val model: ClaudeModel, val key: String, val geminiModel: String = GeminiModel.defaults.first().id)
 
     /** Pièce jointe (PDF ou image JPEG / PNG) envoyée telle quelle au moteur. */
     class Attachment(val bytes: ByteArray, val mime: String)
@@ -170,7 +184,10 @@ object ClaudeAssistant {
         return client(c.key).messages().create(builder.build()).content().mapNotNull { it.text().orElse(null)?.text() }.joinToString("")
     }
 
-    /** Gemini (API REST de Google) : texte, pièces jointes, recherche Google si demandée. */
+    /**
+     * Gemini (API REST de Google) : texte, pièces jointes, recherche Google si demandée. Modèle surchargé (503) :
+     * deux nouveaux essais, puis Flash-Lite. Réflexion coupée sur les modèles Flash (réponses plus rapides).
+     */
     private fun askGemini(c: Config, prompt: String, web: Boolean, files: List<Attachment>): String {
         val parts = JSONArray().put(JSONObject().put("text", prompt))
         files.forEach { f ->
@@ -178,28 +195,72 @@ object ClaudeAssistant {
         }
         val body = JSONObject().put("contents", JSONArray().put(JSONObject().put("role", "user").put("parts", parts)))
         if (web) body.put("tools", JSONArray().put(JSONObject().put("google_search", JSONObject())))
-        val conn = URL("https://generativelanguage.googleapis.com/v1beta/models/${c.model.id}:generateContent").openConnection() as HttpURLConnection
-        try {
-            conn.requestMethod = "POST"
-            conn.connectTimeout = 15_000
-            conn.readTimeout = 90_000
-            conn.doOutput = true
-            conn.setRequestProperty("Content-Type", "application/json")
-            conn.setRequestProperty("x-goog-api-key", c.key)
-            conn.outputStream.use { it.write(body.toString().toByteArray()) }
-            val code = conn.responseCode
-            val text = (if (code in 200..299) conn.inputStream else conn.errorStream)?.bufferedReader()?.use { it.readText() }.orEmpty()
-            when (code) {
-                in 200..299 -> {}
-                429 -> throw IOException(t("Quota gratuit de Gemini atteint pour aujourd'hui."))
-                400, 401, 403 -> throw IOException(t("Clé Gemini refusée : vérifiez-la dans les Réglages."))
-                else -> throw IOException("Gemini : HTTP $code")
+        val models = listOf(c.geminiModel, GeminiModel.FALLBACK).distinct()
+        var last: ApiException? = null
+        for (model in models) for (wait in listOf(0L, 2_000L, 5_000L)) {
+            Thread.sleep(wait)
+            val fast = "flash" in model
+            if (fast) body.put("generationConfig", JSONObject().put("thinkingConfig", JSONObject().put("thinkingBudget", 0)))
+            else body.remove("generationConfig")
+            var (code, text) = geminiCall("models/$model:generateContent", c.key, body.toString())
+            if (code == 400 && fast && "thinking" in text.lowercase()) {   // modèle qui ne permet pas de couper la réflexion
+                body.remove("generationConfig")
+                geminiCall("models/$model:generateContent", c.key, body.toString()).let { code = it.first; text = it.second }
             }
-            val out = JSONObject(text).optJSONArray("candidates")?.optJSONObject(0)?.optJSONObject("content")?.optJSONArray("parts")
-            return (0 until (out?.length() ?: 0)).joinToString("") { out!!.optJSONObject(it)?.optString("text").orEmpty() }
+            if (code in 200..299) {
+                val out = JSONObject(text).optJSONArray("candidates")?.optJSONObject(0)?.optJSONObject("content")?.optJSONArray("parts")
+                return (0 until (out?.length() ?: 0)).joinToString("") { out!!.optJSONObject(it)?.optString("text").orEmpty() }
+            }
+            val google = runCatching { JSONObject(text).optJSONObject("error")?.optString("message") }.getOrNull().orEmpty().take(200)
+            last = when (code) {
+                500, 503, 504 -> ApiException(t("Gemini est surchargé pour le moment : réessayez dans un moment."), code)
+                429 -> ApiException(t("Quota gratuit de Gemini atteint (par minute ou par jour) : réessayez plus tard ou choisissez Flash-Lite."), code)
+                401, 403 -> throw ApiException(t("Clé Gemini refusée : vérifiez-la dans les Réglages.") + " " + google, code)
+                404 -> ApiException(tf("Modèle Gemini indisponible : {0}", model), code)
+                else -> throw ApiException("Gemini ($code) : $google", code)
+            }
+            Diagnostics.log("Gemini $model : HTTP $code ${google.take(120)}")
+            if (code == 429 || code == 404) break   // autre modèle directement
+        }
+        throw last ?: ApiException(t("Gemini est surchargé pour le moment : réessayez dans un moment."))
+    }
+
+    /** Appel REST Gemini → (code HTTP, corps). */
+    private fun geminiCall(path: String, key: String, body: String? = null): Pair<Int, String> {
+        val conn = URL("https://generativelanguage.googleapis.com/v1beta/$path").openConnection() as HttpURLConnection
+        try {
+            conn.connectTimeout = 15_000
+            conn.readTimeout = 80_000
+            conn.setRequestProperty("x-goog-api-key", key)
+            if (body != null) {
+                conn.requestMethod = "POST"
+                conn.doOutput = true
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.outputStream.use { it.write(body.toByteArray()) }
+            }
+            val code = conn.responseCode
+            return code to (if (code in 200..299) conn.inputStream else conn.errorStream)?.bufferedReader()?.use { it.readText() }.orEmpty()
         } finally {
             conn.disconnect()
         }
+    }
+
+    /**
+     * Modèles Gemini ouverts à la clé, sans les Pro (pas sur l'offre gratuite) ni les modèles spécialisés
+     * (images, voix, temps réel, embeddings).
+     */
+    suspend fun geminiModels(key: String): List<GeminiModel> = withContext(Dispatchers.IO) {
+        val (code, text) = geminiCall("models?pageSize=200", key)
+        if (code !in 200..299) throw ApiException(t("Clé Gemini refusée : vérifiez-la dans les Réglages."), code)
+        val a = JSONObject(text).optJSONArray("models") ?: JSONArray()
+        val skip = Regex("pro|image|tts|audio|live|embedding|computer|robotics|vision|aqa|learnlm|thinking-exp|native")
+        (0 until a.length()).mapNotNull { a.optJSONObject(it) }.filter { m ->
+            val methods = m.optJSONArray("supportedGenerationMethods")
+            val id = m.optString("name").removePrefix("models/")
+            id.startsWith("gemini") && !skip.containsMatchIn(id) &&
+                (0 until (methods?.length() ?: 0)).any { methods!!.optString(it) == "generateContent" }
+        }.map { m -> GeminiModel(m.optString("name").removePrefix("models/"), m.optString("displayName").ifBlank { m.optString("name") }) }
+            .distinctBy { it.id }
     }
 
     /** Objet JSON de la réponse (le moteur peut écrire du texte autour). */

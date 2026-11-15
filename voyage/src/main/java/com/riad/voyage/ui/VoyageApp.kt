@@ -374,7 +374,8 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                 Tab.SETTINGS -> {
                     BackHandler { vm.selectTab(Tab.HOME) }
                     SettingsScreen(settings, keyStatus, vm::saveSettings, vm.quotas, vm::setQuotaLimit, vm::setLanguage, vm::diagnosticReport,
-                        onClearHistory = vm::clearRecents, usePrefs = usePrefs, onUsePrefs = vm::setUsePreferences)
+                        onClearHistory = vm::clearRecents, usePrefs = usePrefs, onUsePrefs = vm::setUsePreferences,
+                        onGeminiModels = vm::refreshGeminiModels)
                 }
             }
         }

@@ -102,6 +102,7 @@ class TravelpayoutsApi(
 
         fun userMessage(e: Throwable): String = when (e) {
             is ApiException -> e.message ?: com.riad.voyage.t("Erreur inconnue")
+            is java.net.SocketTimeoutException -> com.riad.voyage.t("Le serveur met trop de temps à répondre : réessayez dans un moment.")
             is IOException -> com.riad.voyage.t("Pas de connexion internet (ou serveur injoignable).")
             else -> "Erreur : ${e.message ?: e.javaClass.simpleName}"
         }

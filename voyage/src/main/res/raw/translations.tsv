@@ -1103,3 +1103,18 @@ rythme ({0})	pace ({0})
 déplacements ({0})	getting around ({0})
 budget ({0})	budget ({0})
 Non précisé, réglage par défaut : {0}. Touchez une puce ci-dessous pour préciser.	Not specified, default setting: {0}. Tap a chip below to specify.
+Gratuit : lit les demandes et les billets, rédige ; recherche web limitée. Modèle à choisir ci-dessous.	Free: reads requests and tickets, writes; limited web search. Choose the model below.
+Le plus capable des modèles gratuits ; quota quotidien réduit, parfois surchargé	The most capable free model; small daily quota, sometimes overloaded
+Plus rapide, quota plus large, un peu moins précis	Faster, larger quota, slightly less accurate
+Version stable	Stable version
+Version stable, la plus légère	Stable version, the lightest
+Gemini est surchargé pour le moment : réessayez dans un moment.	Gemini is overloaded right now: try again in a moment.
+Quota gratuit de Gemini atteint (par minute ou par jour) : réessayez plus tard ou choisissez Flash-Lite.	Gemini free quota reached (per minute or per day): try again later or choose Flash-Lite.
+Modèle Gemini indisponible : {0}	Gemini model unavailable: {0}
+Le serveur met trop de temps à répondre : réessayez dans un moment.	The server is taking too long to respond: try again in a moment.
+Envolée AI met trop de temps à répondre : réessayez dans un moment.	Envolée AI is taking too long to respond: try again in a moment.
+Google n'a pas répondu : réessayez dans un moment.	Google did not respond: try again in a moment.
+{0} modèles Gemini disponibles avec votre clé.	{0} Gemini models available with your key.
+Modèle Gemini	Gemini model
+↻ Actualiser la liste depuis Google	↻ Refresh the list from Google
+Si le modèle choisi est surchargé, Envolée AI réessaie puis passe à Flash-Lite. Les modèles Pro ne sont pas proposés : ils ne sont pas gratuits.	If the chosen model is overloaded, Envolée AI retries and then switches to Flash-Lite. Pro models are not offered: they are not free.
