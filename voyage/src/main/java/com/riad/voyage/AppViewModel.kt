@@ -4,7 +4,6 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.riad.voyage.data.ActivityLinks
-import com.riad.voyage.data.Article
 import com.riad.voyage.data.Blog
 import com.riad.voyage.data.BlogCity
 import com.riad.voyage.data.BudgetCalculator
@@ -13,13 +12,7 @@ import com.riad.voyage.data.DayWeather
 import com.riad.voyage.data.Experience
 import com.riad.voyage.data.ExperienceBuilder
 import com.riad.voyage.data.Flight
-import com.riad.voyage.data.Fx
-import com.riad.voyage.data.GeoPoint
-import com.riad.voyage.data.GuideParser
-import com.riad.voyage.data.NotablePlaces
 import com.riad.voyage.data.Place
-import com.riad.voyage.data.PlacesApi
-import com.riad.voyage.data.PlacesParser
 import com.riad.voyage.data.PlannedActivity
 import com.riad.voyage.data.PointOfInterest
 import com.riad.voyage.data.hhmm
@@ -27,8 +20,6 @@ import com.riad.voyage.data.minutesOf
 import com.riad.voyage.data.PopularPlaces
 import com.riad.voyage.data.Quiz
 import com.riad.voyage.data.RatingSource
-import com.riad.voyage.data.RatingsAggregator
-import com.riad.voyage.data.SavedArticle
 import com.riad.voyage.data.SavedDay
 import com.riad.voyage.data.SavedFlight
 import com.riad.voyage.data.SavedPlace
@@ -37,7 +28,6 @@ import com.riad.voyage.data.Settings
 import com.riad.voyage.data.TravelpayoutsApi
 import com.riad.voyage.data.Trip
 import com.riad.voyage.data.WeatherApi
-import com.riad.voyage.data.WikivoyageGuide
 import com.riad.voyage.data.parseDateTime
 import com.riad.voyage.ui.formatPrice
 import java.time.LocalDate
@@ -64,37 +54,17 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val flights = FlightsModel(core)
     val hotels = HotelsModel(core)
     val budget = BudgetModel(core, answers = { _experience.value.answers }, choose = ::chooseFor)
-    val blog = BlogModel(core, answers = { _experience.value.answers }, activityCategory = { _activityCategory.value })
+    val places = PlacesModel(core)
+    val trips = TripsModel(core, familyProgram = { id -> _experience.value.let { it.tripId == id && it.answers.company == Quiz.Company.FAMILY } },
+        blogCity = { blog.state.value.city?.name })
+    val blog = BlogModel(core, answers = { _experience.value.answers }, activityCategory = { places.category.value })
 
     val settings: StateFlow<Settings> = core.settings.asStateFlow()
     val tab: StateFlow<Tab> = core.tab.asStateFlow()
     val message: StateFlow<String?> = core.message.asStateFlow()
-    val trips: StateFlow<List<Trip>> = core.trips.asStateFlow()
     val quotas get() = core.quotas
 
     init { core.onTripsChanged = { budget.refresh() } }
-
-    /** Voyage ouvert dans « Mes voyages » (null = la liste) ; article gardé en cours de lecture. */
-    private val _openTrip = MutableStateFlow<String?>(null)
-    val openTrip: StateFlow<String?> = _openTrip.asStateFlow()
-    private val _tripArticle = MutableStateFlow<Article?>(null)
-    val tripArticle: StateFlow<Article?> = _tripArticle.asStateFlow()
-
-    private val _activityPlace = MutableStateFlow<Place?>(null)
-    val activityPlace: StateFlow<Place?> = _activityPlace.asStateFlow()
-
-    private val _activityCity = MutableStateFlow("")
-    val activityCity: StateFlow<String> = _activityCity.asStateFlow()
-
-    private val _activityCategory = MutableStateFlow(ActivityLinks.Category.ATTRACTIONS)
-    val activityCategory: StateFlow<ActivityLinks.Category> = _activityCategory.asStateFlow()
-
-    private val _places = MutableStateFlow(PlacesState())
-    val places: StateFlow<PlacesState> = _places.asStateFlow()
-    private var placesJob: kotlinx.coroutines.Job? = null
-    private val placesCache = mutableMapOf<String, PlacesState>()
-
-    private val guideCache = mutableMapOf<String, Set<String>>()
 
     private val prefStore = com.riad.voyage.data.PreferenceStore(app)
     /** Page vierge, ou préférences habituelles si la puce « Reprendre mes préférences » est allumée. */
@@ -116,17 +86,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Ville choisie en haut de la page Ville : lieux, articles et infos pratiques la suivent. */
     fun chooseCity(p: Place) {
-        _activityCity.value = p.name
-        _activityPlace.value = p
+        places.show(p.name, p)
         selectTab(Tab.CITY)
     }
 
     /** Ville affichée dans la page Ville (lieux, articles, infos) : recherche en cours, sinon prochain voyage. */
     fun currentCity(): Pair<String, String>? {
-        val c = _activityCity.value.ifBlank { blog.state.value.city?.name.orEmpty() }
+        val c = places.city.value.ifBlank { blog.state.value.city?.name.orEmpty() }
             .ifBlank { _experience.value.result?.city.orEmpty() }.ifBlank { core.trips.value.firstOrNull()?.city.orEmpty() }
         if (c.isBlank()) return null
-        val country = _activityPlace.value?.takeIf { it.name.equals(c, true) }?.country
+        val country = places.place.value?.takeIf { it.name.equals(c, true) }?.country
             ?: blog.state.value.city?.takeIf { it.name.equals(c, true) }?.country
             ?: core.trips.value.firstOrNull { it.city.equals(c, true) }?.country.orEmpty()
         return c to core.countryOf(c, country)
@@ -141,27 +110,26 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
         val section = _citySection.value
         // Les sorties reprennent la destination du vol si rien n'est saisi.
-        if (t == Tab.CITY && _activityCity.value.isBlank()) {
-            _activityCity.value = flights.form.value.destination?.name.orEmpty()
-            _activityPlace.value = flights.form.value.destination
+        if (t == Tab.CITY && places.city.value.isBlank()) {
+            places.show(flights.form.value.destination?.name.orEmpty(), flights.form.value.destination)
         }
         if (t == Tab.EXPERIENCE && _experience.value.answers.city.isBlank()) {
-            val dest = flights.form.value.destination ?: _activityPlace.value
+            val dest = flights.form.value.destination ?: places.place.value
             if (dest != null) updateAnswers { it.copy(city = dest.name, place = dest) }
         }
         if (t == Tab.HOTELS && hotels.state.value.city.isBlank()) {
-            val dest = flights.form.value.destination ?: _activityPlace.value
+            val dest = flights.form.value.destination ?: places.place.value
             if (dest != null) hotels.updateHotels { it.copy(city = dest.name, place = dest) }
         }
-        if (t == Tab.CITY && _activityCity.value.isBlank()) {
-            core.trips.value.firstOrNull()?.let { _activityCity.value = it.city }
+        if (t == Tab.CITY && places.city.value.isBlank()) {
+            core.trips.value.firstOrNull()?.let { places.show(it.city) }
         }
         core.tab.value = t
-        if (t == Tab.CITY && section == CitySection.PLACES) searchActivities()
+        if (t == Tab.CITY && section == CitySection.PLACES) places.search()
         // Les articles suivent la ville choisie en haut de la page Ville.
-        if (t == Tab.CITY && section == CitySection.ARTICLES && !blog.state.value.city?.name.equals(_activityCity.value, ignoreCase = true)) {
+        if (t == Tab.CITY && section == CitySection.ARTICLES && !blog.state.value.city?.name.equals(places.city.value, ignoreCase = true)) {
             val ctx = blogContext()
-            (ctx.firstOrNull { it.first.name.equals(_activityCity.value, true) } ?: ctx.firstOrNull())?.let { (c, why) -> blog.openBlogCity(c, why) }
+            (ctx.firstOrNull { it.first.name.equals(places.city.value, true) } ?: ctx.firstOrNull())?.let { (c, why) -> blog.openBlogCity(c, why) }
         }
     }
 
@@ -172,10 +140,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _usePrefs.value = false
         _prefsSummary.value = null
         // Toutes les recherches en cours repartent de zéro (Vols, Ville, Hôtels, Blogue, Envolée) ; les voyages enregistrés restent.
-        _activityCity.value = ""
-        _activityPlace.value = null
-        _places.value = PlacesState()
-        placesCache.clear()
+        places.reset()
         core.weatherCache.clear()
         hotels.reset()
         blog.reset()
@@ -234,116 +199,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         if (_experience.value.result == null) generateExperience() else refineExperience { it }
     }
 
-    fun setActivityCity(city: String) { _activityCity.value = city }
-
-    /** Ville choisie dans les suggestions : on garde sa position et on lance la recherche. */
-    fun setActivityPlace(p: Place) {
-        _activityPlace.value = p
-        _activityCity.value = p.name
-        searchActivities(force = true)
-    }
-    fun setActivityCategory(c: ActivityLinks.Category) {
-        _activityCategory.value = c
-        searchActivities()
-    }
-
-    /** Cherche les lieux de la catégorie choisie (sauf si la même recherche est déjà affichée). */
-    fun searchActivities(force: Boolean = false) {
-        val city = _activityCity.value.trim()
-        val category = _activityCategory.value
-        if (city.isBlank() || category == ActivityLinks.Category.TOURS) return
-        val key = "${city.lowercase()}|$category"
-        // Déjà cherché : réponse immédiate depuis le cache.
-        if (!force) placesCache[key]?.let { _places.value = it; return }
-        val current = _places.value
-        if (!force && current.city.equals(city, ignoreCase = true) && current.category == category && current.loading) return
-
-        placesJob?.cancel()
-        val chosen = _activityPlace.value?.takeIf { it.name.equals(city, ignoreCase = true) }
-        _places.value = PlacesState(loading = true, stage = t("Recherche de la ville…"), city = city, category = category)
-        placesJob = viewModelScope.launch {
-            val geo = core.resolveCity(city, chosen)
-            if (geo == null) {
-                _places.value = PlacesState(
-                    error = t("Ville introuvable ou connexion indisponible. Choisissez la ville dans la liste proposée."),
-                    city = city, category = category,
-                )
-                return@launch
-            }
-
-            _places.value = _places.value.copy(stage = t("Recherche des meilleurs lieux…"))
-            val db = NotablePlaces
-
-            // 1) Musées, monuments, attractions, parcs, plages : top 30 de la ville par notoriété.
-            if (db.supports(category)) {
-                val top = attempt(12_000) { db.search(geo, category) }?.getOrNull() ?: emptyList()
-                if (top.size >= 3) {
-                    publish(key, PlacesState(items = top, city = city, category = category, source = SOURCE_FAME))
-                    return@launch
-                }
-            }
-
-            // 2) Restaurants, cafés, bars, sorties, shopping : sélection du guide Wikivoyage de la ville.
-            val guidePicks = if (!db.supports(category)) {
-                val listings = attempt(15_000) { WikivoyageGuide.listings(city, geo.wikidata) }?.getOrNull() ?: emptyList()
-                GuideParser.select(listings, category).take(30)
-                    .map { GuideParser.toPoi(it, category, geo) }
-            } else emptyList()
-            // 2 bis) Notes Google + Tripadvisor + popularité Foursquare, chacune dans sa limite gratuite.
-            val agg = RatingsAggregator
-            val st = core.settings.value
-            val hasRatingKeys = st.googleKey.isNotBlank() || st.tripadvisorKey.isNotBlank() || st.foursquareKey.isNotBlank()
-            var quotaNotice: String? = null
-            if (hasRatingKeys && agg.supports(category)) {
-                _places.value = _places.value.copy(stage = t("Récupération des notes…"))
-                val outcome = attempt(20_000) { agg.search(st, core.quotas, city, geo, category, guidePicks) }?.getOrNull()
-                if (outcome != null && outcome.skipped.isNotEmpty()) {
-                    quotaNotice = if (outcome.usedSources.isNotEmpty()) tf("Limite gratuite atteinte pour {0} : relais pris par {1}.", outcome.skipped.joinToString(", ") { it.label }, outcome.usedSources.joinToString { it.label })
-                        else tf("Limite gratuite atteinte pour {0}.", outcome.skipped.joinToString(", ") { it.label })
-                }
-                if (outcome != null && outcome.places.size >= 3) {
-                    publish(key, PlacesState(items = outcome.places, city = city, category = category,
-                        guideFound = outcome.places.any { it.inGuide }, source = SOURCE_RATINGS,
-                        ratingSources = outcome.usedSources.map { it.label }, notice = quotaNotice))
-                    return@launch
-                }
-            }
-
-            if (guidePicks.size >= 5) {
-                publish(key, PlacesState(items = guidePicks, city = city, category = category, guideFound = true,
-                    source = SOURCE_GUIDE, notice = quotaNotice))
-                return@launch
-            }
-
-            // 3) Secours : carte OpenStreetMap en direct (petite ville ou guide trop pauvre).
-            _places.value = _places.value.copy(stage = t("Recherche sur la carte…"))
-            var liveError: String? = null
-            val live = withTimeoutOrNull(20_000) {
-                runCatching { PlacesApi.search(geo, category) }
-                    .onFailure { liveError = TravelpayoutsApi.userMessage(it) }
-                    .getOrNull()
-            }
-            val merged = (guidePicks + (live ?: emptyList()).sortedWith(
-                compareByDescending<PointOfInterest> { it.notable }
-                    .thenByDescending { it.website != null }
-                    .thenBy { it.distanceM },
-            )).distinctBy { it.name.lowercase() }.take(30)
-            if (merged.isEmpty()) {
-                _places.value = PlacesState(
-                    error = when {
-                        live != null -> t("Aucun lieu trouvé pour cette ville.")
-                        liveError != null -> tf("Recherche impossible : {0}", liveError ?: "")
-                        else -> t("Les serveurs de carte ne répondent pas (plus de 20 s). Réessayez dans un instant.")
-                    },
-                    city = city, category = category,
-                )
-                return@launch
-            }
-            publish(key, PlacesState(items = merged, city = city, category = category,
-                guideFound = guidePicks.isNotEmpty(), source = SOURCE_MAP))
-        }
-    }
-
     // ---------- Budget ----------
 
     /** Budget du programme Expérience affiché (+ vols et hôtel choisis pour la même ville). */
@@ -365,8 +220,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 hotels.openHotels(city, null, trip?.start, trip?.end, travellers)
             }
             BudgetItem.ACTIVITIES -> {
-                _activityCity.value = city
-                _activityPlace.value = PopularPlaces.all.firstOrNull { it.name.equals(city, true) }
+                places.show(city, PopularPlaces.all.firstOrNull { it.name.equals(city, true) })
                 selectTab(Tab.ACTIVITIES)
             }
             else -> selectTab(Tab.FLIGHTS)
@@ -374,68 +228,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     // ---------- Voyage : dépenses, programme, bagages ----------
-
-    private fun updateTrip(id: String, transform: (Trip) -> Trip) {
-        val trip = core.trips.value.firstOrNull { it.id == id } ?: return
-        core.tripStore.upsert(transform(trip))
-        core.refreshTrips()
-    }
-
-    fun addExpense(tripId: String, label: String, amount: Double, currency: String, item: BudgetItem) = updateTrip(tripId) {
-        it.copy(expenses = it.expenses + com.riad.voyage.data.Expense(System.currentTimeMillis(), label.trim(), amount, currency, item.name,
-            LocalDate.now().toString()))
-    }
-
-    fun removeExpense(tripId: String, id: Long) = updateTrip(tripId) { it.copy(expenses = it.expenses.filter { e -> e.id != id }) }
-
-    private fun editDays(tripId: String, f: (MutableList<SavedDay>) -> Unit) = updateTrip(tripId) { t ->
-        t.copy(program = t.program.toMutableList().also(f))
-    }
-
-    private fun editSteps(tripId: String, day: Int, f: (MutableList<com.riad.voyage.data.SavedStep>) -> Unit) = editDays(tripId) { days ->
-        days.getOrNull(day)?.let { d -> days[day] = d.copy(steps = d.steps.toMutableList().also(f)) }
-    }
-
-    /** Déplace une étape d'un cran dans la journée ([delta] = -1 vers le haut, +1 vers le bas). */
-    fun moveStep(tripId: String, day: Int, index: Int, delta: Int) = editSteps(tripId, day) { s ->
-        val j = index + delta
-        if (index in s.indices && j in s.indices) s.add(j, s.removeAt(index))
-    }
-
-    fun deleteStep(tripId: String, day: Int, index: Int) = editSteps(tripId, day) { s -> if (index in s.indices) s.removeAt(index) }
-
-    fun editStep(tripId: String, day: Int, index: Int, time: String, name: String, note: String) = editSteps(tripId, day) { s ->
-        s.getOrNull(index)?.let { st -> s[index] = st.copy(time = time.trim(), moment = note.trim(), place = st.place.copy(name = name.trim())) }
-    }
-
-    /** Ajoute une étape libre (lieu saisi à la main) ; les étapes sont rangées par heure. */
-    fun addStep(tripId: String, day: Int, time: String, name: String, note: String) = editSteps(tripId, day) { s ->
-        s += com.riad.voyage.data.SavedStep(time.trim(), note.trim(), "📍", "", 60, SavedPlace(name.trim(), "Étape ajoutée", 0.0, 0.0, false))
-        s.sortBy { it.time }
-    }
-
-    fun addDay(tripId: String) = editDays(tripId) { days -> days += SavedDay(tf("Jour {0}", days.size + 1), null, emptyList()) }
-
-    fun togglePacked(tripId: String, key: String) = updateTrip(tripId) {
-        it.copy(packed = if (key in it.packed) it.packed - key else it.packed + key)
-    }
-
-    fun addPackItem(tripId: String, text: String) = updateTrip(tripId) { if (text.isBlank()) it else it.copy(extraItems = it.extraItems + text.trim()) }
-
-    fun removePackItem(tripId: String, text: String) = updateTrip(tripId) { it.copy(extraItems = it.extraItems - text, packed = it.packed - text) }
-
-    /** Liste de bagages d'un voyage : durée, météo du séjour (si prévue), activités, pays, enfants. */
-    suspend fun packingFor(trip: Trip): List<com.riad.voyage.data.PackItem> {
-        val start = trip.start
-        val nights = trip.nights ?: (trip.program.size - 1).coerceAtLeast(2)
-        val forecast = core.weatherFor(trip.city).filter { w -> start == null || (!w.date.isBefore(start) && !w.date.isAfter(trip.end ?: start)) }
-        val kinds = trip.program.flatMap { d -> d.steps.map { it.place.kind + " " + it.place.name } } + trip.places.map { it.kind + " " + it.name }
-        val a = _experience.value.answers
-        // En famille seulement si le programme de ce voyage a été fait « en famille ».
-        val family = (trip.travellers ?: 0) >= 3 && _experience.value.tripId == trip.id && a.company == com.riad.voyage.data.Quiz.Company.FAMILY
-        return com.riad.voyage.data.Packing.generate(nights, forecast, kinds, practicalFor(trip.city, trip.country), family,
-            lateDeparture = (trip.departureMin ?: 0) >= 15 * 60)
-    }
 
     /** Rapport de diagnostic (texte, sans aucune clé) : ce que l'appli a reçu, compris et composé. */
     fun diagnosticReport(): java.io.File {
@@ -451,7 +243,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Carnet de voyage en PDF (charte Envolée), prêt à partager. */
     suspend fun tripPdf(source: Trip): java.io.File {
         val trip = tripStory(source)   // textes du carnet par Envolée AI, si activé
-        val rates = rates()
+        val rates = core.rates()
         val people = trip.travellers ?: 2
         val totalEur = com.riad.voyage.data.BudgetCalculator.compute(
             budget.budgetFor(trip.city, core.countryOf(trip.city, trip.country), trip, rates, trip.nights ?: 3, people),
@@ -463,8 +255,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val content = com.riad.voyage.ui.TripPdf.Content(
             trip = trip,
             weather = core.weatherFor(trip.city).filter { w -> start != null && !w.date.isBefore(start) && !w.date.isAfter(trip.end ?: start) },
-            info = practicalFor(trip.city, trip.country),
-            packing = packingFor(trip),
+            info = core.practicalFor(trip.city, trip.country),
+            packing = trips.packingFor(trip),
             budgetTotal = money(totalEur),
             budgetPerPerson = money(totalEur / people),
             people = people,
@@ -474,16 +266,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Ouvre les infos pratiques de la ville d'un voyage (page Ville). */
     fun openPractical(trip: Trip) {
-        _activityCity.value = trip.city
-        _activityPlace.value = null
+        places.show(trip.city)
         setCitySection(CitySection.INFO)
     }
-
-    /** Infos pratiques du pays d'une ville (null si le pays n'est pas connu). */
-    fun practicalFor(city: String, country: String = "") = com.riad.voyage.data.Practical.of(core.countryOf(city, country))
-
-    /** Taux de change (base euro), gardés en mémoire. */
-    suspend fun rates(): Map<String, Double> = attempt(8_000) { Fx.rates() }?.getOrNull().orEmpty()
 
     // ---------- Mes voyages ----------
 
@@ -517,18 +302,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _experience.update { it.copy(tripId = updated.id) }
     }
 
-    // ---------- Créer un voyage ----------
-
-    /** Nouveau voyage : destination, dates et voyageurs, saisis une fois et réutilisés partout. */
-    fun createTrip(city: String, place: Place?, start: LocalDate, end: LocalDate, travellers: Int, arrival: String?, departure: String?) {
-        val trip = Trip(id = "trip-${System.currentTimeMillis()}", city = city.trim(), country = place?.country.orEmpty(),
-            startDate = start.toString(), endDate = end.toString(), travellers = travellers, arrivalTime = arrival, departureTime = departure)
-        core.saveTrip(trip, tf("Voyage créé : {0}", t(trip.city)))
-        openTrip(trip.id)
-    }
-
     fun updateTripInfo(id: String, start: LocalDate, end: LocalDate, travellers: Int, arrival: String?, departure: String?) {
-        updateTrip(id) {
+        trips.updateTrip(id) {
             it.copy(startDate = start.toString(), endDate = end.toString(), travellers = travellers, arrivalTime = arrival, departureTime = departure)
         }
         // Programme de ce voyage : mêmes dates, heures et voyageurs (recalculé sans nouvelle recherche).
@@ -559,36 +334,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         core.tab.value = Tab.EXPERIENCE
     }
 
-    fun saveArticle(a: Article) {
-        val city = blog.state.value.city?.name ?: core.trips.value.firstOrNull()?.city ?: t("Mes lectures")
-        val trip = core.tripFor(city)
-        if (trip.articles.any { it.wiki == a.wiki }) { core.message.value = t("Article déjà gardé."); return }
-        core.saveTrip(trip.copy(articles = trip.articles + SavedArticle.of(a)),
-            tf("Article gardé pour la lecture hors connexion : {0}", t(trip.city)))
-    }
-
-    fun openTrip(id: String?) { _openTrip.value = id; _tripArticle.value = null; core.tab.value = Tab.TRIPS }
-    fun readSavedArticle(a: SavedArticle?) { _tripArticle.value = a?.toArticle() }
-
-    fun deleteTrip(id: String) {
-        core.tripStore.delete(id)
-        core.refreshTrips()
-        _openTrip.value = null
-    }
-
-    fun removeFromTrip(id: String, kind: String, index: Int) {
-        val trip = core.trips.value.firstOrNull { it.id == id } ?: return
-        val updated = when (kind) {
-            "flight" -> trip.copy(flights = trip.flights.filterIndexed { i, _ -> i != index })
-            "place" -> trip.copy(places = trip.places.filterIndexed { i, _ -> i != index })
-            "article" -> trip.copy(articles = trip.articles.filterIndexed { i, _ -> i != index })
-            "program" -> trip.copy(program = emptyList(), programTitle = null)
-            else -> trip
-        }
-        core.tripStore.upsert(updated)
-        core.refreshTrips()
-    }
-
     // ---------- Blogue ----------
 
     /** Villes liées aux recherches de la personne : vol, sorties, expérience. */
@@ -608,7 +353,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         add(_experience.value.answers.place, _experience.value.answers.city, "D'après votre envolée")
         add(flights.results.value.query?.destination, null, "D'après votre vol")
         add(flights.form.value.destination, null, "D'après votre vol")
-        add(_activityPlace.value, _activityCity.value, "D'après vos sorties")
+        add(places.place.value, places.city.value, "D'après vos sorties")
         return out
     }
 
@@ -1084,7 +829,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         if (start != null && end != null && _experience.value.tripId == trip.id)
             updateTripInfo(trip.id, start, end, trip.travellers ?: 2, trip.arrivalTime, trip.departureTime)
         // Depuis l'Envolée : on compose aussitôt le programme de ce voyage ; sinon on ouvre le voyage.
-        if (imp.plan) planTrip(trip) else openTrip(trip.id)
+        if (imp.plan) planTrip(trip) else trips.openTrip(trip.id)
     }
 
     /** Commentaire du budget par Envolée AI. */
@@ -1121,7 +866,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val a = _experience.value.answers.takeIf { _experience.value.tripId == trip.id }
         val needs = listOfNotNull(a?.diet?.takeIf { it != Quiz.Diet.NONE }?.label, "jeunes enfants".takeIf { a?.youngKids == true },
             "poussette".takeIf { a?.stroller == true }).joinToString(", ")
-        val local = practicalFor(trip.city, trip.country)?.phrases?.let { "la langue locale de ${trip.city}" } ?: "la langue locale"
+        val local = core.practicalFor(trip.city, trip.country)?.phrases?.let { "la langue locale de ${trip.city}" } ?: "la langue locale"
         val who = when {
             a != null && "company" !in a.assumed -> t(a.company.label) + (a.people?.let { " ($it)" } ?: "")
             trip.travellers != null -> tf("{0} voyageur(s)", trip.travellers)
@@ -1214,7 +959,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             val pools = coroutineScope {
                 needed.map { c ->
                     val hint = ExperienceBuilder.searchHint(a, c)
-                    async { c to (withTimeoutOrNull(25_000) { loadCategory(city, geo, c, hint) } ?: emptyList()) }
+                    async { c to (withTimeoutOrNull(25_000) { places.loadCategory(city, geo, c, hint) } ?: emptyList()) }
                 }
                     .map { it.await() }.toMap()
             }
@@ -1267,8 +1012,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         else Quiz.Duration((nights + 1).toInt().coerceIn(1, Quiz.Duration.MAX_DAYS))
         val fresh = ExperienceState(answers = blankAnswers().copy(city = dest.name, place = dest, startDate = start, duration = duration))
         _experience.value = fresh.copy(step = fresh.steps.indexOf("interests").coerceAtLeast(0))
-        _activityCity.value = dest.name
-        _activityPlace.value = dest
+        places.show(dest.name, dest)
         blog.reset()
         core.tab.value = Tab.EXPERIENCE
     }
@@ -1304,78 +1048,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Meilleurs lieux d'une catégorie (même logique que l'onglet Sorties, sans l'afficher). */
-    private suspend fun loadCategory(
-        city: String,
-        geo: GeoPoint,
-        category: ActivityLinks.Category,
-        hint: String? = null,
-    ): List<PointOfInterest> {
-        // Cache séparé de l'onglet Sorties : plus de lieux par catégorie pour coller aux goûts.
-        val key = "${city.lowercase()}|$category|exp|${hint.orEmpty()}"
-        placesCache[key]?.items?.takeIf { it.isNotEmpty() }?.let { return it }
-        val db = NotablePlaces
-        val items: List<PointOfInterest> = if (db.supports(category)) {
-            runCatching { db.search(geo, category, limit = 80) }.getOrNull().orEmpty()
-        } else {
-            val listings = attempt(15_000) { WikivoyageGuide.listings(city, geo.wikidata) }?.getOrNull().orEmpty()
-            val guide = GuideParser.select(listings, category).take(30)
-                .map { GuideParser.toPoi(it, category, geo) }
-            val st = core.settings.value
-            val rated = if (st.googleKey.isNotBlank() || st.tripadvisorKey.isNotBlank() || st.foursquareKey.isNotBlank()) {
-                runCatching { RatingsAggregator.search(st, core.quotas, city, geo, category, guide, hint) }
-                    .getOrNull()?.places.orEmpty()
-            } else emptyList()
-            when {
-                rated.size >= 3 -> rated
-                guide.size >= 3 -> guide
-                else -> (guide + runCatching { PlacesApi.search(geo, category) }.getOrNull().orEmpty())
-                    .distinctBy { it.name.lowercase() }.take(30)
-            }
-        }
-        val clean = com.riad.voyage.data.PlaceText.tidy(items)
-        if (clean.isNotEmpty()) placesCache[key] = PlacesState(items = clean, city = city, category = category)
-        return clean
-    }
-
-    private fun publish(key: String, raw: PlacesState) {
-        val state = raw.copy(items = com.riad.voyage.data.PlaceText.tidy(raw.items))
-        placesCache[key] = state
-        if (_places.value.city.equals(state.city, ignoreCase = true) && _places.value.category == state.category) {
-            _places.value = state
-        }
-    }
-
-    private suspend fun cityGuide(geo: GeoPoint, city: String): Set<String> {
-        val id = geo.wikidata
-            ?: runCatching { PlacesApi.geocode(city)?.wikidata }.getOrNull()
-            ?: return emptySet()
-        guideCache[id]?.let { return it }
-        val names = runCatching { PlacesApi.guideNames(id) }.getOrDefault(emptySet())
-        if (names.isNotEmpty()) guideCache[id] = names
-        return names
-    }
-
-    /** Classe les lieux : cités par le guide + notoriété (nombre de Wikipédias), puis distance. */
-    private suspend fun rank(
-        items: List<PointOfInterest>,
-        guide: Set<String>,
-    ): List<PointOfInterest> {
-        val ids = items.mapNotNull { it.wikidata }.take(150)
-        val counts = if (ids.isEmpty()) emptyMap() else
-            runCatching { PlacesApi.sitelinkCounts(ids) }.getOrDefault(emptyMap())
-        return items.map { p ->
-            p.copy(
-                sitelinks = p.wikidata?.let { counts[it] } ?: 0,
-                inGuide = guide.isNotEmpty() && PlacesParser.matchesGuide(p.name, guide),
-            )
-        }.sortedWith(
-            compareByDescending<PointOfInterest> { it.score }
-                .thenByDescending { it.wikipedia != null }
-                .thenByDescending { it.website != null }
-                .thenBy { it.distanceM },
-        )
-    }
-
     fun clearMessage() { core.message.value = null }
 
     // ---------- Vol + sorties ----------
@@ -1383,7 +1055,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Ouvre les sorties de la ville de destination. */
     fun activitiesAtDestination() {
         val q = flights.results.value.query ?: flights.form.value
-        q.destination?.let { _activityCity.value = it.name; _activityPlace.value = it }
+        q.destination?.let { places.show(it.name, it) }
         selectTab(Tab.ACTIVITIES)
     }
 
@@ -1391,15 +1063,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setQuotaLimit(src: RatingSource, limit: Int) {
         core.quotas.setLimit(src, limit)
-        placesCache.clear()
+        places.clear()
     }
 
     /** Changement de langue : on vide les données déjà traduites (Wikipédia, lieux) pour les recharger. */
     fun setLanguage(l: Lang?) {
         I18n.choose(getApplication(), l)
         core.wikiCache.clear()
-        placesCache.clear()
-        _places.value = PlacesState()
+        places.clear()
         blog.reload()
         _experience.update { it.copy(result = null) }
     }
@@ -1421,7 +1092,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun saveSettings(s: Settings) {
-        placesCache.clear()
+        places.clear()
         ActivityLinks.tiqetsPartner = s.tiqetsPartner
         core.settingsStore.save(s)
         core.settings.value = core.settingsStore.load()

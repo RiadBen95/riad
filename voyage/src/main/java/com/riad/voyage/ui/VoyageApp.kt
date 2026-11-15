@@ -32,16 +32,16 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
     val checking by vm.flights.checking.collectAsStateWithLifecycle()
     val message by vm.message.collectAsStateWithLifecycle()
     val keyStatus by vm.keyStatus.collectAsStateWithLifecycle()
-    val activityCity by vm.activityCity.collectAsStateWithLifecycle()
-    val activityCategory by vm.activityCategory.collectAsStateWithLifecycle()
-    val places by vm.places.collectAsStateWithLifecycle()
+    val activityCity by vm.places.city.collectAsStateWithLifecycle()
+    val activityCategory by vm.places.category.collectAsStateWithLifecycle()
+    val places by vm.places.state.collectAsStateWithLifecycle()
     val recents by vm.flights.recents.collectAsStateWithLifecycle()
-    val activityPlace by vm.activityPlace.collectAsStateWithLifecycle()
+    val activityPlace by vm.places.place.collectAsStateWithLifecycle()
     val experience by vm.experience.collectAsStateWithLifecycle()
     val blog by vm.blog.state.collectAsStateWithLifecycle()
-    val trips by vm.trips.collectAsStateWithLifecycle()
-    val openTrip by vm.openTrip.collectAsStateWithLifecycle()
-    val tripArticle by vm.tripArticle.collectAsStateWithLifecycle()
+    val trips by vm.core.trips.collectAsStateWithLifecycle()
+    val openTrip by vm.trips.openTrip.collectAsStateWithLifecycle()
+    val tripArticle by vm.trips.tripArticle.collectAsStateWithLifecycle()
     val hotels by vm.hotels.state.collectAsStateWithLifecycle()
     val budget by vm.budget.state.collectAsStateWithLifecycle()
     val budgetReturn by vm.budget.returning.collectAsStateWithLifecycle()
@@ -101,7 +101,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                     onOpenHotels = { vm.hotels.openHotels(null, null, null, null) },
                     onOpenBudget = { vm.selectTab(Tab.BUDGET) },
                     trips = trips,
-                    onOpenTrip = vm::openTrip,
+                    onOpenTrip = vm.trips::openTrip,
                     onOpenAlerts = { vm.selectTab(Tab.ALERTS) },
                     onOpenSettings = configure,
                     onRecent = vm.flights::applyRecent,
@@ -164,7 +164,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         city = activityCity,
                         selected = activityPlace,
                         onCity = vm::chooseCity,
-                        onCityText = vm::setActivityCity,
+                        onCityText = vm.places::setCity,
                         suggest = vm.core::suggestCities,
                         places = {
                             ActivitiesScreen(
@@ -172,12 +172,12 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                                 city = activityCity,
                                 category = activityCategory,
                                 places = places,
-                                onCity = vm::setActivityCity,
+                                onCity = vm.places::setCity,
                                 selectedPlace = activityPlace,
-                                onPlace = vm::setActivityPlace,
+                                onPlace = vm.places::setPlace,
                                 suggestCities = vm.core::suggestCities,
-                                onCategory = vm::setActivityCategory,
-                                onSearch = { vm.searchActivities(force = true) },
+                                onCategory = vm.places::setCategory,
+                                onSearch = { vm.places.search(force = true) },
                                 wiki = vm.core::wikiSummary,
                                 weather = vm.core::weatherFor,
                                 isFavorite = { name -> trips.any { tr -> tr.places.any { it.name.equals(name, ignoreCase = true) } } },
@@ -190,7 +190,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                                 embedded = true,
                                 state = blog,
                                 context = vm.blogContext(),
-                                onCity = { c, why -> vm.blog.openBlogCity(c, why); vm.setActivityCity(c.name) },
+                                onCity = { c, why -> vm.blog.openBlogCity(c, why); vm.places.setCity(c.name) },
                                 onPlace = vm.blog::openBlogPlace,
                                 onClearCity = vm.blog::clearBlogCity,
                                 onFilter = vm.blog::setBlogFilter,
@@ -201,15 +201,15 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                                 wiki = vm.core::wikiSummary,
                                 hasPersonalFilter = experience.answers.interests.isNotEmpty() ||
                                     NotablePlaces.supports(activityCategory),
-                                onSaveArticle = vm::saveArticle,
+                                onSaveArticle = vm.trips::saveArticle,
                             )
                         },
                         info = {
                             val here = vm.currentCity()
                             PracticalInfo(
                                 city = here?.first, country = here?.second.orEmpty(),
-                                info = here?.let { vm.practicalFor(it.first, it.second) },
-                                myCurrency = settings.currency, rates = vm::rates,
+                                info = here?.let { vm.core.practicalFor(it.first, it.second) },
+                                myCurrency = settings.currency, rates = vm.core::rates,
                             )
                         },
                     )
@@ -247,7 +247,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                             move = vm::moveExperienceStep, add = vm::addExperienceStep, refine = vm::refineExperience,
                             detailed = { wasQuick -> vm.setQuickQuiz(!wasQuick) },
                             linked = trips.any { it.id == experience.tripId && it.city.equals(experience.result?.city ?: experience.answers.city, true) },
-                            openTrip = { experience.tripId?.let(vm::openTrip) },
+                            openTrip = { experience.tripId?.let(vm.trips::openTrip) },
                             describe = if (settings.claudeDescribe) vm::describeTrip else null,
                             setTime = vm::setExperienceStepTime,
                             newEnvolee = vm::newEnvolee,
@@ -301,8 +301,8 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                 Tab.TRIPS -> {
                     BackHandler {
                         when {
-                            tripArticle != null -> vm.readSavedArticle(null)
-                            openTrip != null -> vm.openTrip(null)
+                            tripArticle != null -> vm.trips.readSavedArticle(null)
+                            openTrip != null -> vm.trips.openTrip(null)
                             else -> vm.selectTab(Tab.HOME)
                         }
                     }
@@ -310,10 +310,10 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         trips = trips,
                         openId = openTrip,
                         article = tripArticle,
-                        onOpen = vm::openTrip,
-                        onDelete = vm::deleteTrip,
-                        onRemove = vm::removeFromTrip,
-                        onReadArticle = vm::readSavedArticle,
+                        onOpen = vm.trips::openTrip,
+                        onDelete = vm.trips::deleteTrip,
+                        onRemove = vm.trips::removeFromTrip,
+                        onReadArticle = vm.trips::readSavedArticle,
                         onAlerts = { vm.selectTab(Tab.ALERTS) },
                         wiki = vm.core::wikiSummary,
                         weather = vm.core::weatherFor,
@@ -324,10 +324,10 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         },
                         alertCount = alerts.size,
                         actions = TripActions(
-                            moveStep = vm::moveStep, deleteStep = vm::deleteStep, editStep = vm::editStep, addStep = vm::addStep,
-                            addDay = vm::addDay, packing = vm::packingFor, togglePacked = vm::togglePacked,
-                            addPackItem = vm::addPackItem, removePackItem = vm::removePackItem, practical = vm::openPractical,
-                            create = vm::createTrip, updateInfo = vm::updateTripInfo, plan = vm::planTrip, suggestCities = vm.core::suggestCities,
+                            moveStep = vm.trips::moveStep, deleteStep = vm.trips::deleteStep, editStep = vm.trips::editStep, addStep = vm.trips::addStep,
+                            addDay = vm.trips::addDay, packing = vm.trips::packingFor, togglePacked = vm.trips::togglePacked,
+                            addPackItem = vm.trips::addPackItem, removePackItem = vm.trips::removePackItem, practical = vm::openPractical,
+                            create = vm.trips::createTrip, updateInfo = vm::updateTripInfo, plan = vm::planTrip, suggestCities = vm.core::suggestCities,
                             pdf = vm::tripPdf,
                             importBooking = if (settings.has(com.riad.voyage.data.AiFeature.IMPORT)) { uris -> vm.importDocuments(uris) } else null,
                             souvenir = if (settings.has(com.riad.voyage.data.AiFeature.SOUVENIR)) vm::souvenir else null,
@@ -358,10 +358,10 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                             onOverride = vm.budget::setBudgetOverride,
                             onTarget = vm.budget::setBudgetTarget,
                             expenses = budgetTrip?.expenses.orEmpty(),
-                            localCurrency = vm.practicalFor(b.input.city, b.input.country)?.currency,
-                            onAddExpense = budgetTrip?.let { tr -> { label, amount, cur, item -> vm.addExpense(tr.id, label, amount, cur, item) } },
-                            onRemoveExpense = { id -> budgetTrip?.let { vm.removeExpense(it.id, id) } },
-                            rates = vm::rates,
+                            localCurrency = vm.core.practicalFor(b.input.city, b.input.country)?.currency,
+                            onAddExpense = budgetTrip?.let { tr -> { label, amount, cur, item -> vm.trips.addExpense(tr.id, label, amount, cur, item) } },
+                            onRemoveExpense = { id -> budgetTrip?.let { vm.trips.removeExpense(it.id, id) } },
+                            rates = vm.core::rates,
                             onAdvice = if (settings.has(com.riad.voyage.data.AiFeature.BUDGET)) vm::budgetAdvice else null,
                         )
                     }

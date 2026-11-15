@@ -10,7 +10,6 @@ import com.riad.voyage.data.PointOfInterest
 import com.riad.voyage.data.PopularPlaces
 import com.riad.voyage.data.QuotaStore
 import com.riad.voyage.data.SavedPlace
-import com.riad.voyage.data.Settings
 import com.riad.voyage.data.SettingsStore
 import com.riad.voyage.data.TravelpayoutsApi
 import com.riad.voyage.data.Trip
@@ -76,7 +75,6 @@ class AppCore(val app: Application, val scope: CoroutineScope) {
             Blog.city(city)?.country ?: PopularPlaces.all.firstOrNull { it.name.equals(city, true) }?.country.orEmpty()
         }
 
-
     suspend fun suggestPlaces(term: String): List<Place> {
         if (term.trim().length < 2) return emptyList()
         val online = runCatching { api().searchPlaces(term.trim()) }.getOrDefault(emptyList())
@@ -88,6 +86,12 @@ class AppCore(val app: Application, val scope: CoroutineScope) {
         val all = suggestPlaces(term)
         return all.filter { !it.isAirport }.ifEmpty { all }
     }
+
+    /** Infos pratiques du pays d'une ville (null si le pays n'est pas connu). */
+    fun practicalFor(city: String, country: String = "") = com.riad.voyage.data.Practical.of(countryOf(city, country))
+
+    /** Taux de change (base euro), gardés en mémoire. */
+    suspend fun rates(): Map<String, Double> = attempt(8_000) { com.riad.voyage.data.Fx.rates() }?.getOrNull().orEmpty()
 
     private val geoCache = mutableMapOf<String, GeoPoint>()
     val weatherCache = mutableMapOf<String, List<DayWeather>>()
