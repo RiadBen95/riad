@@ -43,8 +43,8 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
     val openTrip by vm.openTrip.collectAsStateWithLifecycle()
     val tripArticle by vm.tripArticle.collectAsStateWithLifecycle()
     val hotels by vm.hotels.state.collectAsStateWithLifecycle()
-    val budget by vm.budget.collectAsStateWithLifecycle()
-    val budgetReturn by vm.budgetReturn.collectAsStateWithLifecycle()
+    val budget by vm.budget.state.collectAsStateWithLifecycle()
+    val budgetReturn by vm.budget.returning.collectAsStateWithLifecycle()
     val pendingBooking by vm.hotels.pendingBooking.collectAsStateWithLifecycle()
     val citySection by vm.citySection.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
@@ -65,7 +65,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
         bottomBar = { androidx.compose.foundation.layout.Column {
             if (budgetReturn && tab != Tab.BUDGET && budget != null) {
                 androidx.compose.material3.Button(
-                    onClick = vm::backToBudget,
+                    onClick = vm.budget::backToBudget,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
                 ) { Text(com.riad.voyage.t("💰 Retour au budget")) }
             }
@@ -318,7 +318,7 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                         wiki = vm.core::wikiSummary,
                         weather = vm.core::weatherFor,
                         onReadArticle2 = vm::readPlaceArticle,
-                        onBudget = vm::openBudgetForTrip,
+                        onBudget = vm.budget::openBudgetForTrip,
                         onHotels = { tr ->
                             vm.hotels.openHotels(tr.city, null, tr.start, tr.end)
                         },
@@ -337,26 +337,26 @@ fun VoyageApp(vm: AppViewModel, onFollowRequested: () -> Unit) {
                 }
 
                 Tab.BUDGET -> {
-                    BackHandler { if (budget != null) vm.closeBudget() else vm.selectTab(Tab.TRIPS) }
+                    BackHandler { if (budget != null) vm.budget.closeBudget() else vm.selectTab(Tab.TRIPS) }
                     val b = budget
                     if (b == null) {
                         BudgetPicker(
                             trips = trips,
                             experienceCity = experience.result?.city,
-                            onTrip = vm::openBudgetForTrip,
+                            onTrip = vm.budget::openBudgetForTrip,
                             onExperience = vm::openBudgetForExperience,
                             onCreate = { vm.selectTab(Tab.EXPERIENCE) },
                         )
                     } else {
                         val budgetTrip = trips.firstOrNull { it.id == b.tripId }
                         BudgetScreen(
-                            onChoose = vm::chooseForBudget,
+                            onChoose = vm.budget::chooseForBudget,
                             state = b,
                             currency = settings.currency,
-                            onBack = vm::closeBudget,
-                            onInput = vm::updateBudgetInput,
-                            onOverride = vm::setBudgetOverride,
-                            onTarget = vm::setBudgetTarget,
+                            onBack = vm.budget::closeBudget,
+                            onInput = vm.budget::updateBudgetInput,
+                            onOverride = vm.budget::setBudgetOverride,
+                            onTarget = vm.budget::setBudgetTarget,
                             expenses = budgetTrip?.expenses.orEmpty(),
                             localCurrency = vm.practicalFor(b.input.city, b.input.country)?.currency,
                             onAddExpense = budgetTrip?.let { tr -> { label, amount, cur, item -> vm.addExpense(tr.id, label, amount, cur, item) } },

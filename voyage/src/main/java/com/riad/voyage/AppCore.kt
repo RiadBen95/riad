@@ -1,6 +1,7 @@
 package com.riad.voyage
 
 import android.app.Application
+import com.riad.voyage.data.Blog
 import com.riad.voyage.data.DayWeather
 import com.riad.voyage.data.GeoPoint
 import com.riad.voyage.data.Place
@@ -68,6 +69,13 @@ class AppCore(val app: Application, val scope: CoroutineScope) {
     }
 
     // ---------- Villes ----------
+
+    /** Pays d'une ville : celui donné, sinon les villes connues (blogue, villes populaires). */
+    fun countryOf(city: String, fallback: String = ""): String =
+        fallback.ifBlank {
+            Blog.city(city)?.country ?: PopularPlaces.all.firstOrNull { it.name.equals(city, true) }?.country.orEmpty()
+        }
+
 
     suspend fun suggestPlaces(term: String): List<Place> {
         if (term.trim().length < 2) return emptyList()
