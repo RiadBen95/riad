@@ -1100,4 +1100,11 @@ ROWS = [
     ['{0} à visiter', '{0} to visit'],
     ['{0} à voir en passant', '{0} to see on the way'],
     ['Historique et préférences effacés.', 'History and preferences cleared.'],
+    ["À pied et transports", 'On foot and public transport'],
+    ["À pied quand c'est proche, tram ou bus au-delà", 'On foot when it is close, tram or bus beyond'],
+    ['style ({0})', 'style ({0})'],
+    ['rythme ({0})', 'pace ({0})'],
+    ['déplacements ({0})', 'getting around ({0})'],
+    ['budget ({0})', 'budget ({0})'],
+    ['Non précisé, réglage par défaut : {0}. Touchez une puce ci-dessous pour préciser.', 'Not specified, default setting: {0}. Tap a chip below to specify.'],
 ]

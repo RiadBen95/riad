@@ -485,6 +485,7 @@ private fun ExperienceResult(
                         Text(t("Envolée AI a compris :") + " " + summary, style = MaterialTheme.typography.bodySmall)
                         if (state.aiIgnored.isNotEmpty()) Text(tf("Non compris : {0}", state.aiIgnored.joinToString(", ")),
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                        assumedText(state.answers)?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                         TextButton(onClick = onEdit, contentPadding = PaddingValues(0.dp)) { Text(t("Corriger les réponses ›")) }
                     }
                     if (edits.linked) {
@@ -841,4 +842,16 @@ private fun MicButton(onText: (String) -> Unit) {
         .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, if (com.riad.voyage.I18n.lang == com.riad.voyage.Lang.EN) "en-GB" else "fr-FR")
         .putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, t("Dites votre demande"))
     TextButton(onClick = { runCatching { launcher.launch(intent) } }) { Text("🎤") }
+}
+
+/** Réglages que la demande ne précisait pas : valeur par défaut retenue, à préciser d'un geste. */
+private fun assumedText(a: Quiz.Answers): String? {
+    val parts = listOfNotNull(
+        t("compagnie").takeIf { "company" in a.assumed },
+        tf("style ({0})", t(a.style.label).lowercase()).takeIf { "style" in a.assumed },
+        tf("rythme ({0})", t(a.pace.label).lowercase()).takeIf { "pace" in a.assumed },
+        tf("déplacements ({0})", t(a.mobility.label).lowercase()).takeIf { "mobility" in a.assumed },
+        tf("budget ({0})", t(a.budget.label).lowercase()).takeIf { "budget" in a.assumed },
+    )
+    return if (parts.isEmpty()) null else tf("Non précisé, réglage par défaut : {0}. Touchez une puce ci-dessous pour préciser.", parts.joinToString(", "))
 }

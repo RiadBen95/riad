@@ -604,13 +604,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     // ---------- Budget du séjour ----------
 
-    private fun travellersFor(c: Quiz.Company) = when (c) {
-        Quiz.Company.SOLO -> 1
-        Quiz.Company.COUPLE -> 2
-        Quiz.Company.FRIENDS -> 3
-        Quiz.Company.FAMILY -> 4
-    }
-
     private fun countryOf(city: String, fallback: String = ""): String =
         fallback.ifBlank {
             Blog.city(city)?.country ?: PopularPlaces.all.firstOrNull { it.name.equals(city, true) }?.country.orEmpty()
@@ -670,7 +663,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val trip = _trips.value.firstOrNull { it.id == trip0.id } ?: trip0
         val a = _experience.value.answers
         budgetFor(trip.city, countryOf(trip.city, trip.country), trip, rates, trip.nights ?: 3,
-            trip.travellers ?: if (a.city.equals(trip.city, true)) travellersFor(a.company) else 2)
+            trip.travellers ?: (if (a.city.equals(trip.city, true)) a.people else null) ?: 2)
     }
 
     /** Budget du programme Expérience affiché (+ vols et hôtel choisis pour la même ville). */
@@ -681,7 +674,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val city = st.result?.city ?: a.city
         val program = st.result?.days.orEmpty().flatMap { d -> d.steps.map { PlannedActivity(it.place.name, it.place.kind, it.category) } }
         budgetFor(city, countryOf(city, a.place?.country.orEmpty()), linkedTrip(st) ?: _trips.value.firstOrNull { it.city.equals(city, true) }, rates,
-            if (a.duration.halfDay) 0 else (a.duration.days - 1).coerceAtLeast(0), travellersFor(a.company), program)
+            if (a.duration.halfDay) 0 else (a.duration.days - 1).coerceAtLeast(0), a.people ?: 1, program)
     }
 
     private fun budgetFor(
@@ -1128,7 +1121,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val a = st.answers
         val end = a.startDate.plusDays((a.duration.days - 1).toLong())
         val c = a.company
-        val travellers = a.travellers ?: if (c == Quiz.Company.SOLO || c == Quiz.Company.COUPLE) travellersFor(c) else trip.travellers ?: travellersFor(c)
+        val travellers = when {
+            a.travellers != null || "company" in a.assumed -> a.travellers ?: trip.travellers   // rien de supposé dans le voyage
+            c == Quiz.Company.SOLO || c == Quiz.Company.COUPLE -> a.people
+            else -> trip.travellers ?: a.people
+        }
         val updated = trip.copy(programTitle = exp.title, programSubtitle = exp.subtitle, program = program, travellers = travellers,
             startDate = a.startDate.toString(), endDate = end.toString(), arrivalTime = hhmm(a.arrivalMin) ?: trip.arrivalTime,
             departureTime = hhmm(a.departureMin) ?: trip.departureTime,
@@ -1157,7 +1154,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val days = (java.time.temporal.ChronoUnit.DAYS.between(start, end).toInt() + 1).coerceIn(1, Quiz.Duration.MAX_DAYS)
         val change: (Quiz.Answers) -> Quiz.Answers = { a ->
             a.copy(startDate = start, duration = Quiz.Duration(days), arrivalMin = arrival?.let(::minutesOf),
-                departureMin = departure?.let(::minutesOf), company = companyFor(travellers, a.company))
+                departureMin = departure?.let(::minutesOf), company = companyFor(travellers, a.company), travellers = travellers,
+                assumed = a.assumed - "company")
         }
         if (_experience.value.result != null) refineExperience(change) else updateAnswers(change)
     }
@@ -1428,11 +1426,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             a.arrivalMin?.let { tf("arrivée {0}", hhmm(it)!!) },
             t("soirée à l'hôtel").takeIf { a.restAfterArrival && a.arrivalMin != null },
             a.departureMin?.let { tf("départ {0}", hhmm(it)!!) },
-            t(a.company.label),
+            t(a.company.label).takeIf { "company" !in a.assumed },
             a.interests.joinToString(", ") { t(it.label) }.ifBlank { null },
             a.tastes.joinToString(", ") { t(it.label) }.ifBlank { null },
             t(a.diet.label).takeIf { a.diet != Quiz.Diet.NONE },
-            t(a.budget.label),
+            t(a.budget.label).takeIf { "budget" !in a.assumed },
         ).joinToString(" · ")
     }
 
@@ -1447,7 +1445,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun dismissQuestion() = _experience.update { it.copy(aiQuestion = null) }
 
     /** Réponse changée à la main : les remarques d'Envolée AI sur l'ancienne demande ne valent plus. */
-    fun answer(transform: (Quiz.Answers) -> Quiz.Answers) = updateAnswers { transform(it).copy(extraNotes = emptyList()) }
+    fun answer(transform: (Quiz.Answers) -> Quiz.Answers) = updateAnswers { transform(it).copy(extraNotes = emptyList()).confirmedFrom(it) }
 
     private val verifiedIds = mutableSetOf<String>()
     private var verifying = false
@@ -1473,7 +1471,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 if (s.googleKey.isBlank()) { unknown += date to p; continue }
                 if (quotas.remaining(com.riad.voyage.data.RatingSource.GOOGLE) <= 0) break
                 quotas.spend(com.riad.voyage.data.RatingSource.GOOGLE)
-                val c = attempt(10_000) { com.riad.voyage.data.GoogleRatings.check(s.googleKey, p.name, exp.city, (date ?: LocalDate.now()).dayOfWeek) }?.getOrNull()
+                val c = attempt(10_000) { com.riad.voyage.data.GoogleRatings.check(s.googleKey, p, exp.city, (date ?: LocalDate.now()).dayOfWeek) }?.getOrNull()
                 if (c != null) checks[p.id] = c else unknown += date to p
             }
             if (s.aiWeb) unknown.take(4).forEach { (date, p) ->
@@ -1496,9 +1494,20 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val a = _experience.value.answers
         var exp = _experience.value.result ?: return
         // Lieux fermés (définitivement ou ce jour-là) : remplacés par le premier lieu proposé à la place.
-        val closedThen = exp.days.flatMap { it.steps }.filter { st ->
+        fun misfits(st: com.riad.voyage.data.ExperienceStep) =
             checks[st.place.id]?.hoursToday?.let { !com.riad.voyage.data.OpeningHours.fits(it, minutesOf(st.time) ?: 0, st.durationMin) } == true
-        }.map { it.place.id }
+        // Ouvert plus tard ce jour-là (musée qui ouvre à 11 h) : l'étape est décalée plutôt que perdue, si la journée suit.
+        exp = exp.copy(days = exp.days.map { day ->
+            if (day.steps.none { misfits(it) && checks[it.place.id]?.isClosed != true }) return@map day
+            val steps = day.steps.map { st ->
+                val spec = com.riad.voyage.data.OpeningHours.specOf(checks[st.place.id]?.hoursToday)
+                if (spec != null && misfits(st)) st.copy(place = st.place.copy(openingHours = spec)) else st
+            }
+            val moved = ExperienceBuilder.retime(a, steps, day.date)
+            val endOf = { l: List<com.riad.voyage.data.ExperienceStep> -> l.lastOrNull()?.let { (minutesOf(it.time) ?: 0) + it.durationMin } ?: 0 }
+            if (endOf(moved) - endOf(day.steps) <= 45) day.copy(steps = moved) else day
+        })
+        val closedThen = exp.days.flatMap { it.steps }.filter(::misfits).map { it.place.id }
         val replaced = mutableListOf<String>()
         knownClosed += checks.filter { it.value.isClosed }.keys + closedThen
         (checks.filter { it.value.isClosed }.keys + closedThen).forEach { id ->
@@ -1526,7 +1535,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 val why = if (c.hoursToday != null) st.why.replace(" · " + t("horaires à vérifier"), "") else st.why
                 // Horaires précis trouvés pour une tour vue « en passant » : elle se visite, durée normale.
                 val visitable = st.durationMin <= 15 && c.hoursToday?.let { Regex("\\d{1,2}:\\d{2}").containsMatchIn(it) && !Regex("24").containsMatchIn(it) } == true
-                st.copy(why = listOf(why, note).filter { it.isNotBlank() }.joinToString(" · "), durationMin = if (visitable) 45 else st.durationMin)
+                val kind = com.riad.voyage.tk(st.place.kind.substringBefore(" · "))
+                val label = if (visitable) why.replace(tf("{0} à voir en passant", kind), tf("{0} à visiter", kind)) else why
+                st.copy(why = listOf(label, note).filter { it.isNotBlank() }.joinToString(" · "), durationMin = if (visitable) 45 else st.durationMin)
             }.let { steps -> if (steps.map { it.durationMin } != day.steps.map { it.durationMin }) ExperienceBuilder.retime(a, steps, day.date) else steps })
         })
         _experience.update { it.copy(result = exp) }
@@ -1670,17 +1681,32 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Jours fériés, fermetures, grèves et événements sur les dates du séjour (recherche web). */
+    /** Remarques de dates déjà cherchées (ville, début, fin) : un programme recomposé les reprend sans nouvelle recherche. */
+    private var dateNotes: Pair<String, List<String>>? = null
+    private var datesPending: String? = null
+
     private fun checkTripDates() {
         val s = _settings.value
         val c = s.aiConfig ?: return
         if (!s.has(com.riad.voyage.data.AiFeature.DATES) || !s.aiWeb) return
         val a = _experience.value.answers
         val exp = _experience.value.result ?: return
-        viewModelScope.launch {
-            val notes = attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.checkDates(c, exp.city, a.startDate, a.startDate.plusDays((a.duration.days - 1).toLong()), exp.notes) }?.getOrNull().orEmpty()
-            if (notes.isEmpty()) return@launch
+        val end = a.startDate.plusDays((a.duration.days - 1).toLong())
+        val key = "${exp.city}|${a.startDate}|$end"
+        fun add(notes: List<String>) {
+            if (notes.isEmpty()) return
             _experience.update { st -> st.result?.takeIf { it.city == exp.city }?.let { st.copy(result = it.copy(notes = (it.notes + notes).distinct())) } ?: st }
             autosave()
+        }
+        dateNotes?.takeIf { it.first == key }?.let { return add(it.second) }
+        if (datesPending == key) return
+        datesPending = key
+        val places = exp.days.flatMap { d -> d.steps.filter { it.category !in ExperienceBuilder.venues }.map { it.place.name } }
+        viewModelScope.launch {
+            val notes = attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.checkDates(c, exp.city, a.startDate, end, exp.notes, places) }?.getOrNull()
+            datesPending = null
+            if (notes != null) dateNotes = key to notes
+            add(notes.orEmpty())
         }
     }
 
@@ -1807,7 +1833,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val needs = listOfNotNull(a?.diet?.takeIf { it != Quiz.Diet.NONE }?.label, "jeunes enfants".takeIf { a?.youngKids == true },
             "poussette".takeIf { a?.stroller == true }).joinToString(", ")
         val local = practicalFor(trip.city, trip.country)?.phrases?.let { "la langue locale de ${trip.city}" } ?: "la langue locale"
-        val story = attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.story(c, com.riad.voyage.data.TripText.share(trip) { t(it) }, trip.program.size, local, needs) }?.getOrNull() ?: return trip
+        val who = when {
+            a != null && "company" !in a.assumed -> t(a.company.label) + (a.people?.let { " ($it)" } ?: "")
+            trip.travellers != null -> tf("{0} voyageur(s)", trip.travellers)
+            else -> null
+        }
+        val story = attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.story(c, com.riad.voyage.data.TripText.share(trip) { t(it) }, trip.program.size, local, needs, who) }?.getOrNull() ?: return trip
         val updated = trip.copy(storyIntro = story.intro, storyDays = story.days, extraPhrases = story.phrases)
         tripStore.upsert(updated)
         refreshTrips()
@@ -1834,10 +1865,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val st = _experience.value
         val exp = st.result ?: return
         val free = exp.days.count { d -> d.steps.any { it.place.id.startsWith("free/") } }
-        if (!s.has(com.riad.voyage.data.AiFeature.OUTINGS) || free == 0 || st.answers.outings.isNotEmpty()) return
+        val wine = Quiz.Taste.WINE in st.answers.tastes && st.answers.duration.days >= 3   // une journée dans le vignoble
+        if (!s.has(com.riad.voyage.data.AiFeature.OUTINGS) || (free == 0 && !wine) || st.answers.outings.isNotEmpty()) return
         viewModelScope.launch {
             val seen = exp.days.flatMap { d -> d.steps.filter { it.category !in ExperienceBuilder.venues }.map { it.place.name } }
-            val ideas = attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.outings(c, exp.city, free + 2, seen) }?.getOrNull().orEmpty()
+            val ideas = attempt(90_000) { com.riad.voyage.data.ClaudeAssistant.outings(c, exp.city, free + 2, seen, wine) }?.getOrNull().orEmpty()
             if (ideas.isEmpty() || _experience.value.result?.city != exp.city) return@launch
             updateAnswers { it.copy(outings = ideas) }
             val a = _experience.value.answers
@@ -1852,7 +1884,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val stated = a.budgetEur ?: return emptyList()
         val program = exp.days.flatMap { d -> d.steps.map { PlannedActivity(it.place.name, it.place.kind, it.category) } }
         val est = com.riad.voyage.data.BudgetCalculator.compute(budgetFor(exp.city, a.country, linkedTrip(st), emptyMap(),
-            if (a.duration.halfDay) 0 else a.duration.days - 1, a.travellers ?: travellersFor(a.company), program)).sumOf { it.amountEur }.toInt()
+            if (a.duration.halfDay) 0 else a.duration.days - 1, a.people ?: 1, program)).sumOf { it.amountEur }.toInt()
         return listOf(if (est <= stated) tf("Budget estimé {0} € pour {1} € prévus ✓", est, stated)
             else tf("Budget estimé {0} € pour {1} € prévus : plus cher que prévu, voyez le budget pour ajuster.", est, stated))
     }
@@ -1913,10 +1945,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     }
                 }.map { it.await() }.toMap()
             }
-            experiencePools = analysed
+            experiencePools = ExperienceBuilder.withoutBorrowedImages(analysed)
             _experience.update { it.copy(stage = t("Composition du programme…")) }
             experienceWeather = weatherJob.await()
-            val exp = ExperienceBuilder.build(a, city, analysed, weather = experienceWeather)
+            val exp = ExperienceBuilder.build(a, city, experiencePools, weather = experienceWeather)
             prefStore.record(a)
             _prefsSummary.value = computePrefsSummary()
             if (exp.days.isEmpty()) _experience.update {

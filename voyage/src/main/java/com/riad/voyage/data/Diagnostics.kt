@@ -12,6 +12,7 @@ import java.time.LocalDateTime
 object Diagnostics {
     private val errors = ArrayDeque<String>()
     @Volatile var lastAiResponse: String? = null
+    @Volatile var requestResponse: String? = null   // lecture de la demande libre (gardée à part des autres appels)
 
     @Synchronized
     fun log(message: String) {
@@ -61,7 +62,9 @@ object Diagnostics {
             line("== Envolée AI ==")
             line("Compris : ${state.aiSummary ?: "-"}")
             line("Non compris : ${state.aiIgnored.joinToString().ifBlank { "-" }}")
-            line("Dernière réponse brute : ${lastAiResponse?.take(3000) ?: "-"}")
+            line("Supposé (non précisé) : ${a.assumed.joinToString().ifBlank { "-" }}")
+            line("Lecture de la demande (brute) : ${requestResponse?.take(3000) ?: "-"}")
+            line("Dernière réponse brute : ${lastAiResponse?.take(1500) ?: "-"}")
             line()
             line("== Lieux trouvés par catégorie ==")
             line(pools.entries.joinToString(" · ") { "${it.key.name} ${it.value}" }.ifBlank { "-" })

@@ -70,16 +70,11 @@ object OpeningHours {
         return r.mapNotNull { range -> maxOf(at, range.first).takeIf { it + minutes <= range.last } }.minOrNull()
     }
 
-    /**
-     * Horaires du jour en texte (Google : « 13:00 – 22:30 », « 12:00 – 3:00 PM, 7:00 – 11:30 PM », espaces fines
-     * comprises). Vrai si une plage contient toute l'étape ; vrai aussi si le texte ne donne pas d'heures lisibles.
-     * [start] peut dépasser 24 h (étape après minuit).
-     */
-    fun fits(text: String?, start: Int, minutes: Int): Boolean {
+    /** Plages lues dans un texte d'horaires Google (« 13:00 – 22:30 », « 12:00 – 3:00 PM », espaces fines comprises), en minutes. */
+    fun textRanges(text: String?): List<IntRange> {
         val s = text.orEmpty().replace(Regex("[\\u00A0\\u2009\\u202F]"), " ")
-        if (Regex("24\\s*h|24 hours|24/24|24/7", RegexOption.IGNORE_CASE).containsMatchIn(s)) return true
         val clock = "(\\d{1,2}):(\\d{2})\\s*([AaPp][Mm])?"
-        val ranges = Regex("$clock\\s*[–-]\\s*$clock").findAll(s).map { m ->
+        return Regex("$clock\\s*[–-]\\s*$clock").findAll(s).map { m ->
             val g = m.groupValues
             val endHalf = g[6].uppercase()
             val startHalf = g[3].uppercase().ifEmpty { endHalf }                  // « 12:00 – 3:00 PM » : même moitié
@@ -90,10 +85,26 @@ object OpeningHours {
             var from = min(g[1], g[2], startHalf)
             if (startHalf == "PM" && g[3].isEmpty() && from > min(g[4], g[5], endHalf)) from -= 12 * 60   // « 11:00 – 2:00 PM »
             val to = min(g[4], g[5], endHalf)
-            from to (if (to <= from) to + 24 * 60 else to)
+            from..(if (to <= from) to + 24 * 60 else to)
         }.toList()
-        return ranges.isEmpty() || ranges.any { (from, to) ->
-            listOf(start, start + 24 * 60, start - 24 * 60).any { st -> st >= from && st + minutes <= to }
+    }
+
+    private fun isAllDay(text: String?) = Regex("24\\s*h|24 hours|24/24|24/7", RegexOption.IGNORE_CASE).containsMatchIn(text.orEmpty())
+
+    /** Horaires du jour en texte → spécification OpenStreetMap (« 11:00-18:00 ») ; null si illisibles ou 24 h/24. */
+    fun specOf(text: String?): String? = if (isAllDay(text)) null else textRanges(text).takeIf { it.isNotEmpty() }?.joinToString(",") { r ->
+        "%02d:%02d-%02d:%02d".format(java.util.Locale.ROOT, r.first / 60, r.first % 60, r.last % (24 * 60) / 60, r.last % 60)
+    }
+
+    /**
+     * Vrai si une plage du texte contient toute l'étape ; vrai aussi si le texte ne donne pas d'heures lisibles.
+     * [start] peut dépasser 24 h (étape après minuit).
+     */
+    fun fits(text: String?, start: Int, minutes: Int): Boolean {
+        if (isAllDay(text)) return true
+        val ranges = textRanges(text)
+        return ranges.isEmpty() || ranges.any { r ->
+            listOf(start, start + 24 * 60, start - 24 * 60).any { st -> st >= r.first && st + minutes <= r.last }
         }
     }
 

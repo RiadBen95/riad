@@ -99,20 +99,28 @@ data class PlaceCheck(
 }
 
 object GoogleRatings {
-    /** Vérifie un lieu précis (1 recherche Google) : statut, horaires du jour donné, note et avis. */
-    suspend fun check(key: String, name: String, city: String, day: java.time.DayOfWeek): PlaceCheck? {
-        val body = JSONObject().put("textQuery", "$name $city").put("languageCode", com.riad.voyage.I18n.wikiLang).put("pageSize", 1)
+    /**
+     * Vérifie un lieu précis (1 recherche Google) : statut, horaires du jour donné, note et avis.
+     * Null si Google trouve autre chose : un hôtel pour un monument (« Burdigala » → Hôtel Burdigala), ou un lieu à plus de 1,5 km.
+     */
+    suspend fun check(key: String, place: PointOfInterest, city: String, day: java.time.DayOfWeek): PlaceCheck? {
+        val body = JSONObject().put("textQuery", "${place.name} $city").put("languageCode", com.riad.voyage.I18n.wikiLang).put("pageSize", 1)
         val json = Http.call(
             "https://places.googleapis.com/v1/places:searchText",
             mapOf(
                 "X-Goog-Api-Key" to key,
-                "X-Goog-FieldMask" to "places.businessStatus,places.regularOpeningHours.weekdayDescriptions,places.rating,places.reviews",
+                "X-Goog-FieldMask" to "places.businessStatus,places.regularOpeningHours.weekdayDescriptions,places.rating,places.reviews,places.types,places.location",
                 "X-Android-Package" to "com.riad.voyage",
                 "X-Android-Cert" to "603C871E7D07E6B88530DD6E78D3DCC6C9F6A46F",
             ),
             body.toString(),
         )
         val p = JSONObject(json).optJSONArray("places")?.optJSONObject(0) ?: return null
+        val types = p.optJSONArray("types")?.let { a -> List(a.length()) { a.optString(it) } }.orEmpty()
+        if (!place.isVenue && types.any { it in lodging }) return null
+        val loc = p.optJSONObject("location")
+        if (place.hasCoordinates && loc != null &&
+            PlacesParser.distanceMeters(place.lat, place.lon, loc.optDouble("latitude"), loc.optDouble("longitude")) > 1500) return null
         val status = p.optString("businessStatus")
         // weekdayDescriptions : du lundi au dimanche, « lundi: 10:00–17:30 ».
         val desc = p.optJSONObject("regularOpeningHours")?.optJSONArray("weekdayDescriptions")?.optString(day.value - 1).orEmpty()
@@ -128,6 +136,8 @@ object GoogleRatings {
             reviews = reviews,
         )
     }
+
+    private val lodging = setOf("lodging", "hotel", "hostel", "motel", "bed_and_breakfast", "guest_house", "resort_hotel", "inn", "extended_stay_hotel")
 
     private const val FIELDS = "places.id,places.displayName,places.location,places.formattedAddress," +
         "places.rating,places.userRatingCount,places.priceLevel,places.websiteUri," +

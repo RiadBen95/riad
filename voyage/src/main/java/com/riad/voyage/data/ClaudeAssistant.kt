@@ -225,6 +225,9 @@ object ClaudeAssistant {
             - travellers : nombre de voyageurs s'il est dit ou évident (« seul » = 1, « à deux » = 2), sinon 0.
             - childAges : âges des enfants cités ; stroller : true si une poussette est mentionnée.
             - budgetEur : budget total annoncé en euros (0 sinon) ; maxWalkMin : marche maximale entre deux étapes (0 sinon).
+            - company, style, pace, mobility, diet, budget : seulement si la demande le dit clairement, sinon "".
+              Ne les déduis jamais du thème ou du ton (« week-end autour du vin » ne dit ni « en couple » ni « incontournables »).
+              mobility WALK seulement si la personne veut tout faire à pied ou rester près du centre.
             - company parmi : ${choices(Quiz.Company.entries.toTypedArray())}.
             - interests parmi : ${choices(Quiz.Interest.entries.toTypedArray())}.
             - tastes parmi : ${Quiz.Taste.entries.joinToString(", ") { "${it.name} (${it.label})" }}.
@@ -243,7 +246,7 @@ object ClaudeAssistant {
 
             Demande : $text
         """.trimIndent()
-        return json(ask(c, prompt))?.let(::TripRequest)
+        return json(ask(c, prompt).also { Diagnostics.requestResponse = it })?.let(::TripRequest)
     }
 
     /** Résumé en une phrase des avis de chaque lieu ([id], nom, avis) → id → résumé. */
@@ -267,17 +270,21 @@ object ClaudeAssistant {
     }
 
     /** Jours fériés, fermetures exceptionnelles, grèves, événements et marchés sur les dates du séjour. */
-    suspend fun checkDates(c: Config, city: String, start: LocalDate, end: LocalDate, known: List<String>): List<String> =
+    suspend fun checkDates(c: Config, city: String, start: LocalDate, end: LocalDate, known: List<String>, places: List<String>): List<String> =
         json(ask(c, "Pour un séjour à $city du $start au $end : cherche les jours fériés, fermetures exceptionnelles de grands lieux, " +
-            "grèves annoncées, festivals et marchés saisonniers qui tombent pendant le séjour. Ne garde que des informations précises " +
-            "et confirmées (nom de l'événement et dates exactes) ; rien de vague ni d'incertain. Déjà signalé, à ne pas répéter : " +
+            "grèves annoncées, festivals et marchés saisonniers qui tombent pendant le séjour, dans la ville même. Ne garde que des informations " +
+            "précises et confirmées (nom de l'événement et dates exactes) ; rien de vague ni d'incertain, rien qui ne touche pas le séjour. " +
+            "Si un événement occupe un de ces lieux du programme, nomme le lieu : ${places.joinToString(", ")}. " +
+            "Une seule remarque par événement. Déjà signalé, à ne pas répéter : " +
             known.joinToString(" | ").ifBlank { "rien" } + ". Réponds uniquement par un JSON " +
             "{\"notes\": [\"remarque courte et utile en $language\", …]} (3 au plus, liste vide si rien de notable).", web = true))
             ?.texts("notes").orEmpty()
 
     /** Balades de quartier et excursions à la journée, pour les jours où la ville est épuisée. */
-    suspend fun outings(c: Config, city: String, count: Int, seen: List<String>): List<String> =
-        json(ask(c, "Séjour à $city : les grands sites suivants sont déjà au programme : ${seen.joinToString(", ")}. Propose $count idées " +
+    suspend fun outings(c: Config, city: String, count: Int, seen: List<String>, wine: Boolean = false): List<String> =
+        json(ask(c, "Séjour à $city : les grands sites suivants sont déjà au programme : ${seen.joinToString(", ")}. " +
+            (if (wine) "Le séjour est consacré au vin : la première idée est une excursion à la journée dans un vignoble réel et proche " +
+                "(visite de domaine ou de château avec dégustation). " else "") + "Propose $count idées " +
             "pour les jours restants, en $language : des balades dans des quartiers réels (« Balade : nom du quartier — ce qu'on y voit ») et " +
             "des excursions à la journée vers des lieux réels et connus (« Excursion : lieu (distance en km, transport) — intérêt »). " +
             "N'invente rien. Réponds uniquement par un JSON {\"ideas\": [\"…\"]}."))?.texts("ideas").orEmpty()
@@ -374,8 +381,9 @@ object ClaudeAssistant {
             "annoncé (s'il y en a un), quel poste pèse le plus, et deux pistes d'économies concrètes. Pas de titre, pas de liste.").trim()
 
     /** Carnet : introduction, un texte par jour, phrases utiles sur mesure. */
-    suspend fun story(c: Config, summary: String, days: Int, localLanguage: String, needs: String): Story? {
-        val o = json(ask(c, "Voici un programme de voyage :\n$summary\n\nEn $language, écris pour le carnet de voyage : une introduction " +
+    suspend fun story(c: Config, summary: String, days: Int, localLanguage: String, needs: String, who: String?): Story? {
+        val o = json(ask(c, "Voici un programme de voyage :\n$summary\n\nVoyageurs : ${who ?: "non précisés : n'écris ni « nous » ni « je », " +
+            "tourne les phrases sans dire qui voyage"}.\nEn $language, écris pour le carnet de voyage : une introduction " +
             "chaleureuse de 2 phrases, puis pour chacun des $days jours une phrase qui donne envie. Ajoute 3 phrases utiles en $localLanguage " +
             "adaptées à la personne (${needs.ifBlank { "voyageur sans besoin particulier" }}). Réponds uniquement par un JSON " +
             "{\"intro\": \"\", \"days\": [\"\"], \"phrases\": [{\"meaning\": \"sens en $language\", \"local\": \"phrase en $localLanguage\"}]}")) ?: return null
@@ -419,6 +427,15 @@ object ClaudeAssistant {
             travellers != null -> Quiz.Company.FRIENDS
             else -> base.company
         }
+        // Réglage ni dit ni repris (préférences, voyage relié) : valeur par défaut, signalée comme supposée.
+        val blank = Quiz.Answers()
+        val assumed = buildSet {
+            if (company == blank.company && base.travellers == null && travellers == null && r.company.isBlank()) add("company")
+            if (r.style.isBlank() && base.style == blank.style) add("style")
+            if (r.pace.isBlank() && base.pace == blank.pace) add("pace")
+            if (r.mobility.isBlank() && base.mobility == blank.mobility && r.maxWalkMin <= 0) add("mobility")
+            if (r.budget.isBlank() && base.budget == blank.budget && r.budgetEur <= 0) add("budget")
+        }
         val answers = base.copy(
             city = r.city.trim().ifBlank { base.city },
             place = if (r.city.isBlank()) base.place else null,
@@ -449,6 +466,7 @@ object ClaudeAssistant {
             maxWalkMin = r.maxWalkMin.takeIf { it > 0 } ?: base.maxWalkMin,
             extraNotes = r.warnings,
             country = r.country.trim().ifBlank { base.country },
+            assumed = assumed,
         )
         return answers to ignored
     }

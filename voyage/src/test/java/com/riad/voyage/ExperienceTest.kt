@@ -202,4 +202,38 @@ class ExperienceTest {
         assertEquals(exp.days[0].steps.map { it.place.id }, moved.map { it.place.id })
         assertTrue(minutes(moved[1].time) >= 11 * 60 + moved[0].durationMin)
     }
+
+    @Test
+    fun wineStayReachesTheWineMuseumAndAVineyardDay() {
+        val wineMuseum = poi(Category.MUSEUMS, 40, "Musée", fame = 8).copy(id = "vin", name = "Cité du Vin", lat = 48.88, lon = 2.35, distanceM = 3500)
+        val p = pools + (Category.MUSEUMS to pools.getValue(Category.MUSEUMS) + wineMuseum)
+        val a = Quiz.Answers(city = "Bordeaux", duration = Quiz.Duration.THREE, interests = setOf(Quiz.Interest.FOOD, Quiz.Interest.NIGHT),
+            tastes = setOf(Quiz.Taste.WINE), mobility = Quiz.Mobility.WALK, outings = listOf("Excursion : Saint-Émilion (40 km, train) — vignoble"))
+        val exp = ExperienceBuilder.build(a, "Bordeaux", p)
+        assertTrue(exp.days.any { d -> d.steps.any { it.place.id == "vin" } })   // loin à pied, mais au cœur du thème
+        val day2 = exp.days[1].steps
+        assertTrue(day2.any { it.moment == "Excursion" })
+        assertTrue(day2.none { it.category == Category.MUSEUMS || it.category == Category.MONUMENTS })
+        assertTrue(exp.notes.none { "sans nouveau lieu" in it })
+    }
+
+    @Test
+    fun placeBorrowingAnotherPhotoIsDropped() {
+        val img = "https://commons.wikimedia.org/wiki/Special:FilePath/Palais%20Galien-panoramique.jpg?width=600"
+        val city = poi(Category.MONUMENTS, 1, "Site archéologique").copy(id = "burdigala", name = "Burdigala", imageUrl = img)
+        val ruins = poi(Category.MONUMENTS, 2, "Site archéologique").copy(id = "gallien", name = "palais Gallien", imageUrl = img)
+        val kept = ExperienceBuilder.withoutBorrowedImages(mapOf(Category.MONUMENTS to listOf(city, ruins))).getValue(Category.MONUMENTS)
+        assertEquals(listOf("gallien"), kept.map { it.id })
+    }
+
+    @Test
+    fun unstatedSettingsAreNotShownAsChoices() {
+        val a = Quiz.Answers(city = "Paris", interests = setOf(Quiz.Interest.ART), assumed = setOf("company", "mobility"))
+        val exp = ExperienceBuilder.build(a, "Paris", pools)
+        assertTrue("En couple" !in exp.subtitle && "transports" !in exp.subtitle)
+        assertEquals(null, a.people)
+        val solo = a.copy(company = Quiz.Company.SOLO).confirmedFrom(a)
+        assertEquals(setOf("mobility"), solo.assumed)
+        assertEquals(1, solo.people)
+    }
 }

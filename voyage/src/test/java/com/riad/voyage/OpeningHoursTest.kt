@@ -22,4 +22,13 @@ class OpeningHoursTest {
         assertEquals(9 * 60, minutesOf("9h00"))
         assertNull(minutesOf("demain"))
     }
+
+    @Test
+    fun googleDayTextBecomesASpec() {
+        assertEquals("11:00-18:00", OpeningHours.specOf("11:00 – 18:00"))
+        assertEquals("12:00-15:00,19:00-23:30", OpeningHours.specOf("12:00 – 3:00 PM, 7:00 – 11:30 PM"))
+        assertEquals("18:30-00:00", OpeningHours.specOf("18:30 – 00:00"))
+        assertEquals(null, OpeningHours.specOf("Ouvert 24h/24"))
+        assertEquals(listOf(11 * 60), OpeningHours.ranges(OpeningHours.specOf("11:00 – 18:00"), java.time.DayOfWeek.SUNDAY)?.map { it.first })
+    }
 }
